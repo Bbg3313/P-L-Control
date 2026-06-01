@@ -17,12 +17,63 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCompactCurrency } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 import type { MonthlyTotals } from "@/lib/types";
+
+const CHART = {
+  revenue: "#14b8a6",
+  expense: "#f43f5e",
+  grid: "#e2e8f0",
+  axis: "#94a3b8",
+};
 
 interface RevenueExpenseChartProps {
   data: MonthlyTotals[];
   monthLabels: Record<string, string>;
+}
+
+interface TooltipPayloadItem {
+  name?: string;
+  value?: number;
+  color?: string;
+  dataKey?: string;
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 shadow-md">
+      <p className="mb-2 text-xs font-medium text-slate-500">{label}</p>
+      <ul className="space-y-1.5">
+        {payload.map((entry) => (
+          <li
+            key={entry.dataKey}
+            className="flex items-center justify-between gap-6 text-sm"
+          >
+            <span className="flex items-center gap-2 text-slate-600">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              {entry.name}
+            </span>
+            <span className="font-medium tabular-nums text-slate-900">
+              {formatCurrency(Number(entry.value ?? 0))}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function RevenueExpenseChart({
@@ -35,56 +86,75 @@ export function RevenueExpenseChart({
     expenses: row.expenses,
   }));
 
+  const maxValue = Math.max(
+    0,
+    ...chartData.flatMap((d) => [d.revenue, d.expenses])
+  );
+  const yDomain: [number, number] = [0, maxValue * 1.12 || 1];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>매출 vs 비용</CardTitle>
-        <CardDescription>
-          최근 6개월 월별 비교 (마케팅 에이전시 운영)
+    <Card className="border-slate-200/80 bg-white shadow-sm ring-0">
+      <CardHeader className="border-b border-slate-100 pb-4">
+        <CardTitle className="text-base font-semibold text-slate-900">
+          매출 vs 비용
+        </CardTitle>
+        <CardDescription className="text-sm text-slate-500">
+          최근 6개월 월별 비교
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-[320px] w-full">
+      <CardContent className="px-2 pb-4 pt-6 sm:px-6">
+        <div className="h-[340px] w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              barGap={6}
+              margin={{ top: 4, right: 12, left: 4, bottom: 4 }}
             >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <CartesianGrid
+                strokeDasharray="4 4"
+                stroke={CHART.grid}
+                vertical={false}
+              />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: CHART.axis }}
                 tickLine={false}
-                axisLine={false}
+                axisLine={{ stroke: CHART.grid }}
+                dy={8}
               />
               <YAxis
-                tick={{ fontSize: 12 }}
+                width={52}
+                tick={{ fontSize: 11, fill: CHART.axis }}
                 tickLine={false}
                 axisLine={false}
+                tickMargin={6}
+                domain={yDomain}
                 tickFormatter={(v) => formatCompactCurrency(Number(v))}
               />
               <Tooltip
-                formatter={(value) => [
-                  formatCompactCurrency(Number(value ?? 0)),
-                  "",
-                ]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  background: "var(--card)",
-                }}
+                content={<ChartTooltip />}
+                cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
               />
-              <Legend />
+              <Legend
+                wrapperStyle={{ paddingTop: 16 }}
+                iconType="circle"
+                iconSize={8}
+                formatter={(value) => (
+                  <span className="text-sm text-slate-600">{value}</span>
+                )}
+              />
               <Bar
                 dataKey="revenue"
                 name="매출"
-                fill="hsl(142 76% 36%)"
+                fill={CHART.revenue}
+                barSize={32}
                 radius={[4, 4, 0, 0]}
               />
               <Bar
                 dataKey="expenses"
                 name="비용"
-                fill="hsl(0 72% 51%)"
+                fill={CHART.expense}
+                barSize={32}
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
