@@ -1,5 +1,6 @@
 import type {
   DashboardMetrics,
+  ExpenseBreakdownItem,
   FinancialRecord,
   MonthlyTotals,
   TransactionType,
@@ -46,6 +47,42 @@ export function getMonthlyTotals(
       sumByMonth(records, month, "expense") +
       (personnelMonthly > 0 ? personnelMonthly : 0),
   }));
+}
+
+const PERSONNEL_BREAKDOWN_LABEL = "인건비";
+
+/** 해당 월 비용을 카테고리별로 합산 (고정 인건비 포함) */
+export function getExpenseBreakdown(
+  records: FinancialRecord[],
+  yearMonth: string,
+  personnelMonthly = 0
+): ExpenseBreakdownItem[] {
+  const totals = new Map<string, number>();
+
+  if (personnelMonthly > 0) {
+    totals.set(PERSONNEL_BREAKDOWN_LABEL, personnelMonthly);
+  }
+
+  for (const record of records) {
+    if (record.type !== "expense") continue;
+    if (parseYearMonth(record.date) !== yearMonth) continue;
+
+    const label =
+      record.category.trim() ||
+      record.description.trim() ||
+      "기타 비용";
+    totals.set(label, (totals.get(label) ?? 0) + record.amount);
+  }
+
+  const grandTotal = Array.from(totals.values()).reduce((sum, n) => sum + n, 0);
+
+  return Array.from(totals.entries())
+    .map(([category, amount]) => ({
+      category,
+      amount,
+      share: grandTotal > 0 ? amount / grandTotal : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
 export function getDashboardMetrics(

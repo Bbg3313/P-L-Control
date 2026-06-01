@@ -26,3 +26,10 @@ export interface DashboardMetrics {
   fixedCostsReserve: number;
   periodLabel: string;
 }
+
+export interface ExpenseBreakdownItem {
+  category: string;
+  amount: number;
+  /** 0~1 */
+  share: number;
+}

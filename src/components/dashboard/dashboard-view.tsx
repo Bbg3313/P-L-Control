@@ -1,5 +1,6 @@
 "use client";
 
+import { ExpenseBreakdown } from "@/components/dashboard/expense-breakdown";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { RevenueExpenseChart } from "@/components/dashboard/revenue-expense-chart";
 import { useFinancial } from "@/contexts/financial-context";
@@ -7,6 +8,7 @@ import {
   formatMonthLabel,
   getChartMonths,
   getDashboardMetrics,
+  getExpenseBreakdown,
   getMonthlyTotals,
 } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
@@ -37,6 +39,11 @@ export function DashboardView() {
   const monthLabels = Object.fromEntries(
     chartMonths.map((m) => [m, formatMonthLabel(m)])
   );
+  const expenseBreakdown = getExpenseBreakdown(
+    records,
+    reportingMonth,
+    personnelMonthlyTotal
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -66,6 +73,14 @@ export function DashboardView() {
 
       <section aria-label="핵심 지표" className="space-y-5">
         <SummaryCards metrics={metrics} />
+      </section>
+
+      <section aria-label="비용 세부" className="space-y-4">
+        <ExpenseBreakdown
+          items={expenseBreakdown}
+          totalExpenses={metrics.totalExpenses}
+          periodLabel={metrics.periodLabel}
+        />
       </section>
 
       <section aria-label="월별 추이" className="space-y-4">
