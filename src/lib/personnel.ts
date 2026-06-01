@@ -1,4 +1,14 @@
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
+import { getOverseasMonthlyKrw } from "@/lib/overseas-fx";
+
+export {
+  calcOverseasMonthlyKrw,
+  formatForeignAmount,
+  getOverseasCurrency,
+  getOverseasCurrencyLabel,
+  type OverseasCurrency,
+  type OverseasFxBreakdown,
+} from "@/lib/overseas-fx";
 import {
   calcEmployerCostFromSalary,
   type EmployerInsuranceBreakdown,
@@ -45,15 +55,28 @@ export interface PersonnelEntry {
   id: string;
   name: string;
   inputMode: PersonnelInputMode;
-  /** 직접 입력 월 비용(원) */
+  /** 직접 입력 — 국내: 원화 월 / 해외: 현지통화 월 */
   directMonthlyAmount: number;
-  /** 급여 모드: 입력 금액 */
+  /** 급여 모드 — 국내: 원화 / 해외: 현지통화 */
   salaryAmount: number;
   salaryBasis: SalaryBasis;
+  /** 해외팀: 1 현지통화당 원화 환율 */
+  exchangeRateToKrw: number;
+  /** 해외팀: 환율 기준일 (YYYY-MM-DD) */
+  exchangeRateDate: string;
 }
 
 export function isOverseasTeam(name: string): boolean {
   return OVERSEAS_TEAM_NAMES.has(name);
+}
+
+/** 태국·베트남: 월급 / 국내 직원: 연봉 */
+export function getDefaultSalaryBasis(name: string): SalaryBasis {
+  return isOverseasTeam(name) ? "monthly" : "annual";
+}
+
+function defaultExchangeRateDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function createDefaultPersonnel(): PersonnelEntry[] {
@@ -63,22 +86,38 @@ export function createDefaultPersonnel(): PersonnelEntry[] {
     inputMode: "direct" as const,
     directMonthlyAmount: 0,
     salaryAmount: 0,
-    salaryBasis: "monthly" as const,
+    salaryBasis: getDefaultSalaryBasis(name),
+    exchangeRateToKrw: 0,
+    exchangeRateDate: defaultExchangeRateDate(),
   }));
 }
 
+function normalizePersonnelEntry(
+  name: string,
+  existing?: Partial<PersonnelEntry>
+): PersonnelEntry {
+  return {
+    id: existing?.id || name,
+    name,
+    inputMode: existing?.inputMode === "salary" ? "salary" : "direct",
+    directMonthlyAmount: Number(existing?.directMonthlyAmount) || 0,
+    salaryAmount: Number(existing?.salaryAmount) || 0,
+    salaryBasis: getDefaultSalaryBasis(name),
+    exchangeRateToKrw: Number(existing?.exchangeRateToKrw) || 0,
+    exchangeRateDate: existing?.exchangeRateDate || defaultExchangeRateDate(),
+  };
+}
+
 export function getPersonnelMonthlyCost(entry: PersonnelEntry): number {
+  if (isOverseasTeam(entry.name)) {
+    return getOverseasMonthlyKrw(entry);
+  }
+
   if (entry.inputMode === "direct") {
     return entry.directMonthlyAmount > 0 ? entry.directMonthlyAmount : 0;
   }
 
   if (entry.salaryAmount <= 0) return 0;
-
-  if (isOverseasTeam(entry.name)) {
-    return entry.salaryBasis === "monthly"
-      ? entry.salaryAmount
-      : Math.floor(entry.salaryAmount / 12);
-  }
 
   const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
   return calcEmployerCostFromSalary(
@@ -142,28 +181,9 @@ export function loadPersonnelFromStorage(): PersonnelEntry[] {
 
     const byName = new Map(parsed.map((p) => [p.name, p]));
 
-    return FIXED_PERSONNEL_NAMES.map((name) => {
-      const existing = byName.get(name);
-      if (existing) {
-        return {
-          id: existing.id || name,
-          name,
-          inputMode: existing.inputMode === "salary" ? "salary" : "direct",
-          directMonthlyAmount: Number(existing.directMonthlyAmount) || 0,
-          salaryAmount: Number(existing.salaryAmount) || 0,
-          salaryBasis:
-            existing.salaryBasis === "annual" ? "annual" : "monthly",
-        };
-      }
-      return {
-        id: name,
-        name,
-        inputMode: "direct" as const,
-        directMonthlyAmount: 0,
-        salaryAmount: 0,
-        salaryBasis: "monthly" as const,
-      };
-    });
+    return FIXED_PERSONNEL_NAMES.map((name) =>
+      normalizePersonnelEntry(name, byName.get(name))
+    );
   } catch {
     return createDefaultPersonnel();
   }

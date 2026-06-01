@@ -43,6 +43,7 @@ interface FinancialContextValue {
   addRecord: (record: NewFinancialRecord) => void;
   addRecords: (records: NewFinancialRecord[]) => void;
   removeRecord: (id: string) => void;
+  updateRecord: (id: string, input: Partial<NewFinancialRecord>) => void;
   updatePersonnel: (personnel: PersonnelEntry[]) => void;
   resetToSeed: () => void;
   getByType: (type: TransactionType) => FinancialRecord[];
@@ -129,6 +130,31 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
     setRecords((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
+  const updateRecord = useCallback(
+    (id: string, input: Partial<NewFinancialRecord>) => {
+      setRecords((prev) =>
+        prev.map((r) => {
+          if (r.id !== id) return r;
+          return normalizeFinancialRecords([
+            {
+              ...r,
+              date: input.date ?? r.date,
+              category: input.category?.trim() ?? r.category,
+              client: input.client !== undefined ? input.client.trim() : r.client,
+              description:
+                input.description !== undefined
+                  ? input.description.trim()
+                  : r.description,
+              amount: input.amount ?? r.amount,
+              type: input.type ?? r.type,
+            },
+          ])[0];
+        })
+      );
+    },
+    []
+  );
+
   const updatePersonnel = useCallback((next: PersonnelEntry[]) => {
     setPersonnel(next);
   }, []);
@@ -155,6 +181,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       addRecord,
       addRecords,
       removeRecord,
+      updateRecord,
       updatePersonnel,
       resetToSeed,
       getByType,
@@ -168,6 +195,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       addRecord,
       addRecords,
       removeRecord,
+      updateRecord,
       updatePersonnel,
       resetToSeed,
       getByType,

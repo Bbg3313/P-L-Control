@@ -103,6 +103,14 @@ export function parseAmountInput(value: string): number {
   return digits ? Number(digits) : 0;
 }
 
+/** 환율 등 소수 입력 */
+export function parseDecimalInput(value: string): number {
+  const cleaned = value.replace(/,/g, "").trim();
+  if (!cleaned) return 0;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
 export function sortRecordsByDateDesc(records: FinancialRecord[]): FinancialRecord[] {
   return [...records].sort((a, b) => b.date.localeCompare(a.date));
 }

@@ -1,5 +1,5 @@
-import { RecordsPage } from "@/components/records/records-page";
+import { ExpensesPage } from "@/components/expenses/expenses-page";
 
-export default function ExpensesPage() {
-  return <RecordsPage type="expense" />;
+export default function Page() {
+  return <ExpensesPage />;
 }

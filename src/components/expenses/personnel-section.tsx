@@ -15,7 +15,9 @@ import {
   isYouthIncomeTaxReliefEligible,
   type PersonnelEntry,
 } from "@/lib/personnel";
+import { getOverseasCurrency } from "@/lib/overseas-fx";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
+import { OverseasPersonnelFields } from "./overseas-personnel-fields";
 
 function updateEntry(
   personnel: PersonnelEntry[],
@@ -63,6 +65,7 @@ function PersonnelRow({
   onUpdate: (patch: Partial<PersonnelEntry>) => void;
 }) {
   const overseas = isOverseasTeam(entry.name);
+  const overseasCurrency = overseas ? getOverseasCurrency(entry.name) : null;
   const youthRelief = isYouthIncomeTaxReliefEligible(entry.name);
   const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
   const monthlyCost = getPersonnelMonthlyCost(entry);
@@ -75,9 +78,10 @@ function PersonnelRow({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-medium">{entry.name}</p>
-          {overseas && (
+          {overseas && overseasCurrency && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              현지팀 — 한국 4대보험 미적용
+              현지팀 — {overseasCurrency === "THB" ? "바트" : "동"} 입력 · 기준일
+              자동 환율 조회 후 원화 환산
             </p>
           )}
           {nonTaxable > 0 && (
@@ -100,6 +104,14 @@ function PersonnelRow({
         </p>
       </div>
 
+      {overseas && overseasCurrency ? (
+        <OverseasPersonnelFields
+          entry={entry}
+          currency={overseasCurrency}
+          onUpdate={onUpdate}
+        />
+      ) : (
+        <>
       <div className="mt-4 flex flex-wrap gap-2">
         <ModeButton
           active={entry.inputMode === "direct"}
@@ -109,7 +121,7 @@ function PersonnelRow({
         </ModeButton>
         <ModeButton
           active={entry.inputMode === "salary"}
-          onClick={() => onUpdate({ inputMode: "salary" })}
+          onClick={() => onUpdate({ inputMode: "salary", salaryBasis: "annual" })}
         >
           급여 입력
         </ModeButton>
@@ -127,29 +139,15 @@ function PersonnelRow({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <BasisButton
-              active={entry.salaryBasis === "monthly"}
-              onClick={() => onUpdate({ salaryBasis: "monthly" })}
-            >
-              월급
-            </BasisButton>
-            <BasisButton
-              active={entry.salaryBasis === "annual"}
-              onClick={() => onUpdate({ salaryBasis: "annual" })}
-            >
-              연봉
-            </BasisButton>
-          </div>
           <div className="max-w-xs">
             <AmountInput
               id={`${entry.id}-salary`}
-              label={entry.salaryBasis === "annual" ? "연봉 (원)" : "월급 (원)"}
+              label="연봉 (원)"
               value={entry.salaryAmount}
-              onChange={(salaryAmount) => onUpdate({ salaryAmount })}
-              placeholder={
-                entry.salaryBasis === "annual" ? "예: 48000000" : "예: 4000000"
+              onChange={(salaryAmount) =>
+                onUpdate({ salaryAmount, salaryBasis: "annual" })
               }
+              placeholder="예: 48000000"
             />
           </div>
 
@@ -274,12 +272,9 @@ function PersonnelRow({
             </div>
           )}
 
-          {overseas && entry.salaryAmount > 0 && (
-            <p className="text-xs text-muted-foreground">
-              현지팀은 입력 급여를 월 환산 금액으로만 반영합니다.
-            </p>
-          )}
         </div>
+      )}
+        </>
       )}
     </div>
   );
@@ -302,30 +297,6 @@ function ModeButton({
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-background text-muted-foreground hover:bg-muted"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function BasisButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "bg-muted text-foreground"
-          : "text-muted-foreground hover:bg-muted/60"
       }`}
     >
       {children}
@@ -383,8 +354,8 @@ export function PersonnelSection() {
         ))}
         <p className="text-xs text-muted-foreground">
           국내 직원은 비과세(기본 20만·박양근·안효재 40만)를 4대보험·원천징수
-          산정에서 제외합니다. 고용안정 0.25%(150인 미만), 산재 약 2.0‰
-          기준입니다.
+          산정에서 제외합니다. 태국·베트남 팀은 기준일 환율을 자동 조회해 원화로
+          환산합니다.
         </p>
       </CardContent>
     </Card>
