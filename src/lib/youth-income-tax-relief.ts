@@ -6,7 +6,7 @@
  */
 
 import {
-  calcEmployeeInsuranceFromMonthlyGross,
+  calcEmployeeInsuranceFromInsuranceBase,
   calcMonthlyWithholdingTax,
 } from "@/lib/income-tax-2026";
 
@@ -24,6 +24,8 @@ export function isYouthIncomeTaxReliefEligible(name: string): boolean {
 
 export interface YouthTaxReliefBreakdown {
   monthlyGross: number;
+  nonTaxableMonthly: number;
+  insuranceBase: number;
   employeeInsurance: number;
   incomeTaxBeforeRelief: number;
   incomeTaxRelief: number;
@@ -36,12 +38,18 @@ export interface YouthTaxReliefBreakdown {
 }
 
 export function calcYouthTaxReliefBreakdown(
-  monthlyGross: number
+  monthlyGross: number,
+  nonTaxableMonthly = 0
 ): YouthTaxReliefBreakdown | null {
   if (monthlyGross <= 0) return null;
 
-  const employeeInsurance = calcEmployeeInsuranceFromMonthlyGross(monthlyGross);
-  const incomeTaxBeforeRelief = calcMonthlyWithholdingTax(monthlyGross);
+  const insuranceBase = Math.max(0, monthlyGross - nonTaxableMonthly);
+  const employeeInsurance =
+    calcEmployeeInsuranceFromInsuranceBase(insuranceBase);
+  const incomeTaxBeforeRelief = calcMonthlyWithholdingTax(
+    monthlyGross,
+    nonTaxableMonthly
+  );
   const localIncomeTaxBeforeRelief = Math.floor(incomeTaxBeforeRelief * 0.1);
 
   const incomeTaxRelief = Math.min(
@@ -65,6 +73,8 @@ export function calcYouthTaxReliefBreakdown(
 
   return {
     monthlyGross,
+    nonTaxableMonthly,
+    insuranceBase,
     employeeInsurance,
     incomeTaxBeforeRelief,
     incomeTaxRelief,

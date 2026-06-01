@@ -1,7 +1,15 @@
+import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import {
   calcEmployerCostFromSalary,
   type EmployerInsuranceBreakdown,
 } from "@/lib/social-insurance-jun-2026";
+
+export {
+  getMonthlyNonTaxableAllowance,
+  MONTHLY_NON_TAXABLE_ALLOWANCE,
+  MONTHLY_NON_TAXABLE_ALLOWANCE_40,
+  NON_TAXABLE_ALLOWANCE_NAMES,
+} from "@/lib/non-taxable-allowance";
 import {
   calcYouthTaxReliefBreakdown,
   isYouthIncomeTaxReliefEligible,
@@ -72,8 +80,12 @@ export function getPersonnelMonthlyCost(entry: PersonnelEntry): number {
       : Math.floor(entry.salaryAmount / 12);
   }
 
-  return calcEmployerCostFromSalary(entry.salaryAmount, entry.salaryBasis)
-    .totalMonthlyEmployerCost;
+  const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
+  return calcEmployerCostFromSalary(
+    entry.salaryAmount,
+    entry.salaryBasis,
+    nonTaxable
+  ).totalMonthlyEmployerCost;
 }
 
 export interface PersonnelSalaryBreakdown {
@@ -98,13 +110,15 @@ export function getPersonnelSalaryBreakdown(
     return null;
   }
 
+  const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
   const employer = calcEmployerCostFromSalary(
     entry.salaryAmount,
-    entry.salaryBasis
+    entry.salaryBasis,
+    nonTaxable
   );
 
   const youthTaxRelief = isYouthIncomeTaxReliefEligible(entry.name)
-    ? calcYouthTaxReliefBreakdown(employer.monthlyGross)
+    ? calcYouthTaxReliefBreakdown(employer.monthlyGross, nonTaxable)
     : null;
 
   return { employer, youthTaxRelief };

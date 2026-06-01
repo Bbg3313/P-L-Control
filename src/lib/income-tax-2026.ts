@@ -17,19 +17,19 @@ function clampPensionBase(monthlyGross: number): number {
   return Math.min(Math.max(monthlyGross, PENSION_FLOOR), PENSION_CEILING);
 }
 
-/** 4대보험 근로자 부담분 (2026년 6월분 요율) */
-export function calcEmployeeInsuranceFromMonthlyGross(
-  monthlyGross: number
+/** 4대보험 근로자 부담분 (2026년 6월분 요율, 보수월액 기준) */
+export function calcEmployeeInsuranceFromInsuranceBase(
+  insuranceBase: number
 ): number {
-  if (monthlyGross <= 0) return 0;
+  if (insuranceBase <= 0) return 0;
 
-  const pensionBase = clampPensionBase(monthlyGross);
+  const pensionBase = clampPensionBase(insuranceBase);
   const pension = truncateWon(pensionBase * PENSION_EMPLOYEE_RATE);
 
-  const healthTotal = truncateWon(monthlyGross * 0.0719);
+  const healthTotal = truncateWon(insuranceBase * 0.0719);
   const health = truncateWon(healthTotal / 2);
   const longTermCare = truncateWon((healthTotal * 0.1314) / 2);
-  const employment = truncateWon(monthlyGross * 0.009);
+  const employment = truncateWon(insuranceBase * 0.009);
 
   return pension + health + longTermCare + employment;
 }
@@ -101,11 +101,16 @@ function calcEarnedIncomeTaxCredit(annualTax: number, annualEarned: number): num
 }
 
 /** 월 근로소득 원천징수 소득세 (추정) */
-export function calcMonthlyWithholdingTax(monthlyGross: number): number {
+export function calcMonthlyWithholdingTax(
+  monthlyGross: number,
+  nonTaxableMonthly = 0
+): number {
   if (monthlyGross <= 0) return 0;
 
-  const employeeInsurance = calcEmployeeInsuranceFromMonthlyGross(monthlyGross);
-  const monthlyEarned = monthlyGross - employeeInsurance;
+  const insuranceBase = Math.max(0, monthlyGross - nonTaxableMonthly);
+  const employeeInsurance =
+    calcEmployeeInsuranceFromInsuranceBase(insuranceBase);
+  const monthlyEarned = insuranceBase - employeeInsurance;
   const annualEarned = monthlyEarned * 12;
 
   const earnedIncomeDeduction = calcEarnedIncomeDeduction(annualEarned);

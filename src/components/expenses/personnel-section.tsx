@@ -8,6 +8,7 @@ import { useFinancial } from "@/contexts/financial-context";
 import { parseAmountInput } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import {
+  getMonthlyNonTaxableAllowance,
   getPersonnelMonthlyCost,
   getPersonnelSalaryBreakdown,
   isOverseasTeam,
@@ -63,6 +64,7 @@ function PersonnelRow({
 }) {
   const overseas = isOverseasTeam(entry.name);
   const youthRelief = isYouthIncomeTaxReliefEligible(entry.name);
+  const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
   const monthlyCost = getPersonnelMonthlyCost(entry);
   const salaryBreakdown = getPersonnelSalaryBreakdown(entry);
   const breakdown = salaryBreakdown?.employer ?? null;
@@ -76,6 +78,12 @@ function PersonnelRow({
           {overseas && (
             <p className="mt-0.5 text-xs text-muted-foreground">
               현지팀 — 한국 4대보험 미적용
+            </p>
+          )}
+          {nonTaxable > 0 && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              비과세 {formatCurrency(nonTaxable)}/월 제외 (4대보험·원천징수
+              산정)
             </p>
           )}
           {youthRelief && (
@@ -157,6 +165,22 @@ function PersonnelRow({
                     {formatCurrency(breakdown.monthlyGross)}
                   </dd>
                 </div>
+                {breakdown.nonTaxableMonthly > 0 && (
+                  <>
+                    <div className="flex justify-between gap-2 sm:block">
+                      <dt>비과세 제외</dt>
+                      <dd className="tabular-nums text-foreground">
+                        −{formatCurrency(breakdown.nonTaxableMonthly)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-2 sm:block">
+                      <dt>보수월액(산정)</dt>
+                      <dd className="tabular-nums text-foreground">
+                        {formatCurrency(breakdown.insuranceBase)}
+                      </dd>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between gap-2 sm:block">
                   <dt>국민연금</dt>
                   <dd className="tabular-nums text-foreground">
@@ -358,8 +382,9 @@ export function PersonnelSection() {
           />
         ))}
         <p className="text-xs text-muted-foreground">
-          고용안정·직능개발 0.25%(150인 미만), 산재보험 업종+출퇴근·임금채권
-          합산 약 2.0‰ 기준입니다. 업종이 다르면 금액 직접입력을 사용하세요.
+          국내 직원은 비과세(기본 20만·박양근·안효재 40만)를 4대보험·원천징수
+          산정에서 제외합니다. 고용안정 0.25%(150인 미만), 산재 약 2.0‰
+          기준입니다.
         </p>
       </CardContent>
     </Card>

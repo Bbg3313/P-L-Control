@@ -35,6 +35,10 @@ function clampPensionBase(monthlyGross: number): number {
 
 export interface EmployerInsuranceBreakdown {
   monthlyGross: number;
+  /** 식대 등 비과세 (월) */
+  nonTaxableMonthly: number;
+  /** 4대보험 산정 보수월액 */
+  insuranceBase: number;
   pensionEmployer: number;
   healthEmployer: number;
   longTermCareEmployer: number;
@@ -48,6 +52,8 @@ export interface EmployerInsuranceBreakdown {
 
 const ZERO_BREAKDOWN: EmployerInsuranceBreakdown = {
   monthlyGross: 0,
+  nonTaxableMonthly: 0,
+  insuranceBase: 0,
   pensionEmployer: 0,
   healthEmployer: 0,
   longTermCareEmployer: 0,
@@ -70,29 +76,32 @@ export function monthlyGrossFromSalary(
 
 /** 한국 4대보험 사업주 부담 포함 월 인건비(급여+회사부담) */
 export function calcEmployerCostFromMonthlyGross(
-  monthlyGross: number
+  monthlyGross: number,
+  nonTaxableMonthly = 0
 ): EmployerInsuranceBreakdown {
   if (monthlyGross <= 0) return { ...ZERO_BREAKDOWN };
 
-  const pensionBase = clampPensionBase(monthlyGross);
+  const insuranceBase = Math.max(0, monthlyGross - nonTaxableMonthly);
+
+  const pensionBase = clampPensionBase(insuranceBase);
   const pensionEmployer = truncateWon(pensionBase * PENSION_EMPLOYER_RATE);
 
-  const healthPremiumTotal = truncateWon(monthlyGross * HEALTH_TOTAL_RATE);
+  const healthPremiumTotal = truncateWon(insuranceBase * HEALTH_TOTAL_RATE);
   const healthEmployer = truncateWon(healthPremiumTotal / 2);
 
   const longTermCareTotal = truncateWon(healthPremiumTotal * LONG_TERM_CARE_ON_HEALTH);
   const longTermCareEmployer = truncateWon(longTermCareTotal / 2);
 
   const employmentUnemployment = truncateWon(
-    monthlyGross * EMPLOYMENT_UNEMPLOYMENT_EMPLOYER
+    insuranceBase * EMPLOYMENT_UNEMPLOYMENT_EMPLOYER
   );
   const employmentStability = truncateWon(
-    monthlyGross * EMPLOYMENT_STABILITY_EMPLOYER
+    insuranceBase * EMPLOYMENT_STABILITY_EMPLOYER
   );
   const employmentEmployer = employmentUnemployment + employmentStability;
 
   const industrialAccidentEmployer = truncateWon(
-    (monthlyGross * INDUSTRIAL_ACCIDENT_TOTAL_PERMILLE) / 1000
+    (insuranceBase * INDUSTRIAL_ACCIDENT_TOTAL_PERMILLE) / 1000
   );
 
   const totalEmployerContributions =
@@ -104,6 +113,8 @@ export function calcEmployerCostFromMonthlyGross(
 
   return {
     monthlyGross,
+    nonTaxableMonthly,
+    insuranceBase,
     pensionEmployer,
     healthEmployer,
     longTermCareEmployer,
@@ -118,8 +129,9 @@ export function calcEmployerCostFromMonthlyGross(
 
 export function calcEmployerCostFromSalary(
   salaryAmount: number,
-  basis: "monthly" | "annual"
+  basis: "monthly" | "annual",
+  nonTaxableMonthly = 0
 ): EmployerInsuranceBreakdown {
   const monthlyGross = monthlyGrossFromSalary(salaryAmount, basis);
-  return calcEmployerCostFromMonthlyGross(monthlyGross);
+  return calcEmployerCostFromMonthlyGross(monthlyGross, nonTaxableMonthly);
 }
