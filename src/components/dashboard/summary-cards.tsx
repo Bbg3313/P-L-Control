@@ -141,7 +141,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
                 투자 여력
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                순이익 − 예비금
+                순이익 − 운영비 {metrics.operatingReserveMonths}개월분
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">

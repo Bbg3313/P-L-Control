@@ -13,10 +13,11 @@ import { formatCurrency } from "@/lib/format";
 export function ExpensesPage() {
   const { getByType, personnel, personnelMonthlyTotal, reportingMonth } =
     useFinancial();
-  const records = getByType("expense").filter(
+  const allExpenseRecords = getByType("expense");
+  const monthExpenseRecords = allExpenseRecords.filter(
     (r) => r.date.slice(0, 7) === reportingMonth
   );
-  const otherTotal = records.reduce((sum, r) => sum + r.amount, 0);
+  const otherTotal = monthExpenseRecords.reduce((sum, r) => sum + r.amount, 0);
   const grandTotal = otherTotal + personnelMonthlyTotal;
 
   return (
@@ -24,7 +25,8 @@ export function ExpensesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          기타 비용은 월별 등록, 인건비는 고정 구성·금액만 수정합니다.
+          기타 비용은 전체 목록을 유지합니다. ◀ ▶ 는 대시보드 집계 월·신규
+          저장 월만 바꿉니다.
         </p>
       </div>
 
@@ -44,7 +46,8 @@ export function ExpensesPage() {
             인건비 {formatCurrency(personnelMonthlyTotal)}
             <span className="mx-2 text-border">·</span>
             기타 {formatCurrency(otherTotal)}
-            {records.length > 0 && ` (${records.length}건)`}
+            {monthExpenseRecords.length > 0 &&
+              ` (${monthExpenseRecords.length}건)`}
           </p>
         </CardContent>
       </Card>
@@ -60,13 +63,25 @@ export function ExpensesPage() {
         </CollapsibleExpenseCard>
 
         <CollapsibleExpenseCard
-          title={`${formatPeriodLabel(reportingMonth)} 기타 비용`}
-          description="사무실비, 광고비 등 — 월별 등록"
-          amount={otherTotal}
-          meta={records.length > 0 ? `${records.length}건` : "미등록"}
+          title="기타 비용"
+          description={`전체 ${allExpenseRecords.length}건 · ${formatPeriodLabel(reportingMonth)} 합계 ${formatCurrency(otherTotal)}`}
+          amount={allExpenseRecords.reduce((s, r) => s + r.amount, 0)}
+          meta={
+            allExpenseRecords.length > 0
+              ? `전체 ${allExpenseRecords.length}건`
+              : "미등록"
+          }
           defaultOpen
         >
-          <MonthlyRecordsEditor kind="expense" records={records} />
+          <MonthlyRecordsEditor
+            kind="expense"
+            records={allExpenseRecords}
+            showRecordMonth
+            editorOptions={{
+              resetOnMonthChange: false,
+              preserveRecordDates: true,
+            }}
+          />
         </CollapsibleExpenseCard>
       </div>
     </div>

@@ -45,8 +45,13 @@ export function KpiStrip({ insights }: KpiStripProps) {
         investmentCapacity >= 0
           ? formatCurrency(investmentCapacity)
           : "부족",
-      sub: `예비금 ${formatCurrency(metrics.fixedCostsReserve)}`,
+      sub: `예비금 ${formatCurrency(metrics.fixedCostsReserve)} (운영비 ${metrics.operatingReserveMonths}개월분)`,
       warn: investmentCapacity < 0,
+    },
+    {
+      label: "월평균 운영비",
+      value: formatCurrency(metrics.averageMonthlyOperatingBurn),
+      sub: `최근 ${metrics.operatingReserveMonths}개월 평균 · 인건비+기타`,
     },
     {
       label: `${ytdThroughLabel} 매출`,
@@ -56,7 +61,7 @@ export function KpiStrip({ insights }: KpiStripProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {items.map((item) => (
         <div
           key={item.label}

@@ -13,6 +13,15 @@ export interface MonthlyEditorRow {
   primary: string;
   secondary: string;
   amount: string;
+  /** 기존 행의 저장 날짜 (YYYY-MM-DD) */
+  recordDate?: string;
+}
+
+export interface MonthlyRecordsEditorOptions {
+  /** false면 집계 월 변경 시 편집 목록을 비우지 않음 */
+  resetOnMonthChange?: boolean;
+  /** true면 수정 시 기존 날짜 유지 (신규만 선택 월) */
+  preserveRecordDates?: boolean;
 }
 
 function emptyRow(): MonthlyEditorRow {
@@ -36,6 +45,7 @@ function recordToRow(
       primary: record.client,
       secondary: record.category,
       amount: record.amount > 0 ? String(record.amount) : "",
+      recordDate: record.date,
     };
   }
   return {
@@ -44,6 +54,7 @@ function recordToRow(
     primary: record.description || record.category,
     secondary: "",
     amount: record.amount > 0 ? String(record.amount) : "",
+    recordDate: record.date,
   };
 }
 
@@ -56,8 +67,13 @@ function recordsToRows(
 
 export function useMonthlyRecordsEditor(
   kind: MonthlyRecordKind,
-  records: FinancialRecord[]
+  records: FinancialRecord[],
+  options: MonthlyRecordsEditorOptions = {}
 ) {
+  const {
+    resetOnMonthChange = true,
+    preserveRecordDates = false,
+  } = options;
   const {
     reportingMonth,
     hydrated,
@@ -100,7 +116,7 @@ export function useMonthlyRecordsEditor(
   const prevReportingMonth = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !resetOnMonthChange) return;
     if (prevReportingMonth.current === reportingMonth) return;
     prevReportingMonth.current = reportingMonth;
     resetFromRecords(records);
@@ -108,7 +124,13 @@ export function useMonthlyRecordsEditor(
     setEditMode(false);
     setMessage(null);
     setError(null);
-  }, [reportingMonth, hydrated, records, resetFromRecords]);
+  }, [
+    reportingMonth,
+    hydrated,
+    records,
+    resetFromRecords,
+    resetOnMonthChange,
+  ]);
 
   const draftTotal = useMemo(
     () =>
@@ -200,9 +222,11 @@ export function useMonthlyRecordsEditor(
           savedCount += 1;
         }
       } else {
+        const date =
+          preserveRecordDates && row.recordDate ? row.recordDate : applyDate;
         if (row.recordId && !removedIds.includes(row.recordId)) {
           updateRecord(row.recordId, {
-            date: applyDate,
+            date,
             category: primary,
             description: primary,
             amount,

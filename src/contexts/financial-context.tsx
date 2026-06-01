@@ -14,10 +14,10 @@ import {
   sortRecordsByDateDesc,
 } from "@/lib/calculations";
 import {
-  FIXED_COSTS_RESERVE,
   REPORTING_MONTH_STORAGE_KEY,
   STORAGE_KEY,
 } from "@/lib/constants";
+import { getOperatingReserve } from "@/lib/calculations";
 import {
   createDefaultPersonnel,
   getPersonnelTotalMonthly,
@@ -92,6 +92,12 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
   const personnelMonthlyTotal = useMemo(
     () => getPersonnelTotalMonthly(personnel),
     [personnel]
+  );
+
+  const fixedCostsReserve = useMemo(
+    () =>
+      getOperatingReserve(records, reportingMonth, personnelMonthlyTotal),
+    [records, reportingMonth, personnelMonthlyTotal]
   );
 
   useEffect(() => {
@@ -207,7 +213,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       reportingMonth,
       setReportingMonth,
-      fixedCostsReserve: FIXED_COSTS_RESERVE,
+      fixedCostsReserve,
       addRecord,
       addRecords,
       removeRecord,
@@ -222,6 +228,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       personnelMonthlyTotal,
       hydrated,
       reportingMonth,
+      fixedCostsReserve,
       setReportingMonth,
       addRecord,
       addRecords,

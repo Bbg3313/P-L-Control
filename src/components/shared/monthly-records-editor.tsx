@@ -9,12 +9,15 @@ import { formatCurrency } from "@/lib/format";
 import {
   useMonthlyRecordsEditor,
   type MonthlyRecordKind,
+  type MonthlyRecordsEditorOptions,
 } from "@/hooks/use-monthly-records-editor";
 import type { FinancialRecord } from "@/lib/types";
 
 interface MonthlyRecordsEditorProps {
   kind: MonthlyRecordKind;
   records: FinancialRecord[];
+  editorOptions?: MonthlyRecordsEditorOptions;
+  showRecordMonth?: boolean;
 }
 
 const CONFIG: Record<
@@ -37,11 +40,16 @@ const CONFIG: Record<
   expense: {
     primaryLabel: "비용 항목",
     primaryPlaceholder: "예: 사무실비, 광고비",
-    gridClass: "sm:grid-cols-[1fr_140px_40px]",
+    gridClass: "sm:grid-cols-[88px_1fr_140px_40px]",
   },
 };
 
-export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProps) {
+export function MonthlyRecordsEditor({
+  kind,
+  records,
+  editorOptions,
+  showRecordMonth = false,
+}: MonthlyRecordsEditorProps) {
   const config = CONFIG[kind];
   const {
     reportingMonth,
@@ -58,7 +66,7 @@ export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProp
     handleStartEdit,
     handleCancelEdit,
     recordsCount,
-  } = useMonthlyRecordsEditor(kind, records);
+  } = useMonthlyRecordsEditor(kind, records, editorOptions);
 
   if (!hydrated) {
     return (
@@ -72,10 +80,22 @@ export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProp
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">
-            {formatPeriodLabel(reportingMonth)}
-          </span>
-          에 등록 · 상단 ◀ ▶ 로 월을 바꾼 뒤 저장하세요
+          {showRecordMonth ? (
+            <>
+              전체 내역 표시 · 신규 항목만{" "}
+              <span className="font-medium text-foreground">
+                {formatPeriodLabel(reportingMonth)}
+              </span>
+              에 저장
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-foreground">
+                {formatPeriodLabel(reportingMonth)}
+              </span>
+              에 등록 · 상단 ◀ ▶ 로 월을 바꾼 뒤 저장
+            </>
+          )}
         </p>
         <div className="flex flex-wrap gap-2">
           {!editMode ? (
@@ -101,6 +121,7 @@ export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProp
         <div
           className={`hidden gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid ${config.gridClass}`}
         >
+          {showRecordMonth && <span>적용 월</span>}
           <span>{config.primaryLabel}</span>
           {kind === "revenue" && <span>{config.secondaryLabel}</span>}
           <span>금액 (원)</span>
@@ -112,6 +133,13 @@ export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProp
             key={row.key}
             className={`grid gap-2 sm:items-center ${config.gridClass}`}
           >
+            {showRecordMonth && (
+              <span className="px-1 text-xs text-muted-foreground sm:text-sm">
+                {row.recordDate
+                  ? formatPeriodLabel(row.recordDate.slice(0, 7))
+                  : formatPeriodLabel(reportingMonth)}
+              </span>
+            )}
             <Input
               placeholder={config.primaryPlaceholder}
               className="h-9"
@@ -175,7 +203,7 @@ export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProp
 
       <div className="flex flex-col gap-1 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {formatPeriodLabel(reportingMonth)} 합계{" "}
+          {showRecordMonth ? "목록 합계" : formatPeriodLabel(reportingMonth)} ·{" "}
           <span className="font-medium text-foreground">
             {formatCurrency(draftTotal)}
           </span>

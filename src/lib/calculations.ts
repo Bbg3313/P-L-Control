@@ -10,10 +10,14 @@ import type {
 } from "./types";
 import {
   DASHBOARD_CHART_START_MONTH,
-  FIXED_COSTS_RESERVE,
+  OPERATING_RESERVE_LOOKBACK_MONTHS,
+  OPERATING_RESERVE_MONTHS,
 } from "./constants";
 
-export { FIXED_COSTS_RESERVE };
+export {
+  OPERATING_RESERVE_LOOKBACK_MONTHS,
+  OPERATING_RESERVE_MONTHS,
+};
 
 function parseYearMonth(date: string): string {
   return date.slice(0, 7);
@@ -127,6 +131,55 @@ export function formatPeriodLabel(yearMonth: string): string {
     "ko-KR",
     { month: "long", year: "numeric" }
   );
+}
+
+/** 해당 월 운영비 = 기타 비용 + 고정 인건비 */
+export function getMonthlyOperatingBurn(
+  records: FinancialRecord[],
+  yearMonth: string,
+  personnelMonthly = 0
+): number {
+  return sumByMonth(records, yearMonth, "expense") + personnelMonthly;
+}
+
+/**
+ * 최근 N개월 평균 운영비 (데이터 있는 달만 평균, 없으면 인건비만 하한).
+ * 예비금 = 이 값 × OPERATING_RESERVE_MONTHS (통상 3개월분).
+ */
+export function getAverageMonthlyOperatingBurn(
+  records: FinancialRecord[],
+  throughMonth: string,
+  personnelMonthly = 0,
+  lookbackMonths = OPERATING_RESERVE_LOOKBACK_MONTHS
+): number {
+  const chartMonths = getDashboardChartMonths(throughMonth);
+  const recent = chartMonths.slice(-lookbackMonths);
+  if (recent.length === 0) {
+    return personnelMonthly > 0 ? personnelMonthly : 0;
+  }
+
+  const burns = recent.map((m) =>
+    getMonthlyOperatingBurn(records, m, personnelMonthly)
+  );
+  const sum = burns.reduce((a, b) => a + b, 0);
+  const avg = sum / burns.length;
+
+  if (avg > 0) return avg;
+  return personnelMonthly > 0 ? personnelMonthly : 0;
+}
+
+export function getOperatingReserve(
+  records: FinancialRecord[],
+  throughMonth: string,
+  personnelMonthly = 0,
+  reserveMonths = OPERATING_RESERVE_MONTHS
+): number {
+  const avgBurn = getAverageMonthlyOperatingBurn(
+    records,
+    throughMonth,
+    personnelMonthly
+  );
+  return Math.round(avgBurn * reserveMonths);
 }
 
 export function getMonthlyTotals(
@@ -391,17 +444,32 @@ export function getDashboardMetrics(
   personnelMonthly = 0
 ): DashboardMetrics {
   const totalRevenue = sumByMonth(records, yearMonth, "revenue");
-  const totalExpenses =
-    sumByMonth(records, yearMonth, "expense") + personnelMonthly;
+  const totalExpenses = getMonthlyOperatingBurn(
+    records,
+    yearMonth,
+    personnelMonthly
+  );
   const netProfit = totalRevenue - totalExpenses;
-  const investmentCapacity = netProfit - FIXED_COSTS_RESERVE;
+  const averageMonthlyOperatingBurn = getAverageMonthlyOperatingBurn(
+    records,
+    yearMonth,
+    personnelMonthly
+  );
+  const fixedCostsReserve = getOperatingReserve(
+    records,
+    yearMonth,
+    personnelMonthly
+  );
+  const investmentCapacity = netProfit - fixedCostsReserve;
 
   return {
     totalRevenue,
     totalExpenses,
     netProfit,
     investmentCapacity,
-    fixedCostsReserve: FIXED_COSTS_RESERVE,
+    fixedCostsReserve,
+    averageMonthlyOperatingBurn,
+    operatingReserveMonths: OPERATING_RESERVE_MONTHS,
     periodLabel: formatPeriodLabel(yearMonth),
   };
 }

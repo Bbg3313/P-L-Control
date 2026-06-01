@@ -63,8 +63,8 @@ export function DashboardView() {
             경영 대시보드
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {metrics.periodLabel} 손익 요약 ·{" "}
-            {formatPeriodLabel(DASHBOARD_CHART_START_MONTH)}부터 추이
+            {metrics.periodLabel} 손익 요약 · 예비금은 최근 3개월 평균 운영비×3
+            · {formatPeriodLabel(DASHBOARD_CHART_START_MONTH)}부터 추이
           </p>
         </div>
         <ReportingMonthNav className="shrink-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3" />

@@ -23,7 +23,11 @@ export interface DashboardMetrics {
   totalExpenses: number;
   netProfit: number;
   investmentCapacity: number;
+  /** 운영 예비금 (평균 월 운영비 × N개월) */
   fixedCostsReserve: number;
+  /** 예비금 산정에 쓴 월평균 운영비 */
+  averageMonthlyOperatingBurn: number;
+  operatingReserveMonths: number;
   periodLabel: string;
 }
 
