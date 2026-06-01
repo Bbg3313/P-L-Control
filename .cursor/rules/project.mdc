@@ -1,0 +1,12 @@
+---
+description: P&L Control — 기업 손익·투자 여력 대시보드 (Next.js)
+globs: **/*
+alwaysApply: true
+---
+
+# P&L Control
+
+- 이 저장소는 **influencer-hunter와 별개**인 손익 대시보드 프로젝트입니다.
+- 스택: Next.js 14 App Router, Tailwind, shadcn/ui, Recharts.
+- 금액은 **원(KRW)** 기준, UI 문구는 **한국어**입니다.
+- 매출·비용 데이터는 `FinancialProvider` + `localStorage`로 관리합니다.
