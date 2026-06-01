@@ -36,21 +36,26 @@ export function formatPeriodLabel(yearMonth: string): string {
 
 export function getMonthlyTotals(
   records: FinancialRecord[],
-  months: string[]
+  months: string[],
+  personnelMonthly = 0
 ): MonthlyTotals[] {
   return months.map((month) => ({
     month,
     revenue: sumByMonth(records, month, "revenue"),
-    expenses: sumByMonth(records, month, "expense"),
+    expenses:
+      sumByMonth(records, month, "expense") +
+      (personnelMonthly > 0 ? personnelMonthly : 0),
   }));
 }
 
 export function getDashboardMetrics(
   records: FinancialRecord[],
-  yearMonth: string
+  yearMonth: string,
+  personnelMonthly = 0
 ): DashboardMetrics {
   const totalRevenue = sumByMonth(records, yearMonth, "revenue");
-  const totalExpenses = sumByMonth(records, yearMonth, "expense");
+  const totalExpenses =
+    sumByMonth(records, yearMonth, "expense") + personnelMonthly;
   const netProfit = totalRevenue - totalExpenses;
   const investmentCapacity = netProfit - FIXED_COSTS_RESERVE;
 

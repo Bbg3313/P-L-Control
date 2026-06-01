@@ -1,5 +1,5 @@
-import { RecordsPage } from "@/components/records/records-page";
+import { RevenuePage } from "@/components/revenue/revenue-page";
 
-export default function RevenuePage() {
-  return <RecordsPage type="revenue" />;
+export default function Page() {
+  return <RevenuePage />;
 }

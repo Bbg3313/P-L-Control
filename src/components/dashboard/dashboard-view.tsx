@@ -12,7 +12,8 @@ import {
 import { formatCurrency } from "@/lib/format";
 
 export function DashboardView() {
-  const { records, reportingMonth, hydrated } = useFinancial();
+  const { records, reportingMonth, personnelMonthlyTotal, hydrated } =
+    useFinancial();
 
   if (!hydrated) {
     return (
@@ -22,9 +23,17 @@ export function DashboardView() {
     );
   }
 
-  const metrics = getDashboardMetrics(records, reportingMonth);
+  const metrics = getDashboardMetrics(
+    records,
+    reportingMonth,
+    personnelMonthlyTotal
+  );
   const chartMonths = getChartMonths(6);
-  const monthlyTotals = getMonthlyTotals(records, chartMonths);
+  const monthlyTotals = getMonthlyTotals(
+    records,
+    chartMonths,
+    personnelMonthlyTotal
+  );
   const monthLabels = Object.fromEntries(
     chartMonths.map((m) => [m, formatMonthLabel(m)])
   );
