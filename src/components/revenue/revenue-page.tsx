@@ -1,15 +1,19 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
+import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
+import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor";
 import { useFinancial } from "@/contexts/financial-context";
+import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
-import { AddRevenueDialog } from "./add-revenue-dialog";
 import { ImportRevenueDialog } from "./import-revenue-dialog";
-import { RevenueTable } from "./revenue-table";
 
 export function RevenuePage() {
-  const { getByType } = useFinancial();
-  const records = getByType("revenue");
+  const { getByType, reportingMonth } = useFinancial();
+  const records = getByType("revenue").filter(
+    (r) => r.date.slice(0, 7) === reportingMonth
+  );
   const total = records.reduce((sum, r) => sum + r.amount, 0);
 
   return (
@@ -18,20 +22,19 @@ export function RevenuePage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">매출</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            월말 엑셀(날짜·매출처·카테고리·금액)을 가져오거나 건별로 입력합니다.
-            브라우저에 저장됩니다.
+            월별로 매출을 등록합니다. ◀ ▶ 로 월을 바꾼 뒤 해당 월 항목을
+            입력·저장하세요.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ImportRevenueDialog />
-          <AddRevenueDialog />
-        </div>
+        <ImportRevenueDialog />
       </div>
+
+      <ReportingMonthNav className="max-w-md" />
 
       <Card size="sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            전체 매출 합계
+            {formatPeriodLabel(reportingMonth)} 매출 합계
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
@@ -42,20 +45,15 @@ export function RevenuePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="border-b border-border/60 pb-3">
-          <CardTitle className="text-base">매출 내역</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            엑셀 첫 행: 날짜 · 매출처 · 카테고리 · 금액
-          </p>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <RevenueTable
-            records={records}
-            emptyMessage="등록된 매출이 없습니다. 엑셀 가져오기 또는 매출 추가를 이용하세요."
-          />
-        </CardContent>
-      </Card>
+      <CollapsibleExpenseCard
+        title={`${formatPeriodLabel(reportingMonth)} 매출`}
+        description="매출처 · 카테고리 · 금액"
+        amount={total}
+        meta={records.length > 0 ? `${records.length}건` : "미등록"}
+        defaultOpen
+      >
+        <MonthlyRecordsEditor kind="revenue" records={records} />
+      </CollapsibleExpenseCard>
     </div>
   );
 }

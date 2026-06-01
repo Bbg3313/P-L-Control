@@ -10,9 +10,14 @@ import {
 } from "react";
 import {
   getCurrentYearMonth,
+  resolveReportingMonth,
   sortRecordsByDateDesc,
 } from "@/lib/calculations";
-import { FIXED_COSTS_RESERVE, STORAGE_KEY } from "@/lib/constants";
+import {
+  FIXED_COSTS_RESERVE,
+  REPORTING_MONTH_STORAGE_KEY,
+  STORAGE_KEY,
+} from "@/lib/constants";
 import {
   createDefaultPersonnel,
   getPersonnelTotalMonthly,
@@ -39,6 +44,7 @@ interface FinancialContextValue {
   personnelMonthlyTotal: number;
   hydrated: boolean;
   reportingMonth: string;
+  setReportingMonth: (yearMonth: string) => void;
   fixedCostsReserve: number;
   addRecord: (record: NewFinancialRecord) => void;
   addRecords: (records: NewFinancialRecord[]) => void;
@@ -71,7 +77,17 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
     createDefaultPersonnel
   );
   const [hydrated, setHydrated] = useState(false);
-  const reportingMonth = useMemo(() => getCurrentYearMonth(), []);
+  const [reportingMonth, setReportingMonthState] = useState(() =>
+    getCurrentYearMonth()
+  );
+
+  const setReportingMonth = useCallback((yearMonth: string) => {
+    if (!/^\d{4}-\d{2}$/.test(yearMonth)) return;
+    setReportingMonthState(yearMonth);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(REPORTING_MONTH_STORAGE_KEY, yearMonth);
+    }
+  }, []);
 
   const personnelMonthlyTotal = useMemo(
     () => getPersonnelTotalMonthly(personnel),
@@ -79,8 +95,21 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    setRecords(loadRecords());
+    const loadedRecords = loadRecords();
+    setRecords(loadedRecords);
     setPersonnel(loadPersonnelFromStorage());
+
+    try {
+      const saved = localStorage.getItem(REPORTING_MONTH_STORAGE_KEY);
+      setReportingMonthState(
+        resolveReportingMonth(loadedRecords, saved)
+      );
+    } catch {
+      setReportingMonthState(
+        resolveReportingMonth(loadedRecords, null)
+      );
+    }
+
     setHydrated(true);
   }, []);
 
@@ -177,6 +206,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       personnelMonthlyTotal,
       hydrated,
       reportingMonth,
+      setReportingMonth,
       fixedCostsReserve: FIXED_COSTS_RESERVE,
       addRecord,
       addRecords,
@@ -192,6 +222,7 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
       personnelMonthlyTotal,
       hydrated,
       reportingMonth,
+      setReportingMonth,
       addRecord,
       addRecords,
       removeRecord,

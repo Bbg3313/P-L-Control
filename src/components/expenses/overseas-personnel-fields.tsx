@@ -69,44 +69,29 @@ export function OverseasPersonnelFields({
 
   return (
     <div className="mt-3 space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <ModeButton
-          active={entry.inputMode === "direct"}
-          onClick={() => onUpdate({ inputMode: "direct" })}
-        >
-          금액 직접입력
-        </ModeButton>
-        <ModeButton
-          active={entry.inputMode === "salary"}
-          onClick={() => onUpdate({ inputMode: "salary", salaryBasis: "monthly" })}
-        >
-          급여 입력
-        </ModeButton>
-      </div>
-
-      {entry.inputMode === "direct" ? (
-        <div className="max-w-xs">
-          <AmountInput
-            id={`${entry.id}-foreign-direct`}
-            label={`월 비용 (${currencyLabel})`}
-            value={entry.directMonthlyAmount}
-            onChange={(directMonthlyAmount) => onUpdate({ directMonthlyAmount })}
-            placeholder={currency === "THB" ? "예: 120000" : "예: 45000000"}
-          />
-        </div>
-      ) : (
-        <div className="max-w-xs">
-          <AmountInput
-            id={`${entry.id}-foreign-salary`}
-            label={`월급 (${currencyLabel})`}
-            value={entry.salaryAmount}
-            onChange={(salaryAmount) =>
-              onUpdate({ salaryAmount, salaryBasis: "monthly" })
+      <div className="max-w-xs">
+        <AmountInput
+          id={`${entry.id}-foreign-salary`}
+          label={`월급 (${currencyLabel})`}
+          value={
+            entry.inputMode === "direct"
+              ? entry.directMonthlyAmount
+              : entry.salaryAmount
+          }
+          onChange={(amount) => {
+            if (entry.inputMode === "direct") {
+              onUpdate({ directMonthlyAmount: amount });
+            } else {
+              onUpdate({
+                salaryAmount: amount,
+                salaryBasis: "monthly",
+                inputMode: "salary",
+              });
             }
-            placeholder={currency === "THB" ? "예: 120000" : "예: 45000000"}
-          />
-        </div>
-      )}
+          }}
+          placeholder={currency === "THB" ? "예: 120000" : "예: 45000000"}
+        />
+      </div>
 
       <div className="grid max-w-lg gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <div className="grid gap-1.5">
@@ -188,26 +173,3 @@ export function OverseasPersonnelFields({
   );
 }
 
-function ModeButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:bg-muted"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

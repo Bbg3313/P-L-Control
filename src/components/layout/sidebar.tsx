@@ -9,6 +9,7 @@ import {
   Settings,
   Building2,
 } from "lucide-react";
+import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -60,9 +61,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-muted-foreground">보고 기간</p>
-        <p className="mt-0.5 text-sm font-medium">2026년 6월</p>
+      <div className="border-t border-sidebar-border p-3">
+        <ReportingMonthNav showQuickMonths={false} />
       </div>
     </aside>
   );

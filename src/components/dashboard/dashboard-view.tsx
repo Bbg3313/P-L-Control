@@ -1,6 +1,7 @@
 "use client";
 
 import { ExpenseBreakdown } from "@/components/dashboard/expense-breakdown";
+import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { RevenueExpenseChart } from "@/components/dashboard/revenue-expense-chart";
 import { useFinancial } from "@/contexts/financial-context";
@@ -10,6 +11,8 @@ import {
   getDashboardMetrics,
   getExpenseBreakdown,
   getMonthlyTotals,
+  getYearMonthsFromRecords,
+  mergeChartMonths,
 } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 
@@ -30,7 +33,11 @@ export function DashboardView() {
     reportingMonth,
     personnelMonthlyTotal
   );
-  const chartMonths = getChartMonths(6);
+  const chartMonths = mergeChartMonths(
+    getChartMonths(6),
+    reportingMonth,
+    ...getYearMonthsFromRecords(records).slice(0, 12)
+  );
   const monthlyTotals = getMonthlyTotals(
     records,
     chartMonths,
@@ -47,8 +54,8 @@ export function DashboardView() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <header className="space-y-3 border-b border-slate-200/80 pb-6">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <header className="space-y-4 border-b border-slate-200/80 pb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
               Overview
@@ -56,13 +63,17 @@ export function DashboardView() {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
               대시보드
             </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-500">
+              ◀ ▶ 로 월을 바꿉니다. 매출·기타 비용은{" "}
+              <span className="font-medium text-slate-700">
+                {metrics.periodLabel}
+              </span>
+              만 합산하고, 인건비는 매월 동일하게 반영됩니다.
+            </p>
           </div>
-          <p className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
-            {metrics.periodLabel}
-          </p>
+          <ReportingMonthNav className="shrink-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3" />
         </div>
         <p className="max-w-3xl text-sm leading-relaxed text-slate-500">
-          기업 손익 요약 및 투자 여력입니다.{" "}
           <span className="text-slate-600">
             투자 여력 = 순이익 − 고정비 예비금 (
             {formatCurrency(metrics.fixedCostsReserve)})

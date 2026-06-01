@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useFinancial } from "@/contexts/financial-context";
 import { formatCurrency } from "@/lib/format";
+import { formatPeriodLabel } from "@/lib/calculations";
 import {
   downloadRevenueTemplate,
   parseRevenueSpreadsheet,
@@ -24,7 +25,7 @@ const ACCEPT =
   ".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv";
 
 export function ImportRevenueDialog() {
-  const { addRecords } = useFinancial();
+  const { addRecords, reportingMonth } = useFinancial();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -62,9 +63,11 @@ export function ImportRevenueDialog() {
   function handleImport() {
     if (preview.length === 0) return;
 
+    const applyDate = `${reportingMonth}-01`;
+
     addRecords(
       preview.map((row) => ({
-        date: row.date,
+        date: applyDate,
         client: row.client,
         category: row.category,
         amount: row.amount,
@@ -98,8 +101,10 @@ export function ImportRevenueDialog() {
         <DialogHeader>
           <DialogTitle>엑셀에서 매출 가져오기</DialogTitle>
           <DialogDescription>
-            첫 행에 <strong>날짜, 매출처, 카테고리, 금액</strong> 열을 두고 월말
-            정리 파일을 업로드하세요. (.xlsx, .xls, .csv)
+            첫 행에 <strong>날짜, 매출처, 카테고리, 금액</strong> 열을 두고
+            업로드하세요. 선택한 월(
+            <strong>{formatPeriodLabel(reportingMonth)}</strong>)에 모두
+            등록됩니다. (.xlsx, .xls, .csv)
           </DialogDescription>
         </DialogHeader>
 

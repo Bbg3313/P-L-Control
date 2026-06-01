@@ -83,7 +83,7 @@ export function createDefaultPersonnel(): PersonnelEntry[] {
   return FIXED_PERSONNEL_NAMES.map((name) => ({
     id: name,
     name,
-    inputMode: "direct" as const,
+    inputMode: "salary" as const,
     directMonthlyAmount: 0,
     salaryAmount: 0,
     salaryBasis: getDefaultSalaryBasis(name),

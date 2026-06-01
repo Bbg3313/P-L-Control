@@ -1,0 +1,199 @@
+"use client";
+
+import { Minus, Pencil, Plus, Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { REVENUE_CATEGORY_SUGGESTIONS } from "@/lib/category-suggestions";
+import { formatPeriodLabel } from "@/lib/calculations";
+import { formatCurrency } from "@/lib/format";
+import {
+  useMonthlyRecordsEditor,
+  type MonthlyRecordKind,
+} from "@/hooks/use-monthly-records-editor";
+import type { FinancialRecord } from "@/lib/types";
+
+interface MonthlyRecordsEditorProps {
+  kind: MonthlyRecordKind;
+  records: FinancialRecord[];
+}
+
+const CONFIG: Record<
+  MonthlyRecordKind,
+  {
+    primaryLabel: string;
+    primaryPlaceholder: string;
+    secondaryLabel?: string;
+    secondaryPlaceholder?: string;
+    gridClass: string;
+  }
+> = {
+  revenue: {
+    primaryLabel: "매출처",
+    primaryPlaceholder: "예: OO브랜드",
+    secondaryLabel: "카테고리",
+    secondaryPlaceholder: "예: 대행 수수료",
+    gridClass: "sm:grid-cols-[1fr_1fr_140px_40px]",
+  },
+  expense: {
+    primaryLabel: "비용 항목",
+    primaryPlaceholder: "예: 사무실비, 광고비",
+    gridClass: "sm:grid-cols-[1fr_140px_40px]",
+  },
+};
+
+export function MonthlyRecordsEditor({ kind, records }: MonthlyRecordsEditorProps) {
+  const config = CONFIG[kind];
+  const {
+    reportingMonth,
+    hydrated,
+    editMode,
+    rows,
+    draftTotal,
+    message,
+    error,
+    handleAddRow,
+    handleRemoveRow,
+    updateRow,
+    handleSave,
+    handleStartEdit,
+    handleCancelEdit,
+    recordsCount,
+  } = useMonthlyRecordsEditor(kind, records);
+
+  if (!hydrated) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        데이터를 불러오는 중…
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {formatPeriodLabel(reportingMonth)}
+          </span>
+          에 등록 · 상단 ◀ ▶ 로 월을 바꾼 뒤 저장하세요
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {!editMode ? (
+            <Button type="button" variant="outline" onClick={handleStartEdit}>
+              <Pencil data-icon="inline-start" />
+              {recordsCount > 0 ? "수정" : "등록"}
+            </Button>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                취소
+              </Button>
+              <Button type="button" onClick={handleSave}>
+                <Save data-icon="inline-start" />
+                저장
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div
+          className={`hidden gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid ${config.gridClass}`}
+        >
+          <span>{config.primaryLabel}</span>
+          {kind === "revenue" && <span>{config.secondaryLabel}</span>}
+          <span>금액 (원)</span>
+          <span />
+        </div>
+
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className={`grid gap-2 sm:items-center ${config.gridClass}`}
+          >
+            <Input
+              placeholder={config.primaryPlaceholder}
+              className="h-9"
+              disabled={!editMode}
+              value={row.primary}
+              onChange={(e) => updateRow(row.key, { primary: e.target.value })}
+            />
+            {kind === "revenue" && (
+              <>
+                <Input
+                  placeholder={config.secondaryPlaceholder}
+                  className="h-9"
+                  disabled={!editMode}
+                  list="revenue-category-suggestions"
+                  value={row.secondary}
+                  onChange={(e) =>
+                    updateRow(row.key, { secondary: e.target.value })
+                  }
+                />
+                <datalist id="revenue-category-suggestions">
+                  {REVENUE_CATEGORY_SUGGESTIONS.map((item) => (
+                    <option key={item} value={item} />
+                  ))}
+                </datalist>
+              </>
+            )}
+            <Input
+              inputMode="numeric"
+              placeholder="0"
+              className="h-9 tabular-nums"
+              disabled={!editMode}
+              value={row.amount}
+              onChange={(e) => updateRow(row.key, { amount: e.target.value })}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="justify-self-end sm:justify-self-center"
+              disabled={!editMode}
+              aria-label="행 삭제"
+              onClick={() => handleRemoveRow(row.key, row.recordId)}
+            >
+              <Minus className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          disabled={!editMode}
+          onClick={handleAddRow}
+        >
+          <Plus data-icon="inline-start" />
+          항목 추가
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-1 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {formatPeriodLabel(reportingMonth)} 합계{" "}
+          <span className="font-medium text-foreground">
+            {formatCurrency(draftTotal)}
+          </span>
+          {!editMode && recordsCount > 0 && (
+            <span className="ml-2">· 저장 {recordsCount}건</span>
+          )}
+        </p>
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+        {message && !error && (
+          <p className="text-sm text-emerald-700 dark:text-emerald-400">
+            {message}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

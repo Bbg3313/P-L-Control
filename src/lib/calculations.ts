@@ -27,6 +27,94 @@ export function getCurrentYearMonth(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** 기록에 등장하는 연월(YYYY-MM), 최신순 */
+export function getYearMonthsFromRecords(records: FinancialRecord[]): string[] {
+  const months = new Set<string>();
+  for (const record of records) {
+    if (record.date.length >= 7) months.add(record.date.slice(0, 7));
+  }
+  return Array.from(months).sort((a, b) => b.localeCompare(a));
+}
+
+/**
+ * 대시보드 기본 보고 월.
+ * 이번 달에 매출·비용 기록이 없으면 가장 최근 데이터가 있는 달을 씁니다.
+ */
+export function getSuggestedReportingMonth(
+  records: FinancialRecord[],
+  current = getCurrentYearMonth()
+): string {
+  const hasCurrentMonthData = records.some(
+    (r) => r.date.slice(0, 7) === current
+  );
+  if (hasCurrentMonthData) return current;
+
+  const fromRecords = getYearMonthsFromRecords(records);
+  return fromRecords[0] ?? current;
+}
+
+/** 저장된 보고 월이 비어 있으면 데이터가 있는 달로 맞춤 */
+export function resolveReportingMonth(
+  records: FinancialRecord[],
+  saved: string | null,
+  current = getCurrentYearMonth()
+): string {
+  const savedValid =
+    saved && /^\d{4}-\d{2}$/.test(saved) ? saved : null;
+  const monthsWithRecords = getYearMonthsFromRecords(records);
+
+  if (monthsWithRecords.length === 0) {
+    return savedValid ?? current;
+  }
+
+  if (
+    savedValid &&
+    records.some((r) => r.date.slice(0, 7) === savedValid)
+  ) {
+    return savedValid;
+  }
+
+  return getSuggestedReportingMonth(records, current);
+}
+
+export function shiftYearMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return getCurrentYearMonth(d);
+}
+
+/** 집계 월 빠른 선택 목록 (선택 월 + 데이터 있는 달) */
+export function getReportingMonthOptions(
+  records: FinancialRecord[],
+  reportingMonth: string
+): string[] {
+  const months = getYearMonthsFromRecords(records);
+  if (!months.includes(reportingMonth)) {
+    months.push(reportingMonth);
+  }
+  return months.sort((a, b) => b.localeCompare(a));
+}
+
+export function mergeChartMonths(
+  baseMonths: string[],
+  ...extra: string[]
+): string[] {
+  const merged = new Set([...baseMonths, ...extra.filter(Boolean)]);
+  return Array.from(merged).sort();
+}
+
+export function getLatestYearMonthFromDates(dates: string[]): string | null {
+  const months = Array.from(
+    new Set(
+      dates
+        .map((d) => d.slice(0, 7))
+        .filter((ym) => /^\d{4}-\d{2}$/.test(ym))
+    )
+  );
+  if (months.length === 0) return null;
+  return months.reduce((max, ym) => (ym > max ? ym : max));
+}
+
 export function formatPeriodLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
   return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(

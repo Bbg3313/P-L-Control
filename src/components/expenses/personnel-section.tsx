@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancial } from "@/contexts/financial-context";
@@ -112,21 +111,6 @@ function PersonnelRow({
         />
       ) : (
         <>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <ModeButton
-          active={entry.inputMode === "direct"}
-          onClick={() => onUpdate({ inputMode: "direct" })}
-        >
-          금액 직접입력
-        </ModeButton>
-        <ModeButton
-          active={entry.inputMode === "salary"}
-          onClick={() => onUpdate({ inputMode: "salary", salaryBasis: "annual" })}
-        >
-          급여 입력
-        </ModeButton>
-      </div>
-
       {entry.inputMode === "direct" ? (
         <div className="mt-3 max-w-xs">
           <AmountInput
@@ -280,33 +264,8 @@ function PersonnelRow({
   );
 }
 
-function ModeButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:bg-muted"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
 export function PersonnelSection() {
-  const { personnel, personnelMonthlyTotal, updatePersonnel, hydrated } =
-    useFinancial();
+  const { personnel, updatePersonnel, hydrated } = useFinancial();
 
   const handleUpdate = useCallback(
     (id: string, patch: Partial<PersonnelEntry>) => {
@@ -317,47 +276,31 @@ export function PersonnelSection() {
 
   if (!hydrated) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          인건비 데이터를 불러오는 중…
-        </CardContent>
-      </Card>
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        인건비 데이터를 불러오는 중…
+      </p>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle>인건비 (고정)</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
-              구성원별 월 비용을 입력하세요. 국내 직원은 월급·연봉 입력 시{" "}
-              {JUN_2026_INSURANCE_LABEL} 4대보험 회사 부담분이 자동 반영됩니다.
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">인건비 월 합계</p>
-            <p className="text-xl font-semibold tabular-nums">
-              {formatCurrency(personnelMonthlyTotal)}
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {personnel.map((entry) => (
-          <PersonnelRow
-            key={entry.id}
-            entry={entry}
-            onUpdate={(patch) => handleUpdate(entry.id, patch)}
-          />
-        ))}
-        <p className="text-xs text-muted-foreground">
-          국내 직원은 비과세(기본 20만·박양근·안효재 40만)를 4대보험·원천징수
-          산정에서 제외합니다. 태국·베트남 팀은 기준일 환율을 자동 조회해 원화로
-          환산합니다.
-        </p>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        구성원·4대보험 구조는 고정입니다. 연봉·월급 등{" "}
+        <span className="font-medium text-foreground">금액만</span> 입력하세요.{" "}
+        {JUN_2026_INSURANCE_LABEL} 회사 부담분은 자동 계산됩니다.
+      </p>
+      {personnel.map((entry) => (
+        <PersonnelRow
+          key={entry.id}
+          entry={entry}
+          onUpdate={(patch) => handleUpdate(entry.id, patch)}
+        />
+      ))}
+      <p className="text-xs text-muted-foreground">
+        국내 직원은 비과세(기본 20만·박양근·안효재 40만)를 4대보험·원천징수
+        산정에서 제외합니다. 태국·베트남 팀은 기준일 환율을 자동 조회해 원화로
+        환산합니다.
+      </p>
+    </div>
   );
 }
