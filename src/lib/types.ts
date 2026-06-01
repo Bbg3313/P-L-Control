@@ -27,9 +27,33 @@ export interface DashboardMetrics {
   periodLabel: string;
 }
 
-export interface ExpenseBreakdownItem {
+export interface BreakdownItem {
   category: string;
   amount: number;
   /** 0~1 */
   share: number;
+}
+
+export type ExpenseBreakdownItem = BreakdownItem;
+
+export interface MonthOverMonth {
+  previous: number;
+  changePercent: number | null;
+}
+
+export interface DashboardInsights {
+  metrics: DashboardMetrics;
+  personnelMonthly: number;
+  previousMonth: string | null;
+  previousMonthLabel: string | null;
+  revenueMom: MonthOverMonth | null;
+  expensesMom: MonthOverMonth | null;
+  netProfitMom: MonthOverMonth | null;
+  profitMarginPercent: number | null;
+  personnelRatioPercent: number | null;
+  ytdRevenue: number;
+  ytdExpenses: number;
+  ytdNetProfit: number;
+  ytdThroughLabel: string;
+  summaryLine: string;
 }

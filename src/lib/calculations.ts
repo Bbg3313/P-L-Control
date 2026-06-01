@@ -1,11 +1,17 @@
 import type {
+  BreakdownItem,
+  DashboardInsights,
   DashboardMetrics,
   ExpenseBreakdownItem,
   FinancialRecord,
+  MonthOverMonth,
   MonthlyTotals,
   TransactionType,
 } from "./types";
-import { FIXED_COSTS_RESERVE } from "./constants";
+import {
+  DASHBOARD_CHART_START_MONTH,
+  FIXED_COSTS_RESERVE,
+} from "./constants";
 
 export { FIXED_COSTS_RESERVE };
 
@@ -140,6 +146,212 @@ export function getMonthlyTotals(
 const PERSONNEL_BREAKDOWN_LABEL = "인건비";
 
 /** 해당 월 비용을 카테고리별로 합산 (고정 인건비 포함) */
+function calcMonthOverMonth(
+  current: number,
+  previous: number
+): MonthOverMonth {
+  if (previous === 0) {
+    return {
+      previous,
+      changePercent: current === 0 ? 0 : null,
+    };
+  }
+  return {
+    previous,
+    changePercent: ((current - previous) / previous) * 100,
+  };
+}
+
+/** 5월부터 선택 월까지 연속 구간 (차트용) */
+export function getDashboardChartMonths(
+  reportingMonth: string,
+  startMonth = DASHBOARD_CHART_START_MONTH
+): string[] {
+  const start = reportingMonth < startMonth ? reportingMonth : startMonth;
+  const end = reportingMonth >= startMonth ? reportingMonth : startMonth;
+
+  const months: string[] = [];
+  let [y, m] = start.split("-").map(Number);
+  const [ey, em] = end.split("-").map(Number);
+
+  while (y < ey || (y === ey && m <= em)) {
+    months.push(`${y}-${String(m).padStart(2, "0")}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+
+  return months;
+}
+
+/** 해당 연도 1월~선택 월 누적 */
+export function getYearToDateTotals(
+  records: FinancialRecord[],
+  throughMonth: string,
+  personnelMonthly = 0
+): { revenue: number; expenses: number; netProfit: number } {
+  const year = throughMonth.slice(0, 4);
+  const months = getDashboardChartMonths(throughMonth).filter(
+    (m) => m.startsWith(year) && m <= throughMonth
+  );
+
+  let revenue = 0;
+  let expenses = 0;
+  for (const month of months) {
+    revenue += sumByMonth(records, month, "revenue");
+    expenses +=
+      sumByMonth(records, month, "expense") +
+      (personnelMonthly > 0 ? personnelMonthly : 0);
+  }
+
+  return { revenue, expenses, netProfit: revenue - expenses };
+}
+
+/** 매출처별 합계 (상위 N건) */
+export function getRevenueBreakdown(
+  records: FinancialRecord[],
+  yearMonth: string,
+  limit = 5
+): BreakdownItem[] {
+  const totals = new Map<string, number>();
+
+  for (const record of records) {
+    if (record.type !== "revenue") continue;
+    if (parseYearMonth(record.date) !== yearMonth) continue;
+
+    const label =
+      record.client.trim() ||
+      record.category.trim() ||
+      "미지정 매출처";
+    totals.set(label, (totals.get(label) ?? 0) + record.amount);
+  }
+
+  const sorted = Array.from(totals.entries())
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const top = sorted.slice(0, limit);
+  const other = sorted.slice(limit).reduce((sum, r) => sum + r.amount, 0);
+  const items =
+    other > 0
+      ? [...top, { category: "기타", amount: other }]
+      : top;
+
+  const grandTotal = items.reduce((sum, i) => sum + i.amount, 0);
+
+  return items.map(({ category, amount }) => ({
+    category,
+    amount,
+    share: grandTotal > 0 ? amount / grandTotal : 0,
+  }));
+}
+
+function buildSummaryLine(
+  metrics: DashboardMetrics,
+  netProfitMom: MonthOverMonth | null,
+  profitMarginPercent: number | null,
+  ytdNetProfit: number,
+  ytdThroughLabel: string
+): string {
+  const parts: string[] = [];
+
+  if (metrics.netProfit >= 0) {
+    parts.push(`${metrics.periodLabel} 흑자`);
+  } else {
+    parts.push(`${metrics.periodLabel} 적자`);
+  }
+
+  if (netProfitMom?.changePercent != null) {
+    const sign = netProfitMom.changePercent >= 0 ? "+" : "";
+    parts.push(`순이익 전월 대 ${sign}${netProfitMom.changePercent.toFixed(1)}%`);
+  } else if (netProfitMom && netProfitMom.previous === 0 && metrics.netProfit !== 0) {
+    parts.push("순이익 전월 데이터 없음");
+  }
+
+  if (profitMarginPercent != null && metrics.totalRevenue > 0) {
+    parts.push(`이익률 ${profitMarginPercent.toFixed(1)}%`);
+  }
+
+  if (metrics.investmentCapacity < 0) {
+    parts.push("투자 여력 부족");
+  }
+
+  if (ytdNetProfit !== 0 || metrics.totalRevenue > 0) {
+    parts.push(`${ytdThroughLabel} 누적 순이익 ${ytdNetProfit >= 0 ? "흑자" : "적자"}`);
+  }
+
+  return parts.join(" · ");
+}
+
+export function getDashboardInsights(
+  records: FinancialRecord[],
+  yearMonth: string,
+  personnelMonthly = 0
+): DashboardInsights {
+  const metrics = getDashboardMetrics(records, yearMonth, personnelMonthly);
+  const previousMonth = shiftYearMonth(yearMonth, -1);
+  const hasPrevious = previousMonth >= DASHBOARD_CHART_START_MONTH;
+
+  const prevRevenue = hasPrevious
+    ? sumByMonth(records, previousMonth, "revenue")
+    : 0;
+  const prevExpenses = hasPrevious
+    ? sumByMonth(records, previousMonth, "expense") + personnelMonthly
+    : 0;
+  const prevNetProfit = prevRevenue - prevExpenses;
+
+  const revenueMom = hasPrevious
+    ? calcMonthOverMonth(metrics.totalRevenue, prevRevenue)
+    : null;
+  const expensesMom = hasPrevious
+    ? calcMonthOverMonth(metrics.totalExpenses, prevExpenses)
+    : null;
+  const netProfitMom = hasPrevious
+    ? calcMonthOverMonth(metrics.netProfit, prevNetProfit)
+    : null;
+
+  const profitMarginPercent =
+    metrics.totalRevenue > 0
+      ? (metrics.netProfit / metrics.totalRevenue) * 100
+      : null;
+
+  const personnelRatioPercent =
+    metrics.totalRevenue > 0
+      ? (personnelMonthly / metrics.totalRevenue) * 100
+      : null;
+
+  const ytd = getYearToDateTotals(records, yearMonth, personnelMonthly);
+  const year = yearMonth.slice(0, 4);
+  const ytdThroughLabel = `${year}년 ${Number(yearMonth.slice(5, 7))}월까지`;
+
+  const summaryLine = buildSummaryLine(
+    metrics,
+    netProfitMom,
+    profitMarginPercent,
+    ytd.netProfit,
+    ytdThroughLabel
+  );
+
+  return {
+    metrics,
+    personnelMonthly,
+    previousMonth: hasPrevious ? previousMonth : null,
+    previousMonthLabel: hasPrevious ? formatPeriodLabel(previousMonth) : null,
+    revenueMom,
+    expensesMom,
+    netProfitMom,
+    profitMarginPercent,
+    personnelRatioPercent,
+    ytdRevenue: ytd.revenue,
+    ytdExpenses: ytd.expenses,
+    ytdNetProfit: ytd.netProfit,
+    ytdThroughLabel,
+    summaryLine,
+  };
+}
+
 export function getExpenseBreakdown(
   records: FinancialRecord[],
   yearMonth: string,

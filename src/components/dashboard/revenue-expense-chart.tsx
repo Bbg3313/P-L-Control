@@ -30,6 +30,7 @@ const CHART = {
 interface RevenueExpenseChartProps {
   data: MonthlyTotals[];
   monthLabels: Record<string, string>;
+  subtitle?: string;
 }
 
 interface TooltipPayloadItem {
@@ -79,6 +80,7 @@ function ChartTooltip({
 export function RevenueExpenseChart({
   data,
   monthLabels,
+  subtitle = "최근 추이",
 }: RevenueExpenseChartProps) {
   const chartData = data.map((row) => ({
     name: monthLabels[row.month] ?? row.month,
@@ -99,7 +101,7 @@ export function RevenueExpenseChart({
           매출 vs 비용
         </CardTitle>
         <CardDescription className="text-sm text-slate-500">
-          최근 6개월 월별 비교
+          {subtitle}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-2 pb-4 pt-6 sm:px-6">

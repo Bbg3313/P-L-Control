@@ -1,19 +1,22 @@
 "use client";
 
-import { ExpenseBreakdown } from "@/components/dashboard/expense-breakdown";
+import { BreakdownList } from "@/components/dashboard/breakdown-list";
+import { ExecutiveBanner } from "@/components/dashboard/executive-banner";
+import { KpiStrip } from "@/components/dashboard/kpi-strip";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { RevenueExpenseChart } from "@/components/dashboard/revenue-expense-chart";
 import { useFinancial } from "@/contexts/financial-context";
 import {
   formatMonthLabel,
-  getChartMonths,
-  getDashboardMetrics,
+  formatPeriodLabel,
+  getDashboardChartMonths,
+  getDashboardInsights,
   getExpenseBreakdown,
+  getRevenueBreakdown,
   getMonthlyTotals,
-  getYearMonthsFromRecords,
-  mergeChartMonths,
 } from "@/lib/calculations";
+import { DASHBOARD_CHART_START_MONTH } from "@/lib/constants";
 import { formatCurrency } from "@/lib/format";
 
 export function DashboardView() {
@@ -28,16 +31,14 @@ export function DashboardView() {
     );
   }
 
-  const metrics = getDashboardMetrics(
+  const insights = getDashboardInsights(
     records,
     reportingMonth,
     personnelMonthlyTotal
   );
-  const chartMonths = mergeChartMonths(
-    getChartMonths(6),
-    reportingMonth,
-    ...getYearMonthsFromRecords(records).slice(0, 12)
-  );
+  const { metrics } = insights;
+
+  const chartMonths = getDashboardChartMonths(reportingMonth);
   const monthlyTotals = getMonthlyTotals(
     records,
     chartMonths,
@@ -46,6 +47,8 @@ export function DashboardView() {
   const monthLabels = Object.fromEntries(
     chartMonths.map((m) => [m, formatMonthLabel(m)])
   );
+
+  const revenueBreakdown = getRevenueBreakdown(records, reportingMonth);
   const expenseBreakdown = getExpenseBreakdown(
     records,
     reportingMonth,
@@ -53,51 +56,53 @@ export function DashboardView() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <header className="space-y-4 border-b border-slate-200/80 pb-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
-              Overview
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-              대시보드
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              ◀ ▶ 로 월을 바꿉니다. 매출·기타 비용은{" "}
-              <span className="font-medium text-slate-700">
-                {metrics.periodLabel}
-              </span>
-              만 합산하고, 인건비는 매월 동일하게 반영됩니다.
-            </p>
-          </div>
-          <ReportingMonthNav className="shrink-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3" />
+    <div className="mx-auto max-w-7xl space-y-6">
+      <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            경영 대시보드
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {metrics.periodLabel} 손익 요약 ·{" "}
+            {formatPeriodLabel(DASHBOARD_CHART_START_MONTH)}부터 추이
+          </p>
         </div>
-        <p className="max-w-3xl text-sm leading-relaxed text-slate-500">
-          <span className="text-slate-600">
-            투자 여력 = 순이익 − 고정비 예비금 (
-            {formatCurrency(metrics.fixedCostsReserve)})
-          </span>
-          . 매출·비용 페이지에서 입력한 내역이 실시간 반영됩니다.
-        </p>
+        <ReportingMonthNav className="shrink-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3" />
       </header>
 
-      <section aria-label="핵심 지표" className="space-y-5">
-        <SummaryCards metrics={metrics} />
-      </section>
+      <ExecutiveBanner insights={insights} />
 
-      <section aria-label="비용 세부" className="space-y-4">
-        <ExpenseBreakdown
-          items={expenseBreakdown}
-          totalExpenses={metrics.totalExpenses}
-          periodLabel={metrics.periodLabel}
-        />
-      </section>
+      <SummaryCards insights={insights} />
 
-      <section aria-label="월별 추이" className="space-y-4">
+      <KpiStrip insights={insights} />
+
+      <section aria-label="월별 추이">
         <RevenueExpenseChart
           data={monthlyTotals}
           monthLabels={monthLabels}
+          subtitle={`${formatPeriodLabel(DASHBOARD_CHART_START_MONTH)}부터`}
+        />
+      </section>
+
+      <section
+        aria-label="매출·비용 구성"
+        className="grid gap-4 lg:grid-cols-2"
+      >
+        <BreakdownList
+          title="매출 Top"
+          periodLabel={metrics.periodLabel}
+          totalLabel={formatCurrency(metrics.totalRevenue)}
+          items={revenueBreakdown}
+          barClassName="bg-teal-500/80"
+          emptyMessage="이번 달 매출이 없습니다."
+        />
+        <BreakdownList
+          title="비용 구성"
+          periodLabel={metrics.periodLabel}
+          totalLabel={formatCurrency(metrics.totalExpenses)}
+          items={expenseBreakdown}
+          barClassName="bg-rose-500/80"
+          emptyMessage="이번 달 비용이 없습니다."
         />
       </section>
     </div>
