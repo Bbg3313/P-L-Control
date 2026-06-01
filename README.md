@@ -1,34 +1,53 @@
-# Corporate P&L & Investment Capacity Dashboard
+# 기업 손익·투자 여력 대시보드 (P&L Control)
 
-Web dashboard for monthly profit & loss and investment capacity (net profit minus fixed costs reserve). Built for marketing agency operations.
+마케팅 에이전시 운영을 위한 월별 손익(P&L) 및 투자 여력 관리 대시보드입니다.
 
-## Stack
+## 링크
+
+| 항목 | URL |
+|------|-----|
+| **배포 (Production)** | https://corporate-pl-dashboard.vercel.app |
+| **GitHub** | https://github.com/Bbg3313/P-L-Control |
+
+`main` 브랜치에 push하면 Vercel이 자동으로 프로덕션 배포합니다.
+
+## 기술 스택
 
 - Next.js 14 (App Router)
 - Tailwind CSS + shadcn/ui
 - Recharts
 - Lucide React
 
-## Getting started
+## 로컬 실행
 
 ```powershell
-cd corporate-pl-dashboard
+git clone https://github.com/Bbg3313/P-L-Control.git
+cd P-L-Control
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+http://localhost:3000 에서 확인합니다.
 
-## Project structure
+## 프로젝트 구조
 
-- `src/app/(dashboard)/` — Main routes (Dashboard, Revenue, Expenses, Settings)
-- `src/lib/financial-data.ts` — Dummy agency revenue/expense records and P&L calculations
-- `src/components/dashboard/` — Summary cards and revenue vs expenses chart
+- `src/app/(dashboard)/` — 대시보드, 매출, 비용, 설정
+- `src/lib/financial-data.ts` — 더미 데이터 및 P&L·투자 여력 계산
+- `src/components/dashboard/` — 요약 카드, 매출 vs 비용 차트
 
-## Investment capacity
+## 투자 여력 공식
 
-For the selected month:
+해당 월 기준:
 
-**Investment Capacity = Net Profit − Fixed Costs Reserve**
+**투자 여력 = 순이익 − 고정비 예비금**
 
-Default reserve: **₩114,800,000** (editable in Settings in a future step). All amounts are in KRW.
+기본 예비금: **₩114,800,000** (설정 페이지에서 변경 예정)
+
+## 배포
+
+Vercel 프로젝트가 [P-L-Control](https://github.com/Bbg3313/P-L-Control) 저장소와 연결되어 있습니다.
+
+```powershell
+npm run build   # 로컬 빌드 검증
+git push origin main   # 자동 배포
+```
