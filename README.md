@@ -44,6 +44,20 @@ http://localhost:3000 에서 확인합니다.
 - **예비금** = 월평균 운영비 × **3개월** (운영자금 3개월분, 일반적인 현금보유 기준)  
 - **투자 여력** = 순이익 − 예비금
 
+## 데이터 공유 (중요)
+
+매출·비용·인건비는 **브라우저가 아니라 서버(Redis)** 에 저장됩니다.  
+같은 URL과 비밀번호로 들어가면 **모든 사람이 같은 숫자**를 봅니다.
+
+### Vercel에 Redis 연결 (최초 1회)
+
+1. [Vercel](https://vercel.com) → 이 프로젝트 → **Storage** (또는 Marketplace에서 **Upstash Redis**)
+2. Redis DB 생성 후 **이 프로젝트에 Connect**
+3. 환경 변수 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 확인 후 **Redeploy**
+4. 앱 **설정** 페이지에서 「서버에 저장 중」 문구 확인
+
+Redis가 없으면 예전처럼 **그 브라우저에만** 저장됩니다.
+
 ## 배포
 
 Vercel 프로젝트가 [P-L-Control](https://github.com/Bbg3313/P-L-Control) 저장소와 연결되어 있습니다.

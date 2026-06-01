@@ -167,6 +167,18 @@ export function getPersonnelTotalMonthly(personnel: PersonnelEntry[]): number {
   return personnel.reduce((sum, p) => sum + getPersonnelMonthlyCost(p), 0);
 }
 
+export function normalizePersonnelList(
+  parsed: Partial<PersonnelEntry>[] | undefined
+): PersonnelEntry[] {
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return createDefaultPersonnel();
+  }
+  const byName = new Map(parsed.map((p) => [p.name, p]));
+  return FIXED_PERSONNEL_NAMES.map((name) =>
+    normalizePersonnelEntry(name, byName.get(name))
+  );
+}
+
 export function loadPersonnelFromStorage(): PersonnelEntry[] {
   if (typeof window === "undefined") return createDefaultPersonnel();
 
