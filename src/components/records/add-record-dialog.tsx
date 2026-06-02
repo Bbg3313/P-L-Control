@@ -163,7 +163,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
                       setForm((f) => ({ ...f, amountIncludesVat: false }))
                     }
                   >
-                    부가세 미포함
+                    무자료
                   </Button>
                   <Button
                     type="button"
@@ -173,7 +173,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
                       setForm((f) => ({ ...f, amountIncludesVat: true }))
                     }
                   >
-                    부가세 포함
+                    계산서 발행
                   </Button>
                 </div>
               )}

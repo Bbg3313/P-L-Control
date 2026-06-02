@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "블루브릿지글로벌 손익 관리",
+  title: "블루브릿지글로벌 손익관리",
   description: "블루브릿지글로벌 매출·비용·손익 대시보드",
 };
 

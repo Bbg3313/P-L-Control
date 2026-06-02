@@ -21,10 +21,14 @@ export interface MonthlyTotals {
 }
 
 export interface DashboardMetrics {
-  /** 매출 공급가액 (부가세 제외) */
+  /** 손익 집계용 매출 (미포함=입력액, 포함=공급가액) */
   totalRevenue: number;
+  /** 부가세 포함 항목에서 산출한 세액 합계 */
   totalRevenueVat: number;
+  /** 매출 + 세액 */
   totalRevenueGross: number;
+  /** 부가세 포함으로 등록된 매출 건수 */
+  totalRevenueVatIncludedCount: number;
   totalExpenses: number;
   netProfit: number;
   investmentCapacity: number;

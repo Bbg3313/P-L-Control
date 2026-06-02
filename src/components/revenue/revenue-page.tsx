@@ -52,10 +52,10 @@ export function RevenuePage() {
               <p className="shrink-0 text-2xl font-semibold tabular-nums">
                 {formatCurrency(total)}
               </p>
-              {vatSummary.grossTotal > 0 && (
+              {vatSummary.vatTotal > 0 && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  공급가액 · 부가세 {formatCurrency(vatSummary.vatTotal)} · 합계{" "}
-                  {formatCurrency(vatSummary.grossTotal)}
+                  계산서 {vatSummary.vatIncludedCount}건 · 세액{" "}
+                  {formatCurrency(vatSummary.vatTotal)}
                 </p>
               )}
             </div>

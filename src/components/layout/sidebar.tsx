@@ -10,7 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
-import { APP_LOGO_ALT, APP_LOGO_SRC, APP_NAME } from "@/lib/brand";
+import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -39,8 +39,9 @@ export function Sidebar() {
         />
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-snug tracking-tight">
-            {APP_NAME}
+            {APP_COMPANY_NAME}
           </p>
+          <p className="text-xs text-muted-foreground">{APP_SUBTITLE}</p>
         </div>
       </Link>
 

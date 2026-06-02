@@ -82,17 +82,15 @@ export function ImportRevenueDialog() {
     setOpen(false);
   }
 
-  const previewTotal = preview.reduce((sum, r) => sum + r.amount, 0);
   const previewVatSummary = preview.reduce(
     (acc, row) => {
       const parts = splitRevenueAmount(row.amount, amountIncludesVat);
       return {
         supply: acc.supply + parts.supply,
-        vat: acc.vat + parts.vat,
-        gross: acc.gross + parts.gross,
+        vat: amountIncludesVat ? acc.vat + parts.vat : acc.vat,
       };
     },
-    { supply: 0, vat: 0, gross: 0 }
+    { supply: 0, vat: 0 }
   );
 
   return (
@@ -136,14 +134,14 @@ export function ImportRevenueDialog() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">금액 기준:</span>
+            <span className="text-sm text-muted-foreground">과세 구분:</span>
             <Button
               type="button"
               variant={amountIncludesVat ? "outline" : "default"}
               size="sm"
               onClick={() => setAmountIncludesVat(false)}
             >
-              부가세 미포함
+              무자료
             </Button>
             <Button
               type="button"
@@ -151,7 +149,7 @@ export function ImportRevenueDialog() {
               size="sm"
               onClick={() => setAmountIncludesVat(true)}
             >
-              부가세 포함
+              계산서 발행
             </Button>
           </div>
 
@@ -195,14 +193,14 @@ export function ImportRevenueDialog() {
           {preview.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">
-                미리보기 {preview.length}건 · 공급가{" "}
+                미리보기 {preview.length}건 · 매출{" "}
                 {formatCurrency(previewVatSummary.supply)}
               </p>
-              <p className="text-xs text-muted-foreground">
-                입력 합계 {formatCurrency(previewTotal)} · 부가세{" "}
-                {formatCurrency(previewVatSummary.vat)} · 합계{" "}
-                {formatCurrency(previewVatSummary.gross)}
-              </p>
+              {amountIncludesVat && previewVatSummary.vat > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  계산서 발행 · 세액 {formatCurrency(previewVatSummary.vat)}
+                </p>
+              )}
               <div className="max-h-48 overflow-auto rounded-md border text-xs">
                 <table className="w-full">
                   <thead className="sticky top-0 bg-muted">

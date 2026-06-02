@@ -510,6 +510,7 @@ export function getDashboardMetrics(
     totalRevenue,
     totalRevenueVat: revenueVat.vatTotal,
     totalRevenueGross: revenueVat.grossTotal,
+    totalRevenueVatIncludedCount: revenueVat.vatIncludedCount,
     totalExpenses,
     netProfit,
     investmentCapacity,

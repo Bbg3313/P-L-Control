@@ -165,7 +165,7 @@ export function useMonthlyRecordsEditor(
     if (kind !== "revenue") return null;
     let supplyTotal = 0;
     let vatTotal = 0;
-    let grossTotal = 0;
+    let vatIncludedCount = 0;
     for (const row of rows) {
       const amount = parseAmountInput(row.amount);
       const primary = row.primary.trim();
@@ -173,10 +173,17 @@ export function useMonthlyRecordsEditor(
       if (!primary || !category || amount <= 0) continue;
       const parts = splitRevenueAmount(amount, row.amountIncludesVat);
       supplyTotal += parts.supply;
-      vatTotal += parts.vat;
-      grossTotal += parts.gross;
+      if (row.amountIncludesVat) {
+        vatTotal += parts.vat;
+        vatIncludedCount += 1;
+      }
     }
-    return { supplyTotal, vatTotal, grossTotal };
+    return {
+      supplyTotal,
+      vatTotal,
+      grossTotal: supplyTotal + vatTotal,
+      vatIncludedCount,
+    };
   }, [rows, kind]);
 
   function handleAddRow() {

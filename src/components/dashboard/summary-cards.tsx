@@ -16,6 +16,7 @@ import {
   TrendingDown,
   CircleDollarSign,
   PiggyBank,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
   const capacityShortfall = metrics.investmentCapacity < 0;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <Card size="sm" className={cardShell}>
         <CardHeader className="pb-1">
           <div className="flex items-start justify-between gap-3">
@@ -40,7 +41,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
                 총 매출
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                공급가액 · {metrics.periodLabel}
+                {metrics.periodLabel}
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10">
@@ -53,13 +54,39 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             amount={metrics.totalRevenue}
             valueClassName="text-2xl font-semibold text-slate-900"
           />
-          {metrics.totalRevenueVat > 0 && (
+          <MomBadge mom={revenueMom} />
+        </CardContent>
+      </Card>
+
+      <Card size="sm" className={cardShell}>
+        <CardHeader className="pb-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium text-slate-700">
+                부가세 (세액)
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                계산서 발행 매출 10% · {metrics.periodLabel}
+              </CardDescription>
+            </div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10">
+              <Receipt className="h-4 w-4 text-sky-600" strokeWidth={2} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2 pt-2">
+          <CurrencyDisplay
+            amount={metrics.totalRevenueVat}
+            valueClassName="text-2xl font-semibold text-slate-900"
+          />
+          {metrics.totalRevenueVatIncludedCount > 0 ? (
             <p className="text-xs text-slate-500">
-              부가세 {formatCurrency(metrics.totalRevenueVat)} · 합계{" "}
+              계산서 {metrics.totalRevenueVatIncludedCount}건 · 합계{" "}
               {formatCurrency(metrics.totalRevenueGross)}
             </p>
+          ) : (
+            <p className="text-xs text-slate-500">계산서 발행 매출 없음</p>
           )}
-          <MomBadge mom={revenueMom} />
         </CardContent>
       </Card>
 

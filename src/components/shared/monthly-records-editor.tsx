@@ -130,14 +130,14 @@ export function MonthlyRecordsEditor({
 
       {kind === "revenue" && editMode && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">신규 항목 금액:</span>
+          <span className="text-muted-foreground">신규 항목:</span>
           <Button
             type="button"
             variant={defaultAmountIncludesVat ? "outline" : "default"}
             size="sm"
             onClick={() => setDefaultAmountIncludesVat(false)}
           >
-            부가세 미포함
+            무자료
           </Button>
           <Button
             type="button"
@@ -145,7 +145,7 @@ export function MonthlyRecordsEditor({
             size="sm"
             onClick={() => setDefaultAmountIncludesVat(true)}
           >
-            부가세 포함
+            계산서 발행
           </Button>
         </div>
       )}
@@ -159,7 +159,7 @@ export function MonthlyRecordsEditor({
           )}
           <span>{config.primaryLabel}</span>
           {kind === "revenue" && <span>{config.secondaryLabel}</span>}
-          {kind === "revenue" && <span className="whitespace-nowrap">부가세</span>}
+          {kind === "revenue" && <span className="whitespace-nowrap">구분</span>}
           <span>금액 (원)</span>
           <span />
         </div>
@@ -206,16 +206,16 @@ export function MonthlyRecordsEditor({
               <select
                 className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!editMode}
-                aria-label="부가세 포함 여부"
-                value={row.amountIncludesVat ? "gross" : "supply"}
+                aria-label="과세 구분"
+                value={row.amountIncludesVat ? "invoice" : "taxfree"}
                 onChange={(e) =>
                   updateRow(row.key, {
-                    amountIncludesVat: e.target.value === "gross",
+                    amountIncludesVat: e.target.value === "invoice",
                   })
                 }
               >
-                <option value="supply">미포함</option>
-                <option value="gross">포함</option>
+                <option value="taxfree">무자료</option>
+                <option value="invoice">계산서</option>
               </select>
             )}
             <Input
@@ -266,16 +266,18 @@ export function MonthlyRecordsEditor({
                 {formatCurrency(draftTotal)}
               </span>
               {kind === "revenue" && (
-                <span className="ml-1 text-xs">(공급가액)</span>
+                <span className="ml-1 text-xs">(매출)</span>
               )}
               {!editMode && recordsCount > 0 && (
                 <span className="ml-2">· 저장 {recordsCount}건</span>
               )}
             </p>
-            {kind === "revenue" && draftVatSummary && draftVatSummary.grossTotal > 0 && (
+            {kind === "revenue" &&
+              draftVatSummary &&
+              draftVatSummary.vatTotal > 0 && (
               <p className="text-xs text-muted-foreground">
-                부가세 {formatCurrency(draftVatSummary.vatTotal)} · 합계{" "}
-                {formatCurrency(draftVatSummary.grossTotal)}
+                계산서 {draftVatSummary.vatIncludedCount}건 · 세액{" "}
+                {formatCurrency(draftVatSummary.vatTotal)}
               </p>
             )}
           </div>

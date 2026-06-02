@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { APP_LOGO_ALT, APP_LOGO_SRC, APP_NAME } from "@/lib/brand";
+import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/lib/brand";
 
 function LoginForm() {
   const router = useRouter();
@@ -59,7 +59,12 @@ function LoginForm() {
               priority
             />
           </div>
-          <CardTitle className="text-lg leading-snug">{APP_NAME}</CardTitle>
+          <CardTitle className="space-y-0.5 text-lg leading-snug">
+            <span className="block">{APP_COMPANY_NAME}</span>
+            <span className="block text-base font-medium text-muted-foreground">
+              {APP_SUBTITLE}
+            </span>
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
             손익 데이터 보호를 위해 비밀번호를 입력하세요.
           </p>
