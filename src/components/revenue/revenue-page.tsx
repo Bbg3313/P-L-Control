@@ -14,12 +14,17 @@ import { ImportRevenueDialog } from "./import-revenue-dialog";
 
 export function RevenuePage() {
   const { getByType, reportingMonth } = useFinancial();
-  const records = getByType("revenue").filter(
+  const allRevenueRecords = getByType("revenue");
+  const monthRevenueRecords = allRevenueRecords.filter(
     (r) => r.date.slice(0, 7) === reportingMonth
   );
   const vatSummary = useMemo(
-    () => summarizeRevenueVat(records),
-    [records]
+    () => summarizeRevenueVat(monthRevenueRecords),
+    [monthRevenueRecords]
+  );
+  const allRevenueTotal = useMemo(
+    () => summarizeRevenueVat(allRevenueRecords).supplyTotal,
+    [allRevenueRecords]
   );
   const total = vatSummary.supplyTotal;
 
@@ -53,19 +58,31 @@ export function RevenuePage() {
               </>
             ) : undefined
           }
-          meta={records.length > 0 ? `${records.length}건` : "미등록"}
+          meta={monthRevenueRecords.length > 0 ? `${monthRevenueRecords.length}건` : "미등록"}
         />
       </header>
 
       <div className="w-full max-w-full space-y-3 pb-4 pt-4">
         <CollapsibleExpenseCard
-          title={`${formatPeriodLabel(reportingMonth)} 매출`}
-          description="매출처 · 상세 카테고리 · 카테고리 · 금액"
-          amount={total}
-          meta={records.length > 0 ? `${records.length}건` : "미등록"}
+          title="매출"
+          description={`${ENTITY_REVENUE_LABEL} · 전체 ${allRevenueRecords.length}건 · ${formatPeriodLabel(reportingMonth)} 합계 ${formatCurrency(total)}`}
+          amount={allRevenueTotal}
+          meta={
+            allRevenueRecords.length > 0
+              ? `전체 ${allRevenueRecords.length}건`
+              : "미등록"
+          }
           defaultOpen
         >
-          <MonthlyRecordsEditor kind="revenue" records={records} />
+          <MonthlyRecordsEditor
+            kind="revenue"
+            records={allRevenueRecords}
+            showRecordMonth
+            editorOptions={{
+              resetOnMonthChange: false,
+              preserveRecordDates: true,
+            }}
+          />
         </CollapsibleExpenseCard>
       </div>
     </div>
