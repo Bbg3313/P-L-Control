@@ -15,49 +15,66 @@ import {
 } from "@/lib/overseas-fx";
 import type { PersonnelEntry } from "@/lib/personnel";
 
-function AmountInput({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (amount: number) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        inputMode="numeric"
-        placeholder={placeholder ?? "0"}
-        className="h-9 tabular-nums"
-        value={value > 0 ? String(value) : ""}
-        onChange={(e) => onChange(parseAmountInput(e.target.value))}
-      />
-    </div>
-  );
-}
-
-interface OverseasPersonnelFieldsProps {
+interface OverseasSalaryCellProps {
   entry: PersonnelEntry;
   currency: OverseasCurrency;
   onUpdate: (patch: Partial<PersonnelEntry>) => void;
 }
 
-export function OverseasPersonnelFields({
+/** 테이블 셀용 — 월급 입력만 */
+export function OverseasSalaryCell({
   entry,
   currency,
   onUpdate,
-}: OverseasPersonnelFieldsProps) {
+}: OverseasSalaryCellProps) {
   const currencyLabel = getOverseasCurrencyLabel(currency);
-  const rateDate = entry.exchangeRateDate || new Date().toISOString().slice(0, 10);
+  const amount =
+    entry.inputMode === "direct"
+      ? entry.directMonthlyAmount
+      : entry.salaryAmount;
+
+  return (
+    <div className="flex min-w-[7.5rem] items-center gap-1.5">
+      <Input
+        inputMode="numeric"
+        placeholder="0"
+        className="h-8 w-full min-w-0 tabular-nums"
+        aria-label={`${entry.name} 월급`}
+        value={amount > 0 ? String(amount) : ""}
+        onChange={(e) => {
+          const next = parseAmountInput(e.target.value);
+          if (entry.inputMode === "direct") {
+            onUpdate({ directMonthlyAmount: next });
+          } else {
+            onUpdate({
+              salaryAmount: next,
+              salaryBasis: "monthly",
+              inputMode: "salary",
+            });
+          }
+        }}
+      />
+      <span className="shrink-0 text-[11px] text-muted-foreground">
+        {currencyLabel}
+      </span>
+    </div>
+  );
+}
+
+interface OverseasPersonnelDetailProps {
+  entry: PersonnelEntry;
+  currency: OverseasCurrency;
+  onUpdate: (patch: Partial<PersonnelEntry>) => void;
+}
+
+/** 펼침 상세 — 환율·환산 */
+export function OverseasPersonnelDetail({
+  entry,
+  currency,
+  onUpdate,
+}: OverseasPersonnelDetailProps) {
+  const rateDate =
+    entry.exchangeRateDate || new Date().toISOString().slice(0, 10);
 
   const { loading, error, meta, refetch } = useAutoExchangeRate({
     currency,
@@ -68,108 +85,58 @@ export function OverseasPersonnelFields({
   const fx = calcOverseasMonthlyKrw({ ...entry, exchangeRateDate: rateDate });
 
   return (
-    <div className="mt-3 space-y-3">
-      <div className="max-w-xs">
-        <AmountInput
-          id={`${entry.id}-foreign-salary`}
-          label={`월급 (${currencyLabel})`}
-          value={
-            entry.inputMode === "direct"
-              ? entry.directMonthlyAmount
-              : entry.salaryAmount
-          }
-          onChange={(amount) => {
-            if (entry.inputMode === "direct") {
-              onUpdate({ directMonthlyAmount: amount });
-            } else {
-              onUpdate({
-                salaryAmount: amount,
-                salaryBasis: "monthly",
-                inputMode: "salary",
-              });
-            }
-          }}
-          placeholder={currency === "THB" ? "예: 120000" : "예: 45000000"}
-        />
-      </div>
-
-      <div className="grid max-w-lg gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div className="grid gap-1.5">
-          <Label htmlFor={`${entry.id}-fx-date`} className="text-xs text-muted-foreground">
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="grid min-w-[8rem] flex-1 gap-1">
+          <Label
+            htmlFor={`${entry.id}-fx-date`}
+            className="text-[11px] text-muted-foreground"
+          >
             환율 기준일
           </Label>
           <Input
             id={`${entry.id}-fx-date`}
             type="date"
-            className="h-9"
+            className="h-8"
             value={rateDate}
-            onChange={(e) =>
-              onUpdate({
-                exchangeRateDate: e.target.value,
-              })
-            }
+            onChange={(e) => onUpdate({ exchangeRateDate: e.target.value })}
           />
         </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="h-9"
+          className="h-8"
           disabled={loading}
           onClick={() => refetch()}
         >
           <RefreshCw
-            className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"}
-            data-icon="inline-start"
+            className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
           />
-          환율 조회
+          환율
         </Button>
       </div>
-
-      <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
-        {loading && (
-          <p className="text-muted-foreground">환율을 불러오는 중…</p>
-        )}
-        {error && !loading && (
-          <p className="text-destructive">{error}</p>
-        )}
+      <div className="text-xs text-muted-foreground">
+        {loading && "환율 조회 중…"}
+        {error && !loading && <span className="text-destructive">{error}</span>}
         {!loading && !error && entry.exchangeRateToKrw > 0 && (
-          <p className="text-foreground">
-            <span className="text-muted-foreground">자동 환율 · </span>
-            1 {currency === "THB" ? "바트" : "동"} ={" "}
-            <span className="font-medium tabular-nums">
-              ₩{" "}
-              {entry.exchangeRateToKrw.toLocaleString("ko-KR", {
-                maximumFractionDigits: 6,
-              })}
-            </span>
+          <>
+            1 {currency === "THB" ? "바트" : "동"} = ₩{" "}
+            {entry.exchangeRateToKrw.toLocaleString("ko-KR", {
+              maximumFractionDigits: 4,
+            })}
             {meta && meta.usedDate !== meta.requestedDate && (
-              <span className="ml-1 text-muted-foreground">
-                (미래·휴일 → 최신 환율 적용)
-              </span>
+              <span className="ml-1">(최신 환율)</span>
             )}
+          </>
+        )}
+        {fx && fx.foreignMonthly > 0 && fx.exchangeRateToKrw > 0 && (
+          <p className="mt-1 font-medium text-foreground">
+            {formatForeignAmount(fx.foreignMonthly, fx.currency)} →{" "}
+            {formatCurrency(fx.monthlyKrw)}/월
           </p>
         )}
       </div>
-
-      {fx && fx.foreignMonthly > 0 && fx.exchangeRateToKrw > 0 && (
-        <div className="rounded-md border border-border/60 bg-background/80 p-3 text-xs">
-          <p className="text-muted-foreground">
-            {rateDate} 기준 자동 환산
-          </p>
-          <p className="mt-2 font-medium text-foreground">
-            {formatForeignAmount(fx.foreignMonthly, fx.currency)} →{" "}
-            {formatCurrency(fx.monthlyKrw)} /월
-          </p>
-        </div>
-      )}
-
-      {fx && fx.foreignMonthly > 0 && fx.exchangeRateToKrw <= 0 && !loading && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          환율 조회가 완료되면 원화로 환산됩니다.
-        </p>
-      )}
     </div>
   );
 }
-

@@ -14,11 +14,14 @@ import { cn } from "@/lib/utils";
 interface ReportingMonthNavProps {
   className?: string;
   showQuickMonths?: boolean;
+  /** 사이드바 등 좁은 영역 */
+  compact?: boolean;
 }
 
 export function ReportingMonthNav({
   className,
   showQuickMonths = true,
+  compact = false,
 }: ReportingMonthNavProps) {
   const { records, reportingMonth, setReportingMonth, hydrated } =
     useFinancial();
@@ -31,12 +34,20 @@ export function ReportingMonthNav({
   if (!hydrated) return null;
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex items-center gap-1">
+    <div className={cn("w-full min-w-0 space-y-3", className)}>
+      <div
+        className={cn(
+          "w-full items-center gap-1",
+          compact
+            ? "grid grid-cols-[2rem_minmax(0,1fr)_2rem]"
+            : "flex"
+        )}
+      >
         <Button
           type="button"
           variant="outline"
           size="icon-sm"
+          className={cn("shrink-0", compact && "h-8 w-8")}
           aria-label="이전 달"
           onClick={() =>
             setReportingMonth(shiftYearMonth(reportingMonth, -1))
@@ -45,17 +56,28 @@ export function ReportingMonthNav({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <div className="min-w-[8.5rem] flex-1 text-center sm:min-w-[10rem]">
-          <p className="text-sm font-semibold text-slate-900">
+        <div
+          className={cn(
+            "min-w-0 text-center",
+            !compact && "min-w-[8.5rem] flex-1 sm:min-w-[10rem]"
+          )}
+        >
+          <p
+            className={cn(
+              "truncate font-semibold text-slate-900",
+              compact ? "text-xs leading-tight" : "text-sm"
+            )}
+          >
             {formatPeriodLabel(reportingMonth)}
           </p>
-          <p className="text-[11px] text-slate-500">집계 기준 월</p>
+          <p className="truncate text-[11px] text-slate-500">집계 기준 월</p>
         </div>
 
         <Button
           type="button"
           variant="outline"
           size="icon-sm"
+          className={cn("shrink-0", compact && "h-8 w-8")}
           aria-label="다음 달"
           onClick={() =>
             setReportingMonth(shiftYearMonth(reportingMonth, 1))

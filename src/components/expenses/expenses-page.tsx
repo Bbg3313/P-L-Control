@@ -19,38 +19,42 @@ export function ExpensesPage() {
   );
   const otherTotal = monthExpenseRecords.reduce((sum, r) => sum + r.amount, 0);
   const grandTotal = otherTotal + personnelMonthlyTotal;
+  const allOtherTotal = allExpenseRecords.reduce((s, r) => s + r.amount, 0);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          기타 비용은 전체 목록을 유지합니다. ◀ ▶ 는 대시보드 집계 월·신규
-          저장 월만 바꿉니다.
-        </p>
+      <div className="sticky top-0 z-20 -mx-6 border-b border-slate-200/80 bg-slate-50/95 px-6 pb-4 backdrop-blur-sm lg:-mx-10 lg:px-10">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-6">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              기타 비용은 전체 목록을 유지합니다. ◀ ▶ 는 대시보드 집계 월·신규
+              저장 월만 바꿉니다.
+            </p>
+          </div>
+          <ReportingMonthNav className="w-full lg:justify-self-end" />
+        </div>
+
+        <Card size="sm" className="mt-4 border-slate-200/80 bg-white shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {formatPeriodLabel(reportingMonth)} 비용 총합
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 pt-0 sm:grid-cols-[auto_1fr] sm:items-baseline sm:gap-x-6">
+            <p className="text-2xl font-semibold tabular-nums">
+              {formatCurrency(grandTotal)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              인건비 {formatCurrency(personnelMonthlyTotal)}
+              <span className="mx-2 text-border">·</span>
+              기타 {formatCurrency(otherTotal)}
+              {monthExpenseRecords.length > 0 &&
+                ` (${monthExpenseRecords.length}건)`}
+            </p>
+          </CardContent>
+        </Card>
       </div>
-
-      <ReportingMonthNav className="max-w-md" />
-
-      <Card size="sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {formatPeriodLabel(reportingMonth)} 비용 총합
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-baseline gap-x-6 gap-y-1 pt-0">
-          <p className="text-2xl font-semibold tabular-nums">
-            {formatCurrency(grandTotal)}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            인건비 {formatCurrency(personnelMonthlyTotal)}
-            <span className="mx-2 text-border">·</span>
-            기타 {formatCurrency(otherTotal)}
-            {monthExpenseRecords.length > 0 &&
-              ` (${monthExpenseRecords.length}건)`}
-          </p>
-        </CardContent>
-      </Card>
 
       <div className="space-y-3">
         <CollapsibleExpenseCard
@@ -65,7 +69,7 @@ export function ExpensesPage() {
         <CollapsibleExpenseCard
           title="기타 비용"
           description={`전체 ${allExpenseRecords.length}건 · ${formatPeriodLabel(reportingMonth)} 합계 ${formatCurrency(otherTotal)}`}
-          amount={allExpenseRecords.reduce((s, r) => s + r.amount, 0)}
+          amount={allOtherTotal}
           meta={
             allExpenseRecords.length > 0
               ? `전체 ${allExpenseRecords.length}건`

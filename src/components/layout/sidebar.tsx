@@ -62,7 +62,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <ReportingMonthNav showQuickMonths={false} />
+        <ReportingMonthNav compact showQuickMonths={false} />
       </div>
     </aside>
   );
