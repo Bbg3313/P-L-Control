@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useFinancial } from "@/contexts/financial-context";
 import { getCategorySuggestions } from "@/lib/category-suggestions";
 import { parseAmountInput } from "@/lib/calculations";
+import { normalizeAmountInputString } from "@/lib/format";
 import type { TransactionType } from "@/lib/types";
 
 interface AddRecordDialogProps {
@@ -153,11 +154,14 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
               <Input
                 id="amount"
                 inputMode="numeric"
-                placeholder="예: 5000000"
+                placeholder="예: 5,000,000"
                 required
                 value={form.amount}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, amount: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    amount: normalizeAmountInputString(e.target.value),
+                  }))
                 }
               />
             </div>

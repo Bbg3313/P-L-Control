@@ -22,14 +22,14 @@ export function ExpensesPage() {
   const allOtherTotal = allExpenseRecords.reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="sticky top-0 z-20 -mx-6 border-b border-slate-200/80 bg-slate-50/95 px-6 pb-4 backdrop-blur-sm lg:-mx-10 lg:px-10">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* 상단 고정: 제목 · 월 선택 · 총합 */}
+      <div className="shrink-0 border-b border-slate-200/80 bg-slate-50 pb-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start lg:gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              기타 비용은 전체 목록을 유지합니다. ◀ ▶ 는 대시보드 집계 월·신규
-              저장 월만 바꿉니다.
+              아래만 스크롤됩니다. ◀ ▶ 로 집계·저장 월을 바꿉니다.
             </p>
           </div>
           <ReportingMonthNav className="w-full lg:justify-self-end" />
@@ -41,7 +41,7 @@ export function ExpensesPage() {
               {formatPeriodLabel(reportingMonth)} 비용 총합
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 pt-0 sm:grid-cols-[auto_1fr] sm:items-baseline sm:gap-x-6">
+          <CardContent className="grid gap-2 pt-0 sm:grid-cols-[auto_1fr] sm:items-baseline sm:gap-x-6">
             <p className="text-2xl font-semibold tabular-nums">
               {formatCurrency(grandTotal)}
             </p>
@@ -56,7 +56,8 @@ export function ExpensesPage() {
         </Card>
       </div>
 
-      <div className="space-y-3">
+      {/* 스크롤 영역 */}
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pt-4">
         <CollapsibleExpenseCard
           title="인건비"
           description={`고정 9명 · ${JUN_2026_INSURANCE_LABEL} 자동 계산 · 금액만 수정`}

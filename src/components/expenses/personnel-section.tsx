@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { useFinancial } from "@/contexts/financial-context";
 import { parseAmountInput } from "@/lib/calculations";
-import { formatCurrency } from "@/lib/format";
+import { formatAmountInputValue, formatCurrency } from "@/lib/format";
 import {
   getMonthlyNonTaxableAllowance,
   getPersonnelMonthlyCost,
@@ -28,6 +28,7 @@ import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import {
   OverseasPersonnelDetail,
   OverseasSalaryCell,
+  SALARY_INPUT_CLASS,
 } from "./overseas-personnel-fields";
 
 function updateEntry(
@@ -203,7 +204,7 @@ function PersonnelDataRow({
         <TableCell>
           <NameCell entry={entry} />
         </TableCell>
-        <TableCell>
+        <TableCell className="w-[5.25rem] max-w-[5.25rem]">
           {overseas && overseasCurrency ? (
             <OverseasSalaryCell
               entry={entry}
@@ -213,14 +214,10 @@ function PersonnelDataRow({
           ) : entry.inputMode === "direct" ? (
             <Input
               inputMode="numeric"
-              placeholder="월 비용"
-              className="h-8 w-full min-w-[7.5rem] tabular-nums"
+              placeholder="월"
+              className={SALARY_INPUT_CLASS}
               aria-label={`${entry.name} 월 비용`}
-              value={
-                entry.directMonthlyAmount > 0
-                  ? String(entry.directMonthlyAmount)
-                  : ""
-              }
+              value={formatAmountInputValue(entry.directMonthlyAmount)}
               onChange={(e) =>
                 onUpdate({
                   directMonthlyAmount: parseAmountInput(e.target.value),
@@ -231,9 +228,9 @@ function PersonnelDataRow({
             <Input
               inputMode="numeric"
               placeholder="연봉"
-              className="h-8 w-full min-w-[7.5rem] tabular-nums"
+              className={SALARY_INPUT_CLASS}
               aria-label={`${entry.name} 연봉`}
-              value={entry.salaryAmount > 0 ? String(entry.salaryAmount) : ""}
+              value={formatAmountInputValue(entry.salaryAmount)}
               onChange={(e) =>
                 onUpdate({
                   salaryAmount: parseAmountInput(e.target.value),
@@ -243,10 +240,10 @@ function PersonnelDataRow({
             />
           )}
         </TableCell>
-        <TableCell className="text-right tabular-nums text-muted-foreground">
+        <TableCell className="text-right tabular-nums text-xs text-muted-foreground sm:text-sm">
           {employerInsurance > 0 ? formatCurrency(employerInsurance) : "—"}
         </TableCell>
-        <TableCell className="text-right font-semibold tabular-nums">
+        <TableCell className="text-right text-sm font-semibold tabular-nums sm:text-base">
           {monthlyCost > 0 ? formatCurrency(monthlyCost) : "—"}
         </TableCell>
       </TableRow>
@@ -314,13 +311,13 @@ export function PersonnelSection() {
       </p>
 
       <div className="overflow-hidden rounded-lg border border-border/80">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-[28%]">이름</TableHead>
-              <TableHead>연봉 · 월급</TableHead>
+              <TableHead className="w-[22%]">이름</TableHead>
+              <TableHead className="w-[5.25rem]">연봉</TableHead>
               <TableHead className="text-right">회사 보험</TableHead>
-              <TableHead className="text-right">월 비용</TableHead>
+              <TableHead className="w-[26%] text-right">월 비용</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAutoExchangeRate } from "@/hooks/use-auto-exchange-rate";
 import { parseAmountInput } from "@/lib/calculations";
-import { formatCurrency } from "@/lib/format";
+import { formatAmountInputValue, formatCurrency } from "@/lib/format";
 import {
   calcOverseasMonthlyKrw,
   formatForeignAmount,
@@ -14,6 +14,10 @@ import {
   type OverseasCurrency,
 } from "@/lib/overseas-fx";
 import type { PersonnelEntry } from "@/lib/personnel";
+
+/** 연봉·월급 입력 — 고정 폭 */
+export const SALARY_INPUT_CLASS =
+  "h-8 w-[5.25rem] shrink-0 tabular-nums px-1.5 text-sm";
 
 interface OverseasSalaryCellProps {
   entry: PersonnelEntry;
@@ -34,30 +38,25 @@ export function OverseasSalaryCell({
       : entry.salaryAmount;
 
   return (
-    <div className="flex min-w-[7.5rem] items-center gap-1.5">
-      <Input
-        inputMode="numeric"
-        placeholder="0"
-        className="h-8 w-full min-w-0 tabular-nums"
-        aria-label={`${entry.name} 월급`}
-        value={amount > 0 ? String(amount) : ""}
-        onChange={(e) => {
-          const next = parseAmountInput(e.target.value);
-          if (entry.inputMode === "direct") {
-            onUpdate({ directMonthlyAmount: next });
-          } else {
-            onUpdate({
-              salaryAmount: next,
-              salaryBasis: "monthly",
-              inputMode: "salary",
-            });
-          }
-        }}
-      />
-      <span className="shrink-0 text-[11px] text-muted-foreground">
-        {currencyLabel}
-      </span>
-    </div>
+    <Input
+      inputMode="numeric"
+      placeholder={currency === "THB" ? "바트" : "동"}
+      className={SALARY_INPUT_CLASS}
+      aria-label={`${entry.name} 월급 (${currencyLabel})`}
+      value={formatAmountInputValue(amount)}
+      onChange={(e) => {
+        const next = parseAmountInput(e.target.value);
+        if (entry.inputMode === "direct") {
+          onUpdate({ directMonthlyAmount: next });
+        } else {
+          onUpdate({
+            salaryAmount: next,
+            salaryBasis: "monthly",
+            inputMode: "salary",
+          });
+        }
+      }}
+    />
   );
 }
 

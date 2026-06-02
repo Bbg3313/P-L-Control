@@ -17,7 +17,7 @@ export function RevenuePage() {
   const total = records.reduce((sum, r) => sum + r.amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pb-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">매출</h1>

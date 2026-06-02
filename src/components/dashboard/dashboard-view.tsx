@@ -25,7 +25,7 @@ export function DashboardView() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <p className="text-sm text-slate-500">데이터를 불러오는 중…</p>
       </div>
     );
@@ -56,7 +56,8 @@ export function DashboardView() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="mx-auto max-w-7xl space-y-6 pb-4">
       <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
@@ -105,6 +106,7 @@ export function DashboardView() {
           emptyMessage="이번 달 비용이 없습니다."
         />
       </section>
+    </div>
     </div>
   );
 }

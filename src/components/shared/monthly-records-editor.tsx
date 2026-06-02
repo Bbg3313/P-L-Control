@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { REVENUE_CATEGORY_SUGGESTIONS } from "@/lib/category-suggestions";
 import { formatPeriodLabel } from "@/lib/calculations";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, normalizeAmountInputString } from "@/lib/format";
 import {
   useMonthlyRecordsEditor,
   type MonthlyRecordKind,
@@ -172,7 +172,11 @@ export function MonthlyRecordsEditor({
               className="h-9 tabular-nums"
               disabled={!editMode}
               value={row.amount}
-              onChange={(e) => updateRow(row.key, { amount: e.target.value })}
+              onChange={(e) =>
+                updateRow(row.key, {
+                  amount: normalizeAmountInputString(e.target.value),
+                })
+              }
             />
             <Button
               type="button"

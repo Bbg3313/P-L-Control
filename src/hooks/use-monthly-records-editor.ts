@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFinancial } from "@/contexts/financial-context";
 import { parseAmountInput } from "@/lib/calculations";
+import { formatAmountInputValue } from "@/lib/format";
 import type { FinancialRecord, TransactionType } from "@/lib/types";
 
 export type MonthlyRecordKind = "revenue" | "expense";
@@ -44,7 +45,7 @@ function recordToRow(
       recordId: record.id,
       primary: record.client,
       secondary: record.category,
-      amount: record.amount > 0 ? String(record.amount) : "",
+      amount: formatAmountInputValue(record.amount),
       recordDate: record.date,
     };
   }
@@ -53,7 +54,7 @@ function recordToRow(
     recordId: record.id,
     primary: record.description || record.category,
     secondary: "",
-    amount: record.amount > 0 ? String(record.amount) : "",
+    amount: formatAmountInputValue(record.amount),
     recordDate: record.date,
   };
 }

@@ -7,7 +7,7 @@ export default function SettingsPage() {
   const { syncStatus, hydrated } = useFinancial();
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pb-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">설정</h1>
         <p className="mt-1 text-sm text-muted-foreground">
