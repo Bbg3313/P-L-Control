@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Card,
   CardContent,
@@ -25,7 +26,37 @@ interface SummaryCardsProps {
 }
 
 const cardShell =
-  "border-slate-200/80 bg-white shadow-sm ring-0 transition-shadow hover:shadow-md";
+  "flex h-full flex-col border-slate-200/80 bg-white shadow-sm ring-0 transition-shadow hover:shadow-md";
+
+const cardHeaderClass = "shrink-0 pb-1";
+const cardHeaderInnerClass = "min-h-[3.75rem]";
+const cardContentClass = "flex flex-1 flex-col pt-0";
+const amountRowClass = "flex min-h-9 items-end";
+const footerRowClass = "mt-2 min-h-5";
+
+function SummaryCardAmount({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={cn(amountRowClass, className)}>{children}</div>;
+}
+
+function SummaryCardFooter({
+  children,
+  className,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn(footerRowClass, className)}>
+      {children ?? <span className="block" aria-hidden />}
+    </div>
+  );
+}
 
 export function SummaryCards({ insights }: SummaryCardsProps) {
   const { metrics, revenueMom, expensesMom, netProfitMom } = insights;
@@ -34,8 +65,13 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <Card size="sm" className={cardShell}>
-        <CardHeader className="pb-1">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
                 총 매출
@@ -49,18 +85,27 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-2">
-          <CurrencyDisplay
-            amount={metrics.totalRevenue}
-            valueClassName="text-2xl font-semibold text-slate-900"
-          />
-          <MomBadge mom={revenueMom} />
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.totalRevenue}
+              valueClassName="text-2xl font-semibold text-slate-900"
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            <MomBadge mom={revenueMom} />
+          </SummaryCardFooter>
         </CardContent>
       </Card>
 
       <Card size="sm" className={cardShell}>
-        <CardHeader className="pb-1">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
                 부가세 (세액)
@@ -74,25 +119,36 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-2">
-          <CurrencyDisplay
-            amount={metrics.totalRevenueVat}
-            valueClassName="text-2xl font-semibold text-slate-900"
-          />
-          {metrics.totalRevenueVatIncludedCount > 0 ? (
-            <p className="text-xs text-slate-500">
-              계산서 {metrics.totalRevenueVatIncludedCount}건 · 합계{" "}
-              {formatCurrency(metrics.totalRevenueGross)}
-            </p>
-          ) : (
-            <p className="text-xs text-slate-500">계산서 발행 매출 없음</p>
-          )}
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.totalRevenueVat}
+              valueClassName="text-2xl font-semibold text-slate-900"
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            {metrics.totalRevenueVatIncludedCount > 0 ? (
+              <p className="block text-xs leading-5 text-slate-500">
+                계산서 {metrics.totalRevenueVatIncludedCount}건 · 합계{" "}
+                {formatCurrency(metrics.totalRevenueGross)}
+              </p>
+            ) : (
+              <p className="block text-xs leading-5 text-slate-500">
+                계산서 발행 매출 없음
+              </p>
+            )}
+          </SummaryCardFooter>
         </CardContent>
       </Card>
 
       <Card size="sm" className={cardShell}>
-        <CardHeader className="pb-1">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
                 총 비용
@@ -106,18 +162,27 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-2">
-          <CurrencyDisplay
-            amount={metrics.totalExpenses}
-            valueClassName="text-2xl font-semibold text-slate-900"
-          />
-          <MomBadge mom={expensesMom} invertColors />
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.totalExpenses}
+              valueClassName="text-2xl font-semibold text-slate-900"
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            <MomBadge mom={expensesMom} invertColors />
+          </SummaryCardFooter>
         </CardContent>
       </Card>
 
       <Card size="sm" className={cardShell}>
-        <CardHeader className="pb-1">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
                 순이익
@@ -144,15 +209,19 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-2">
-          <CurrencyDisplay
-            amount={metrics.netProfit}
-            valueClassName={cn(
-              "text-2xl font-semibold",
-              metrics.netProfit >= 0 ? "text-emerald-600" : "text-rose-500"
-            )}
-          />
-          <MomBadge mom={netProfitMom} />
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.netProfit}
+              valueClassName={cn(
+                "text-2xl font-semibold",
+                metrics.netProfit >= 0 ? "text-emerald-600" : "text-rose-500"
+              )}
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            <MomBadge mom={netProfitMom} />
+          </SummaryCardFooter>
         </CardContent>
       </Card>
 
@@ -163,8 +232,13 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
           capacityShortfall && "border-amber-200/90 bg-amber-50/40"
         )}
       >
-        <CardHeader className="pb-1">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
             <div className="space-y-1">
               <CardTitle
                 className={cn(
@@ -183,15 +257,20 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-2">
-          {capacityShortfall ? (
-            <p className="text-lg font-semibold text-amber-800">예비금 부족</p>
-          ) : (
-            <CurrencyDisplay
-              amount={metrics.investmentCapacity}
-              valueClassName="text-2xl font-semibold text-emerald-600"
-            />
-          )}
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            {capacityShortfall ? (
+              <p className="text-2xl font-semibold leading-none text-amber-800">
+                예비금 부족
+              </p>
+            ) : (
+              <CurrencyDisplay
+                amount={metrics.investmentCapacity}
+                valueClassName="text-2xl font-semibold text-emerald-600"
+              />
+            )}
+          </SummaryCardAmount>
+          <SummaryCardFooter />
         </CardContent>
       </Card>
     </div>
