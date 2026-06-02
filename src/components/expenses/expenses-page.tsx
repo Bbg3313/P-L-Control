@@ -3,13 +3,15 @@
 import { useMemo } from "react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
+import { ExpenseCategorySummary } from "@/components/expenses/expense-category-summary";
 import { PersonnelSection } from "@/components/expenses/personnel-section";
 import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor";
 import { PeriodTotalCard } from "@/components/shared/period-total-card";
 import { useFinancial } from "@/contexts/financial-context";
 import { ENTITY_PURCHASE_LABEL } from "@/lib/brand";
+import { OFFICE_MANAGEMENT_GROUP } from "@/lib/expense-category-groups";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
-import { formatPeriodLabel } from "@/lib/calculations";
+import { formatPeriodLabel, getOtherExpenseBreakdown } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import { summarizeExpenseVat, summarizeVatSettlement } from "@/lib/vat";
 
@@ -35,6 +37,16 @@ export function ExpensesPage() {
   );
   const otherTotal = expenseVat.supplyTotal;
   const grandTotal = otherTotal + personnelMonthlyTotal;
+  const categoryBreakdown = useMemo(
+    () => getOtherExpenseBreakdown(allExpenseRecords, reportingMonth),
+    [allExpenseRecords, reportingMonth]
+  );
+  const officeManagementTotal = useMemo(
+    () =>
+      categoryBreakdown.find((item) => item.category === OFFICE_MANAGEMENT_GROUP)
+        ?.amount ?? 0,
+    [categoryBreakdown]
+  );
   const allOtherTotal = useMemo(
     () => summarizeExpenseVat(allExpenseRecords).supplyTotal,
     [allExpenseRecords]
@@ -72,6 +84,13 @@ export function ExpensesPage() {
                 인건비 {formatCurrency(personnelMonthlyTotal)}
                 <span className="mx-1 opacity-60">·</span>
                 기타 {formatCurrency(otherTotal)}
+                {officeManagementTotal > 0 && (
+                  <>
+                    <span className="mx-1 opacity-60">·</span>
+                    {OFFICE_MANAGEMENT_GROUP}{" "}
+                    {formatCurrency(officeManagementTotal)}
+                  </>
+                )}
               </p>
             </>
           }
@@ -104,6 +123,10 @@ export function ExpensesPage() {
           }
           defaultOpen
         >
+          <ExpenseCategorySummary
+            periodLabel={formatPeriodLabel(reportingMonth)}
+            items={categoryBreakdown}
+          />
           <MonthlyRecordsEditor
             kind="expense"
             records={allExpenseRecords}

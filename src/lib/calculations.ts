@@ -14,6 +14,7 @@ import {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
 } from "./constants";
+import { getExpenseDisplayCategory } from "./expense-category-groups";
 import { getRevenueDetailCategoryLabel } from "./revenue-detail-categories";
 import {
   getExpenseSupplyAmount,
@@ -449,6 +450,35 @@ export function getDashboardInsights(
   };
 }
 
+export function getOtherExpenseBreakdown(
+  records: FinancialRecord[],
+  yearMonth: string
+): ExpenseBreakdownItem[] {
+  const totals = new Map<string, number>();
+
+  for (const record of records) {
+    if (record.type !== "expense") continue;
+    if (parseYearMonth(record.date) !== yearMonth) continue;
+
+    const raw =
+      record.category.trim() ||
+      record.description.trim() ||
+      "기타 비용";
+    const label = getExpenseDisplayCategory(raw);
+    totals.set(label, (totals.get(label) ?? 0) + getExpenseSupplyAmount(record));
+  }
+
+  const grandTotal = Array.from(totals.values()).reduce((sum, n) => sum + n, 0);
+
+  return Array.from(totals.entries())
+    .map(([category, amount]) => ({
+      category,
+      amount,
+      share: grandTotal > 0 ? amount / grandTotal : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
 export function getExpenseBreakdown(
   records: FinancialRecord[],
   yearMonth: string,
@@ -464,10 +494,11 @@ export function getExpenseBreakdown(
     if (record.type !== "expense") continue;
     if (parseYearMonth(record.date) !== yearMonth) continue;
 
-    const label =
+    const raw =
       record.category.trim() ||
       record.description.trim() ||
       "기타 비용";
+    const label = getExpenseDisplayCategory(raw);
     totals.set(label, (totals.get(label) ?? 0) + getExpenseSupplyAmount(record));
   }
 
