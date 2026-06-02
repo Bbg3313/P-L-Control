@@ -132,7 +132,9 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
   }
 
   const columns = detectColumns(matrix[headerIndex]);
-  const missing = (["date", "client", "category", "amount"] as const).filter(
+  const missing = (
+    ["date", "client", "detailCategory", "category", "amount"] as const
+  ).filter(
     (key) => columns[key] === undefined
   );
 
@@ -149,7 +151,7 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
       errors: [
         {
           row: headerIndex + 1,
-          message: `필수 열이 없습니다: ${missing.map((k) => labels[k]).join(", ")}. 첫 행에 날짜·매출처·카테고리·금액 헤더를 넣어 주세요.`,
+          message: `필수 열이 없습니다: ${missing.map((k) => labels[k]).join(", ")}. 첫 행에 날짜·매출처·상세 카테고리·카테고리·금액 헤더를 넣어 주세요.`,
         },
       ],
     };
@@ -167,10 +169,7 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
     const date = parseDateCell(row[columns.date!]);
     const client = String(row[columns.client!] ?? "").trim();
     const category = String(row[columns.category!] ?? "").trim();
-    const detailRaw =
-      columns.detailCategory !== undefined
-        ? String(row[columns.detailCategory] ?? "").trim()
-        : "";
+    const detailRaw = String(row[columns.detailCategory!] ?? "").trim();
     const detailCategory = normalizeRevenueDetailCategory(detailRaw);
     const amount = parseAmountCell(row[columns.amount!]);
 
@@ -184,6 +183,10 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
     }
     if (!category) {
       errors.push({ row: excelRow, message: "카테고리가 비어 있습니다." });
+      continue;
+    }
+    if (!detailRaw) {
+      errors.push({ row: excelRow, message: "상세 카테고리가 비어 있습니다." });
       continue;
     }
     if (amount <= 0) {
@@ -209,6 +212,7 @@ export function buildRevenueTemplateCsv(): string {
   const bom = "\uFEFF";
   const sample = [
     ["2026-06-15", "예시 거래처", "화장품", "대행 수수료", "5000000"],
+    ["2026-06-20", "예시 병원", "병원", "광고 집행", "3500000"],
   ];
   const lines = [
     REVENUE_TEMPLATE_HEADERS.join(","),

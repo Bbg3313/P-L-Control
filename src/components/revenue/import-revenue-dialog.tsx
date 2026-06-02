@@ -119,6 +119,9 @@ export function ImportRevenueDialog() {
             업로드하세요. 선택한 월(
             <strong>{formatPeriodLabel(reportingMonth)}</strong>)에 모두
             등록됩니다. (.xlsx, .xls, .csv)
+            <br />
+            상세 카테고리는 <strong>화장품 / 병원 / 기타 / 한약</strong> 중 하나로
+            입력해 주세요.
           </DialogDescription>
         </DialogHeader>
 
