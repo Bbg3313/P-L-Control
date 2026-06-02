@@ -117,26 +117,26 @@ export function PersonnelCard({ entry, onUpdate }: PersonnelCardProps) {
   const salaryLabel = overseas ? "월급" : entry.inputMode === "direct" ? "월비용" : "연봉";
 
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/[0.03] transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
-        <div className="min-w-0">
+    <article className="min-w-0 w-full rounded-xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/[0.03] transition-shadow hover:shadow-md">
+      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold tracking-tight text-slate-900">
             {entry.name}
           </h3>
           <PersonnelBadges entry={entry} />
         </div>
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 sm:text-right">
           <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
             월 비용
           </p>
-          <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900 sm:text-xl">
+          <p className="mt-0.5 text-base font-bold tabular-nums text-slate-900 sm:text-lg">
             {monthlyCost > 0 ? formatCurrency(monthlyCost) : "—"}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 bg-gradient-to-r from-slate-50/80 to-white px-4 py-3 sm:px-5">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+      <div className="flex flex-col gap-2 border-t border-slate-100 bg-gradient-to-r from-slate-50/80 to-white px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5 sm:flex-1">
           <span className="w-11 shrink-0 text-xs font-medium text-slate-500">
             {salaryLabel}
           </span>

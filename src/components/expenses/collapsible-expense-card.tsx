@@ -26,10 +26,10 @@ export function CollapsibleExpenseCard({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="min-w-0 !overflow-visible">
       <button
         type="button"
-        className="flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:items-center sm:px-6"
+        className="flex w-full min-w-0 items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:items-center sm:px-6"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
       >
@@ -41,13 +41,13 @@ export function CollapsibleExpenseCard({
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-base font-semibold">{title}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             </div>
-            <div className="shrink-0 sm:text-right">
-              <p className="text-xl font-semibold tabular-nums sm:text-2xl">
+            <div className="min-w-0 sm:shrink-0 sm:text-right">
+              <p className="text-lg font-semibold tabular-nums sm:text-2xl">
                 {formatCurrency(amount)}
               </p>
               {meta && (
@@ -59,7 +59,9 @@ export function CollapsibleExpenseCard({
       </button>
 
       {open && (
-        <CardContent className="border-t border-border/60 pt-4">{children}</CardContent>
+        <CardContent className="min-w-0 overflow-visible border-t border-border/60 px-4 pt-4 sm:px-6">
+          {children}
+        </CardContent>
       )}
     </Card>
   );

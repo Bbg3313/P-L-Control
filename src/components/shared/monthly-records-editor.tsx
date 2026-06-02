@@ -28,6 +28,7 @@ const CONFIG: Record<
     secondaryLabel?: string;
     secondaryPlaceholder?: string;
     gridClass: string;
+    gridClassWithMonth: string;
   }
 > = {
   revenue: {
@@ -35,12 +36,18 @@ const CONFIG: Record<
     primaryPlaceholder: "예: OO브랜드",
     secondaryLabel: "카테고리",
     secondaryPlaceholder: "예: 대행 수수료",
-    gridClass: "sm:grid-cols-[1fr_1fr_minmax(9rem,11rem)_40px]",
+    gridClass:
+      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
+    gridClassWithMonth:
+      "grid-cols-1 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
   },
   expense: {
     primaryLabel: "비용 항목",
     primaryPlaceholder: "예: 사무실비, 광고비",
-    gridClass: "sm:grid-cols-[88px_minmax(0,1fr)_minmax(9rem,11rem)_40px]",
+    gridClass:
+      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
+    gridClassWithMonth:
+      "grid-cols-1 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
   },
 };
 
@@ -51,6 +58,7 @@ export function MonthlyRecordsEditor({
   showRecordMonth = false,
 }: MonthlyRecordsEditorProps) {
   const config = CONFIG[kind];
+  const gridClass = showRecordMonth ? config.gridClassWithMonth : config.gridClass;
   const {
     reportingMonth,
     hydrated,
@@ -77,7 +85,7 @@ export function MonthlyRecordsEditor({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {showRecordMonth ? (
@@ -117,9 +125,9 @@ export function MonthlyRecordsEditor({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-2">
         <div
-          className={`hidden gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid ${config.gridClass}`}
+          className={`hidden gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid ${gridClass}`}
         >
           {showRecordMonth && <span>적용 월</span>}
           <span>{config.primaryLabel}</span>
@@ -131,7 +139,7 @@ export function MonthlyRecordsEditor({
         {rows.map((row) => (
           <div
             key={row.key}
-            className={`grid gap-2 sm:items-center ${config.gridClass}`}
+            className={`grid min-w-0 gap-2 sm:items-center ${gridClass}`}
           >
             {showRecordMonth && (
               <span className="px-1 text-xs text-muted-foreground sm:text-sm">
@@ -142,7 +150,7 @@ export function MonthlyRecordsEditor({
             )}
             <Input
               placeholder={config.primaryPlaceholder}
-              className="h-9"
+              className="h-9 min-w-0"
               disabled={!editMode}
               value={row.primary}
               onChange={(e) => updateRow(row.key, { primary: e.target.value })}
@@ -151,7 +159,7 @@ export function MonthlyRecordsEditor({
               <>
                 <Input
                   placeholder={config.secondaryPlaceholder}
-                  className="h-9"
+                  className="h-9 min-w-0"
                   disabled={!editMode}
                   list="revenue-category-suggestions"
                   value={row.secondary}
@@ -169,7 +177,7 @@ export function MonthlyRecordsEditor({
             <Input
               inputMode="numeric"
               placeholder="0"
-              className="h-9 tabular-nums"
+              className="h-9 min-w-0 tabular-nums"
               disabled={!editMode}
               value={row.amount}
               onChange={(e) =>

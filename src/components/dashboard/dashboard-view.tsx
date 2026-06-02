@@ -56,7 +56,7 @@ export function DashboardView() {
   );
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
     <div className="mx-auto max-w-7xl space-y-6 pb-4">
       <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div>

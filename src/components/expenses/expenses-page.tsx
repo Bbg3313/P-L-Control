@@ -22,14 +22,14 @@ export function ExpensesPage() {
   const allOtherTotal = allExpenseRecords.reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* 상단 고정: 제목 · 월 선택 · 총합 */}
-      <div className="shrink-0 border-b border-slate-200/80 bg-slate-50 pb-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+      {/* 스크롤해도 상단 고정 — 음수 마진 없음(좌우 잘림 방지) */}
+      <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start lg:gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              아래만 스크롤됩니다. ◀ ▶ 로 집계·저장 월을 바꿉니다.
+              ◀ ▶ 로 집계·저장 월을 바꿉니다.
             </p>
           </div>
           <ReportingMonthNav className="w-full lg:justify-self-end" />
@@ -41,11 +41,11 @@ export function ExpensesPage() {
               {formatPeriodLabel(reportingMonth)} 비용 총합
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2 pt-0 sm:grid-cols-[auto_1fr] sm:items-baseline sm:gap-x-6">
-            <p className="text-2xl font-semibold tabular-nums">
+          <CardContent className="flex flex-col gap-2 pt-0 sm:flex-row sm:items-baseline sm:gap-x-6">
+            <p className="shrink-0 text-2xl font-semibold tabular-nums">
               {formatCurrency(grandTotal)}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="min-w-0 text-sm leading-relaxed text-muted-foreground">
               인건비 {formatCurrency(personnelMonthlyTotal)}
               <span className="mx-2 text-border">·</span>
               기타 {formatCurrency(otherTotal)}
@@ -54,10 +54,9 @@ export function ExpensesPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </header>
 
-      {/* 스크롤 영역 */}
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pt-4">
+      <div className="min-w-0 space-y-3 pb-4 pt-4">
         <CollapsibleExpenseCard
           title="인건비"
           description={`고정 9명 · ${JUN_2026_INSURANCE_LABEL} 자동 계산 · 금액만 수정`}

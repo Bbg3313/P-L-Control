@@ -30,7 +30,7 @@ function PersonnelGroup({
       <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
         {label}
       </h3>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
         {entries.map((entry) => (
           <PersonnelCard
             key={entry.id}
@@ -73,7 +73,7 @@ export function PersonnelSection() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <p className="text-sm text-slate-500">
         연봉·월급만 입력하면 월 비용이 자동 계산됩니다. 카드 하단에서 상세를
         펼칠 수 있습니다.
