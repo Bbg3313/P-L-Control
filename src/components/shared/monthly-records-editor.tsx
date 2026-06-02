@@ -7,11 +7,17 @@ import { REVENUE_CATEGORY_SUGGESTIONS } from "@/lib/category-suggestions";
 import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency, normalizeAmountInputString } from "@/lib/format";
 import {
+  PeriodTotalBar,
+  periodTotalAmountClass,
+  periodTotalTextClass,
+} from "@/components/shared/period-total-card";
+import {
   useMonthlyRecordsEditor,
   type MonthlyRecordKind,
   type MonthlyRecordsEditorOptions,
 } from "@/hooks/use-monthly-records-editor";
 import type { FinancialRecord } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface MonthlyRecordsEditorProps {
   kind: MonthlyRecordKind;
@@ -255,23 +261,25 @@ export function MonthlyRecordsEditor({
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+      <PeriodTotalBar variant={kind}>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">
+            <p className={cn("text-sm", periodTotalTextClass(kind))}>
               {showRecordMonth ? "목록 합계" : formatPeriodLabel(reportingMonth)} ·{" "}
-              <span className="font-medium text-foreground">
+              <span className={periodTotalAmountClass(kind)}>
                 {formatCurrency(draftTotal)}
               </span>
-              <span className="ml-1 text-xs">
+              <span className="ml-1 text-xs font-normal opacity-80">
                 ({kind === "revenue" ? "매출" : "비용"})
               </span>
               {!editMode && recordsCount > 0 && (
-                <span className="ml-2">· 저장 {recordsCount}건</span>
+                <span className="ml-2 font-normal opacity-80">
+                  · 저장 {recordsCount}건
+                </span>
               )}
             </p>
             {draftVatSummary && draftVatSummary.vatTotal > 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className={cn("text-xs", periodTotalTextClass(kind))}>
                 계산서 {draftVatSummary.vatIncludedCount}건 ·{" "}
                 {kind === "revenue" ? "매출" : "매입"}세액{" "}
                 {formatCurrency(draftVatSummary.vatTotal)}
@@ -289,7 +297,7 @@ export function MonthlyRecordsEditor({
             </p>
           )}
         </div>
-      </div>
+      </PeriodTotalBar>
     </div>
   );
 }

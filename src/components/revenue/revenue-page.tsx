@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
 import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor";
+import { PeriodTotalCard } from "@/components/shared/period-total-card";
 import { useFinancial } from "@/contexts/financial-context";
 import { ENTITY_REVENUE_LABEL } from "@/lib/brand";
 import { formatPeriodLabel } from "@/lib/calculations";
@@ -40,32 +40,21 @@ export function RevenuePage() {
           <ReportingMonthNav className="w-full lg:justify-self-end" />
         </div>
 
-        <Card
-          size="sm"
-          className="mt-4 box-border w-full max-w-full border-slate-200/80 bg-white shadow-sm ring-0"
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {formatPeriodLabel(reportingMonth)} 매출 합계
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-1 pt-0 sm:flex-row sm:items-baseline sm:gap-x-4">
-            <div>
-              <p className="shrink-0 text-2xl font-semibold tabular-nums">
-                {formatCurrency(total)}
-              </p>
-              {vatSummary.vatTotal > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  계산서 {vatSummary.vatIncludedCount}건 · 매출세액{" "}
-                  {formatCurrency(vatSummary.vatTotal)}
-                </p>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {records.length > 0 ? `${records.length}건` : "미등록"}
-            </p>
-          </CardContent>
-        </Card>
+        <PeriodTotalCard
+          variant="revenue"
+          className="mt-4"
+          title={`${formatPeriodLabel(reportingMonth)} 매출 합계`}
+          amount={formatCurrency(total)}
+          footer={
+            vatSummary.vatTotal > 0 ? (
+              <>
+                계산서 {vatSummary.vatIncludedCount}건 · 매출세액{" "}
+                {formatCurrency(vatSummary.vatTotal)}
+              </>
+            ) : undefined
+          }
+          meta={records.length > 0 ? `${records.length}건` : "미등록"}
+        />
       </header>
 
       <div className="w-full max-w-full space-y-3 pb-4 pt-4">
