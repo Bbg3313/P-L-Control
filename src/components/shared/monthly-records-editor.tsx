@@ -185,9 +185,11 @@ export function MonthlyRecordsEditor({
           >
             {showRecordMonth && (
               <span className="whitespace-nowrap px-1 text-xs text-muted-foreground sm:text-sm">
-                {row.recordDate
-                  ? formatPeriodLabel(row.recordDate.slice(0, 7))
-                  : formatPeriodLabel(reportingMonth)}
+                {kind === "revenue"
+                  ? formatPeriodLabel(reportingMonth)
+                  : row.recordDate
+                    ? formatPeriodLabel(row.recordDate.slice(0, 7))
+                    : formatPeriodLabel(reportingMonth)}
               </span>
             )}
             <Input
