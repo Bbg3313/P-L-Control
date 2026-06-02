@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { CurrencyDisplay } from "@/components/dashboard/currency-display";
 import { MomBadge } from "@/components/dashboard/mom-badge";
+import { formatCurrency } from "@/lib/format";
 import type { DashboardInsights } from "@/lib/types";
 import {
   TrendingUp,
@@ -39,7 +40,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
                 총 매출
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                {metrics.periodLabel}
+                공급가액 · {metrics.periodLabel}
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10">
@@ -52,6 +53,12 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
             amount={metrics.totalRevenue}
             valueClassName="text-2xl font-semibold text-slate-900"
           />
+          {metrics.totalRevenueVat > 0 && (
+            <p className="text-xs text-slate-500">
+              부가세 {formatCurrency(metrics.totalRevenueVat)} · 합계{" "}
+              {formatCurrency(metrics.totalRevenueGross)}
+            </p>
+          )}
           <MomBadge mom={revenueMom} />
         </CardContent>
       </Card>

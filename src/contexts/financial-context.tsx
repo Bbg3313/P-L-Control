@@ -41,6 +41,8 @@ export interface NewFinancialRecord {
   description?: string;
   amount: number;
   type: TransactionType;
+  /** 매출만 — true면 입력 금액이 부가세 포함 합계 */
+  amountIncludesVat?: boolean;
 }
 
 export type DataSyncStatus = "loading" | "cloud" | "local-only" | "error";
@@ -216,6 +218,9 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
           description: (input.description ?? "").trim(),
           amount: input.amount,
           type: input.type,
+          ...(input.type === "revenue"
+            ? { amountIncludesVat: input.amountIncludesVat ?? false }
+            : {}),
         },
       ])[0],
     []
@@ -258,6 +263,14 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
                   : r.description,
               amount: input.amount ?? r.amount,
               type: input.type ?? r.type,
+              ...(r.type === "revenue" || input.type === "revenue"
+                ? {
+                    amountIncludesVat:
+                      input.amountIncludesVat !== undefined
+                        ? input.amountIncludesVat
+                        : r.amountIncludesVat,
+                  }
+                : {}),
             },
           ])[0];
         })

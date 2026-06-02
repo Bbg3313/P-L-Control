@@ -29,6 +29,7 @@ const emptyForm = () => ({
   category: "",
   description: "",
   amount: "",
+  amountIncludesVat: false,
 });
 
 export function AddRecordDialog({ type }: AddRecordDialogProps) {
@@ -71,6 +72,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
       description,
       amount,
       type,
+      ...(type === "revenue" ? { amountIncludesVat: form.amountIncludesVat } : {}),
     });
 
     setForm(emptyForm());
@@ -151,6 +153,30 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
 
             <div className="grid gap-2">
               <Label htmlFor="amount">금액 (원)</Label>
+              {!isExpense && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={form.amountIncludesVat ? "outline" : "default"}
+                    size="sm"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, amountIncludesVat: false }))
+                    }
+                  >
+                    부가세 미포함
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={form.amountIncludesVat ? "default" : "outline"}
+                    size="sm"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, amountIncludesVat: true }))
+                    }
+                  >
+                    부가세 포함
+                  </Button>
+                </div>
+              )}
               <Input
                 id="amount"
                 inputMode="numeric"

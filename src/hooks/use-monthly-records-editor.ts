@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFinancial } from "@/contexts/financial-context";
 import { parseAmountInput } from "@/lib/calculations";
 import { formatAmountInputValue } from "@/lib/format";
+import type { RevenueVatSummary } from "@/lib/vat";
+import { splitRevenueAmount } from "@/lib/vat";
 import type { FinancialRecord, TransactionType } from "@/lib/types";
 
 export type MonthlyRecordKind = "revenue" | "expense";
@@ -14,6 +16,8 @@ export interface MonthlyEditorRow {
   primary: string;
   secondary: string;
   amount: string;
+  /** 매출: 입력 금액이 부가세 포함인지 */
+  amountIncludesVat: boolean;
   /** 기존 행의 저장 날짜 (YYYY-MM-DD) */
   recordDate?: string;
 }
@@ -25,13 +29,14 @@ export interface MonthlyRecordsEditorOptions {
   preserveRecordDates?: boolean;
 }
 
-function emptyRow(): MonthlyEditorRow {
+function emptyRow(amountIncludesVat = false): MonthlyEditorRow {
   return {
     key: crypto.randomUUID(),
     recordId: null,
     primary: "",
     secondary: "",
     amount: "",
+    amountIncludesVat,
   };
 }
 
@@ -46,6 +51,7 @@ function recordToRow(
       primary: record.client,
       secondary: record.category,
       amount: formatAmountInputValue(record.amount),
+      amountIncludesVat: record.amountIncludesVat ?? false,
       recordDate: record.date,
     };
   }
@@ -55,6 +61,7 @@ function recordToRow(
     primary: record.description || record.category,
     secondary: "",
     amount: formatAmountInputValue(record.amount),
+    amountIncludesVat: false,
     recordDate: record.date,
   };
 }
@@ -87,6 +94,7 @@ export function useMonthlyRecordsEditor(
   const applyDate = `${reportingMonth}-01`;
 
   const [editMode, setEditMode] = useState(false);
+  const [defaultAmountIncludesVat, setDefaultAmountIncludesVat] = useState(false);
   const [rows, setRows] = useState<MonthlyEditorRow[]>([emptyRow()]);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -104,7 +112,9 @@ export function useMonthlyRecordsEditor(
   const recordsSignature = useMemo(
     () =>
       records
-        .map((r) => `${r.id}|${r.date}|${r.client}|${r.category}|${r.description}|${r.amount}`)
+        .map((r) =>
+          `${r.id}|${r.date}|${r.client}|${r.category}|${r.description}|${r.amount}|${r.amountIncludesVat ?? false}`
+        )
         .join(";;"),
     [records]
   );
@@ -140,16 +150,38 @@ export function useMonthlyRecordsEditor(
         const primary = row.primary.trim();
         if (kind === "revenue") {
           const category = row.secondary.trim();
-          return sum + (primary && category && amount > 0 ? amount : 0);
+          if (!primary || !category || amount <= 0) return sum;
+          return (
+            sum +
+            splitRevenueAmount(amount, row.amountIncludesVat).supply
+          );
         }
-        return sum + (primary && amount > 0 ? amount : 0);
+        return primary && amount > 0 ? sum + amount : sum;
       }, 0),
     [rows, kind]
   );
 
+  const draftVatSummary = useMemo((): RevenueVatSummary | null => {
+    if (kind !== "revenue") return null;
+    let supplyTotal = 0;
+    let vatTotal = 0;
+    let grossTotal = 0;
+    for (const row of rows) {
+      const amount = parseAmountInput(row.amount);
+      const primary = row.primary.trim();
+      const category = row.secondary.trim();
+      if (!primary || !category || amount <= 0) continue;
+      const parts = splitRevenueAmount(amount, row.amountIncludesVat);
+      supplyTotal += parts.supply;
+      vatTotal += parts.vat;
+      grossTotal += parts.gross;
+    }
+    return { supplyTotal, vatTotal, grossTotal };
+  }, [rows, kind]);
+
   function handleAddRow() {
     if (!editMode) setEditMode(true);
-    setRows((prev) => [...prev, emptyRow()]);
+    setRows((prev) => [...prev, emptyRow(defaultAmountIncludesVat)]);
   }
 
   function handleRemoveRow(key: string, recordId: string | null) {
@@ -210,6 +242,7 @@ export function useMonthlyRecordsEditor(
             category,
             amount,
             type: recordType,
+            amountIncludesVat: row.amountIncludesVat,
           });
           savedCount += 1;
         } else if (!row.recordId) {
@@ -219,6 +252,7 @@ export function useMonthlyRecordsEditor(
             category,
             amount,
             type: recordType,
+            amountIncludesVat: row.amountIncludesVat,
           });
           savedCount += 1;
         }
@@ -285,6 +319,9 @@ export function useMonthlyRecordsEditor(
     editMode,
     rows,
     draftTotal,
+    draftVatSummary,
+    defaultAmountIncludesVat,
+    setDefaultAmountIncludesVat,
     message,
     error,
     handleAddRow,

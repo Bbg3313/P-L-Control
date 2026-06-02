@@ -1,11 +1,13 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { APP_LOGO_ALT, APP_LOGO_SRC, APP_NAME } from "@/lib/brand";
 
 function LoginForm() {
   const router = useRouter();
@@ -47,7 +49,17 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">P&amp;L Control</CardTitle>
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center">
+            <Image
+              src={APP_LOGO_SRC}
+              alt={APP_LOGO_ALT}
+              width={64}
+              height={64}
+              className="h-16 w-16 object-contain"
+              priority
+            />
+          </div>
+          <CardTitle className="text-lg leading-snug">{APP_NAME}</CardTitle>
           <p className="text-sm text-muted-foreground">
             손익 데이터 보호를 위해 비밀번호를 입력하세요.
           </p>

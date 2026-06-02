@@ -10,6 +10,8 @@ export interface FinancialRecord {
   description: string;
   amount: number;
   type: TransactionType;
+  /** 매출만 — 입력 금액이 부가세 포함(합계)인지 */
+  amountIncludesVat?: boolean;
 }
 
 export interface MonthlyTotals {
@@ -19,7 +21,10 @@ export interface MonthlyTotals {
 }
 
 export interface DashboardMetrics {
+  /** 매출 공급가액 (부가세 제외) */
   totalRevenue: number;
+  totalRevenueVat: number;
+  totalRevenueGross: number;
   totalExpenses: number;
   netProfit: number;
   investmentCapacity: number;
@@ -60,4 +65,22 @@ export interface DashboardInsights {
   ytdNetProfit: number;
   ytdThroughLabel: string;
   summaryLine: string;
+}
+
+/** 집계 월 실적을 바탕으로 한 다음 달 매출 전망 */
+export interface NextMonthRevenueForecast {
+  baseMonth: string;
+  baseMonthLabel: string;
+  targetMonth: string;
+  targetMonthLabel: string;
+  /** 기준 월(예: 5월) 실적 매출 */
+  baseRevenue: number;
+  /** 다음 달 예상 매출 — 기준 월과 동일 전망 */
+  forecastRevenue: number;
+  /** 다음 달에 이미 등록된 매출 */
+  actualRevenueInTarget: number;
+  /** 기준 월 비용 수준 가정 시 예상 순이익 */
+  projectedNetProfit: number;
+  baseExpenses: number;
+  topClients: BreakdownItem[];
 }

@@ -6,6 +6,7 @@ import type {
   FinancialRecord,
   MonthOverMonth,
   MonthlyTotals,
+  NextMonthRevenueForecast,
   TransactionType,
 } from "./types";
 import {
@@ -13,6 +14,7 @@ import {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
 } from "./constants";
+import { getRevenueSupplyAmount, splitRevenueAmount, summarizeRevenueVat } from "./vat";
 
 export {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
@@ -30,7 +32,12 @@ function sumByMonth(
 ): number {
   return records
     .filter((r) => r.type === type && parseYearMonth(r.date) === yearMonth)
-    .reduce((sum, r) => sum + r.amount, 0);
+    .reduce(
+      (sum, r) =>
+        sum +
+        (type === "revenue" ? getRevenueSupplyAmount(r) : r.amount),
+      0
+    );
 }
 
 export function getCurrentYearMonth(date = new Date()): string {
@@ -278,7 +285,11 @@ export function getRevenueBreakdown(
       record.client.trim() ||
       record.category.trim() ||
       "미지정 매출처";
-    totals.set(label, (totals.get(label) ?? 0) + record.amount);
+    const supply = splitRevenueAmount(
+      record.amount,
+      record.amountIncludesVat ?? false
+    ).supply;
+    totals.set(label, (totals.get(label) ?? 0) + supply);
   }
 
   const sorted = Array.from(totals.entries())
@@ -299,6 +310,38 @@ export function getRevenueBreakdown(
     amount,
     share: grandTotal > 0 ? amount / grandTotal : 0,
   }));
+}
+
+/**
+ * 다음 달 예상 매출 — 집계 월(예: 5월) 실적을 그대로 전월 전망.
+ * 비용은 기준 월 수준으로 가정해 예상 순이익도 함께 산출.
+ */
+export function getNextMonthRevenueForecast(
+  records: FinancialRecord[],
+  baseMonth: string,
+  personnelMonthly = 0
+): NextMonthRevenueForecast {
+  const targetMonth = shiftYearMonth(baseMonth, 1);
+  const baseRevenue = sumByMonth(records, baseMonth, "revenue");
+  const baseExpenses = getMonthlyOperatingBurn(
+    records,
+    baseMonth,
+    personnelMonthly
+  );
+  const actualRevenueInTarget = sumByMonth(records, targetMonth, "revenue");
+
+  return {
+    baseMonth,
+    baseMonthLabel: formatPeriodLabel(baseMonth),
+    targetMonth,
+    targetMonthLabel: formatPeriodLabel(targetMonth),
+    baseRevenue,
+    forecastRevenue: baseRevenue,
+    actualRevenueInTarget,
+    projectedNetProfit: baseRevenue - baseExpenses,
+    baseExpenses,
+    topClients: getRevenueBreakdown(records, baseMonth, 5),
+  };
 }
 
 function buildSummaryLine(
@@ -443,7 +486,8 @@ export function getDashboardMetrics(
   yearMonth: string,
   personnelMonthly = 0
 ): DashboardMetrics {
-  const totalRevenue = sumByMonth(records, yearMonth, "revenue");
+  const revenueVat = summarizeRevenueVat(records, yearMonth);
+  const totalRevenue = revenueVat.supplyTotal;
   const totalExpenses = getMonthlyOperatingBurn(
     records,
     yearMonth,
@@ -464,6 +508,8 @@ export function getDashboardMetrics(
 
   return {
     totalRevenue,
+    totalRevenueVat: revenueVat.vatTotal,
+    totalRevenueGross: revenueVat.grossTotal,
     totalExpenses,
     netProfit,
     investmentCapacity,

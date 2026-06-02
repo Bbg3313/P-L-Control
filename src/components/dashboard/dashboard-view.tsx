@@ -5,6 +5,7 @@ import { ExecutiveBanner } from "@/components/dashboard/executive-banner";
 import { KpiStrip } from "@/components/dashboard/kpi-strip";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
+import { RevenueForecastCard } from "@/components/dashboard/revenue-forecast-card";
 import { RevenueExpenseChart } from "@/components/dashboard/revenue-expense-chart";
 import { useFinancial } from "@/contexts/financial-context";
 import {
@@ -15,6 +16,7 @@ import {
   getExpenseBreakdown,
   getRevenueBreakdown,
   getMonthlyTotals,
+  getNextMonthRevenueForecast,
 } from "@/lib/calculations";
 import { DASHBOARD_CHART_START_MONTH } from "@/lib/constants";
 import { formatCurrency } from "@/lib/format";
@@ -54,6 +56,11 @@ export function DashboardView() {
     reportingMonth,
     personnelMonthlyTotal
   );
+  const revenueForecast = getNextMonthRevenueForecast(
+    records,
+    reportingMonth,
+    personnelMonthlyTotal
+  );
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
@@ -79,6 +86,10 @@ export function DashboardView() {
         <ExecutiveBanner insights={insights} />
 
         <SummaryCards insights={insights} />
+
+        <section aria-label="다음 달 예상 매출" className="w-full min-w-0">
+          <RevenueForecastCard forecast={revenueForecast} />
+        </section>
 
         <KpiStrip insights={insights} />
 

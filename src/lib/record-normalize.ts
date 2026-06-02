@@ -26,6 +26,7 @@ export function normalizeFinancialRecord(
       description: client ? description : "",
       amount: raw.amount,
       type: "revenue",
+      amountIncludesVat: raw.amountIncludesVat === true,
     };
   }
 

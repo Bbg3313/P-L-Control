@@ -15,6 +15,7 @@ import {
 import { useFinancial } from "@/contexts/financial-context";
 import { formatCurrency } from "@/lib/format";
 import { formatPeriodLabel } from "@/lib/calculations";
+import { splitRevenueAmount } from "@/lib/vat";
 import {
   downloadRevenueTemplate,
   parseRevenueSpreadsheet,
@@ -32,6 +33,7 @@ export function ImportRevenueDialog() {
   const [preview, setPreview] = useState<RevenueImportRow[]>([]);
   const [errors, setErrors] = useState<{ row: number; message: string }[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [amountIncludesVat, setAmountIncludesVat] = useState(false);
 
   function resetState() {
     setFileName(null);
@@ -72,6 +74,7 @@ export function ImportRevenueDialog() {
         category: row.category,
         amount: row.amount,
         type: "revenue" as const,
+        amountIncludesVat,
       }))
     );
 
@@ -80,6 +83,17 @@ export function ImportRevenueDialog() {
   }
 
   const previewTotal = preview.reduce((sum, r) => sum + r.amount, 0);
+  const previewVatSummary = preview.reduce(
+    (acc, row) => {
+      const parts = splitRevenueAmount(row.amount, amountIncludesVat);
+      return {
+        supply: acc.supply + parts.supply,
+        vat: acc.vat + parts.vat,
+        gross: acc.gross + parts.gross,
+      };
+    },
+    { supply: 0, vat: 0, gross: 0 }
+  );
 
   return (
     <Dialog
@@ -118,6 +132,26 @@ export function ImportRevenueDialog() {
             >
               <FileSpreadsheet data-icon="inline-start" />
               양식 다운로드 (CSV)
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">금액 기준:</span>
+            <Button
+              type="button"
+              variant={amountIncludesVat ? "outline" : "default"}
+              size="sm"
+              onClick={() => setAmountIncludesVat(false)}
+            >
+              부가세 미포함
+            </Button>
+            <Button
+              type="button"
+              variant={amountIncludesVat ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAmountIncludesVat(true)}
+            >
+              부가세 포함
             </Button>
           </div>
 
@@ -161,8 +195,13 @@ export function ImportRevenueDialog() {
           {preview.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">
-                미리보기 {preview.length}건 · 합계{" "}
-                {formatCurrency(previewTotal)}
+                미리보기 {preview.length}건 · 공급가{" "}
+                {formatCurrency(previewVatSummary.supply)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                입력 합계 {formatCurrency(previewTotal)} · 부가세{" "}
+                {formatCurrency(previewVatSummary.vat)} · 합계{" "}
+                {formatCurrency(previewVatSummary.gross)}
               </p>
               <div className="max-h-48 overflow-auto rounded-md border text-xs">
                 <table className="w-full">

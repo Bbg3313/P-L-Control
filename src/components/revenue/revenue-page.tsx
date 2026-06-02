@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
@@ -7,6 +8,7 @@ import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor
 import { useFinancial } from "@/contexts/financial-context";
 import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
+import { summarizeRevenueVat } from "@/lib/vat";
 import { ImportRevenueDialog } from "./import-revenue-dialog";
 
 export function RevenuePage() {
@@ -14,7 +16,11 @@ export function RevenuePage() {
   const records = getByType("revenue").filter(
     (r) => r.date.slice(0, 7) === reportingMonth
   );
-  const total = records.reduce((sum, r) => sum + r.amount, 0);
+  const vatSummary = useMemo(
+    () => summarizeRevenueVat(records),
+    [records]
+  );
+  const total = vatSummary.supplyTotal;
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
@@ -42,9 +48,17 @@ export function RevenuePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-1 pt-0 sm:flex-row sm:items-baseline sm:gap-x-4">
-            <p className="shrink-0 text-2xl font-semibold tabular-nums">
-              {formatCurrency(total)}
-            </p>
+            <div>
+              <p className="shrink-0 text-2xl font-semibold tabular-nums">
+                {formatCurrency(total)}
+              </p>
+              {vatSummary.grossTotal > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  공급가액 · 부가세 {formatCurrency(vatSummary.vatTotal)} · 합계{" "}
+                  {formatCurrency(vatSummary.grossTotal)}
+                </p>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               {records.length > 0 ? `${records.length}건` : "미등록"}
             </p>

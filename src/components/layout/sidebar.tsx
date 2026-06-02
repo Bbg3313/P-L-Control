@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -7,9 +8,9 @@ import {
   TrendingUp,
   TrendingDown,
   Settings,
-  Building2,
 } from "lucide-react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
+import { APP_LOGO_ALT, APP_LOGO_SRC, APP_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -24,19 +25,24 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Building2 className="h-5 w-5" />
-        </div>
+      <Link
+        href="/"
+        className="flex items-center gap-3 border-b border-sidebar-border px-4 py-5 transition-colors hover:bg-sidebar-accent/40"
+      >
+        <Image
+          src={APP_LOGO_SRC}
+          alt={APP_LOGO_ALT}
+          width={40}
+          height={40}
+          className="h-10 w-10 shrink-0 object-contain"
+          priority
+        />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">
-            손익 관리
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            에이전시 재무
+          <p className="text-sm font-semibold leading-snug tracking-tight">
+            {APP_NAME}
           </p>
         </div>
-      </div>
+      </Link>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {navItems.map(({ href, label, icon: Icon }) => {
