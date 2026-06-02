@@ -22,9 +22,9 @@ export function ExpensesPage() {
   const allOtherTotal = allExpenseRecords.reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-      {/* 스크롤해도 상단 고정 — 음수 마진 없음(좌우 잘림 방지) */}
-      <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
+      {/* 스크롤해도 상단 고정 */}
+      <header className="sticky top-0 z-30 w-full max-w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start lg:gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
@@ -35,7 +35,10 @@ export function ExpensesPage() {
           <ReportingMonthNav className="w-full lg:justify-self-end" />
         </div>
 
-        <Card size="sm" className="mt-4 border-slate-200/80 bg-white shadow-sm">
+        <Card
+          size="sm"
+          className="mt-4 box-border w-full max-w-full border-slate-200/80 bg-white shadow-sm ring-0"
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {formatPeriodLabel(reportingMonth)} 비용 총합
@@ -56,7 +59,7 @@ export function ExpensesPage() {
         </Card>
       </header>
 
-      <div className="min-w-0 space-y-3 pb-4 pt-4">
+      <div className="w-full max-w-full space-y-3 pb-4 pt-4">
         <CollapsibleExpenseCard
           title="인건비"
           description={`고정 9명 · ${JUN_2026_INSURANCE_LABEL} 자동 계산 · 금액만 수정`}

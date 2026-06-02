@@ -39,15 +39,15 @@ const CONFIG: Record<
     gridClass:
       "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
     gridClassWithMonth:
-      "grid-cols-1 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
+      "grid-cols-1 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1fr)_minmax(9rem,1fr)_2.5rem]",
   },
   expense: {
     primaryLabel: "비용 항목",
     primaryPlaceholder: "예: 사무실비, 광고비",
     gridClass:
-      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
+      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(9rem,1fr)_2.5rem]",
     gridClassWithMonth:
-      "grid-cols-1 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(8rem,1fr)_2.5rem]",
+      "grid-cols-1 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(9rem,1fr)_2.5rem]",
   },
 };
 
@@ -129,7 +129,9 @@ export function MonthlyRecordsEditor({
         <div
           className={`hidden gap-2 px-1 text-xs font-medium text-muted-foreground sm:grid ${gridClass}`}
         >
-          {showRecordMonth && <span>적용 월</span>}
+          {showRecordMonth && (
+            <span className="whitespace-nowrap">적용 월</span>
+          )}
           <span>{config.primaryLabel}</span>
           {kind === "revenue" && <span>{config.secondaryLabel}</span>}
           <span>금액 (원)</span>
@@ -142,7 +144,7 @@ export function MonthlyRecordsEditor({
             className={`grid min-w-0 gap-2 sm:items-center ${gridClass}`}
           >
             {showRecordMonth && (
-              <span className="px-1 text-xs text-muted-foreground sm:text-sm">
+              <span className="whitespace-nowrap px-1 text-xs text-muted-foreground sm:text-sm">
                 {row.recordDate
                   ? formatPeriodLabel(row.recordDate.slice(0, 7))
                   : formatPeriodLabel(reportingMonth)}

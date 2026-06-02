@@ -26,7 +26,7 @@ export function CollapsibleExpenseCard({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <Card className="min-w-0 !overflow-visible">
+    <Card className="box-border w-full max-w-full !overflow-visible border border-slate-200/80 bg-white shadow-sm ring-0">
       <button
         type="button"
         className="flex w-full min-w-0 items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:items-center sm:px-6"
@@ -59,8 +59,8 @@ export function CollapsibleExpenseCard({
       </button>
 
       {open && (
-        <CardContent className="min-w-0 overflow-visible border-t border-border/60 px-4 pt-4 sm:px-6">
-          {children}
+        <CardContent className="min-w-0 border-t border-border/60 px-4 pt-4 sm:px-6">
+          <div className="w-full max-w-full overflow-x-auto">{children}</div>
         </CardContent>
       )}
     </Card>
