@@ -35,12 +35,12 @@ const CONFIG: Record<
     primaryPlaceholder: "예: OO브랜드",
     secondaryLabel: "카테고리",
     secondaryPlaceholder: "예: 대행 수수료",
-    gridClass: "sm:grid-cols-[1fr_1fr_140px_40px]",
+    gridClass: "sm:grid-cols-[1fr_1fr_minmax(9rem,11rem)_40px]",
   },
   expense: {
     primaryLabel: "비용 항목",
     primaryPlaceholder: "예: 사무실비, 광고비",
-    gridClass: "sm:grid-cols-[88px_1fr_140px_40px]",
+    gridClass: "sm:grid-cols-[88px_minmax(0,1fr)_minmax(9rem,11rem)_40px]",
   },
 };
 

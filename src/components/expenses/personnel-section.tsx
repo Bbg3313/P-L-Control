@@ -1,35 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useFinancial } from "@/contexts/financial-context";
-import { parseAmountInput } from "@/lib/calculations";
-import { formatAmountInputValue, formatCurrency } from "@/lib/format";
-import {
-  getMonthlyNonTaxableAllowance,
-  getPersonnelMonthlyCost,
-  getPersonnelSalaryBreakdown,
-  isOverseasTeam,
-  isYouthIncomeTaxReliefEligible,
-  type PersonnelEntry,
-} from "@/lib/personnel";
-import { getOverseasCurrency } from "@/lib/overseas-fx";
-import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
-import {
-  OverseasPersonnelDetail,
-  OverseasSalaryCell,
-  SALARY_INPUT_CLASS,
-} from "./overseas-personnel-fields";
+import { formatCurrency } from "@/lib/format";
+import { isOverseasTeam, type PersonnelEntry } from "@/lib/personnel";
+import { PersonnelCard } from "./personnel-card";
 
 function updateEntry(
   personnel: PersonnelEntry[],
@@ -39,216 +14,32 @@ function updateEntry(
   return personnel.map((p) => (p.id === id ? { ...p, ...patch } : p));
 }
 
-function NameCell({ entry }: { entry: PersonnelEntry }) {
-  const overseas = isOverseasTeam(entry.name);
-  const youth = isYouthIncomeTaxReliefEligible(entry.name);
-  const nonTaxable = getMonthlyNonTaxableAllowance(entry.name);
+function PersonnelGroup({
+  label,
+  entries,
+  onUpdate,
+}: {
+  label: string;
+  entries: PersonnelEntry[];
+  onUpdate: (id: string, patch: Partial<PersonnelEntry>) => void;
+}) {
+  if (entries.length === 0) return null;
 
   return (
-    <div className="min-w-[4.5rem]">
-      <p className="font-medium text-slate-900">{entry.name}</p>
-      <div className="mt-0.5 flex flex-wrap gap-1">
-        {overseas && (
-          <span className="rounded bg-slate-100 px-1 py-px text-[10px] text-slate-600">
-            해외
-          </span>
-        )}
-        {youth && (
-          <span className="rounded bg-emerald-50 px-1 py-px text-[10px] text-emerald-700">
-            청년감면
-          </span>
-        )}
-        {nonTaxable >= 400_000 && (
-          <span className="rounded bg-blue-50 px-1 py-px text-[10px] text-blue-700">
-            비과세40
-          </span>
-        )}
+    <section className="space-y-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {entries.map((entry) => (
+          <PersonnelCard
+            key={entry.id}
+            entry={entry}
+            onUpdate={(patch) => onUpdate(entry.id, patch)}
+          />
+        ))}
       </div>
-    </div>
-  );
-}
-
-function InsuranceBreakdownDetail({
-  breakdown,
-}: {
-  breakdown: NonNullable<
-    ReturnType<typeof getPersonnelSalaryBreakdown>
-  >["employer"];
-}) {
-  const items = [
-    ["급여(세전)", breakdown.monthlyGross],
-    ...(breakdown.nonTaxableMonthly > 0
-      ? [
-          ["비과세 제외", -breakdown.nonTaxableMonthly] as const,
-          ["보수월액", breakdown.insuranceBase] as const,
-        ]
-      : []),
-    ["국민연금", breakdown.pensionEmployer],
-    ["건강보험", breakdown.healthEmployer],
-    ["장기요양", breakdown.longTermCareEmployer],
-    ["고용보험", breakdown.employmentEmployer],
-    ["산재보험", breakdown.industrialAccidentEmployer],
-  ];
-
-  return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3 lg:grid-cols-4">
-      {items.map(([label, value]) => (
-        <div key={label} className="flex justify-between gap-2 sm:block">
-          <dt className="text-muted-foreground">{label}</dt>
-          <dd className="tabular-nums text-foreground">
-            {typeof value === "number" && value < 0
-              ? `−${formatCurrency(Math.abs(value))}`
-              : formatCurrency(value as number)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function PersonnelDetailRow({
-  entry,
-  onUpdate,
-}: {
-  entry: PersonnelEntry;
-  onUpdate: (patch: Partial<PersonnelEntry>) => void;
-}) {
-  const overseas = isOverseasTeam(entry.name);
-  const overseasCurrency = overseas ? getOverseasCurrency(entry.name) : null;
-  const salaryBreakdown = getPersonnelSalaryBreakdown(entry);
-  const breakdown = salaryBreakdown?.employer ?? null;
-  const taxRelief = salaryBreakdown?.youthTaxRelief ?? null;
-
-  const hasDetail =
-    (overseas && overseasCurrency) ||
-    (breakdown && breakdown.monthlyGross > 0) ||
-    (taxRelief && taxRelief.incomeTaxBeforeRelief > 0);
-
-  if (!hasDetail) return null;
-
-  return (
-    <TableRow className="hover:bg-transparent">
-      <TableCell colSpan={4} className="border-b bg-slate-50/80 px-2 py-0">
-        <details className="group py-2">
-          <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-slate-600 [&::-webkit-details-marker]:hidden">
-            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-            4대보험·환율·원천징수 상세
-          </summary>
-          <div className="mt-3 space-y-3 border-t border-slate-200/80 pt-3">
-            {overseas && overseasCurrency && (
-              <OverseasPersonnelDetail
-                entry={entry}
-                currency={overseasCurrency}
-                onUpdate={onUpdate}
-              />
-            )}
-            {breakdown && breakdown.monthlyGross > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-medium text-slate-700">
-                  {JUN_2026_INSURANCE_LABEL} · 회사 부담
-                </p>
-                <InsuranceBreakdownDetail breakdown={breakdown} />
-              </div>
-            )}
-            {taxRelief && taxRelief.incomeTaxBeforeRelief > 0 && (
-              <div className="rounded-md border border-emerald-200/70 bg-emerald-50/40 p-3 text-xs">
-                <p className="font-medium text-emerald-800">
-                  청년 소득세 감면 (근로자 원천징수 참고)
-                </p>
-                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
-                  <div>
-                    <dt className="text-muted-foreground">소득세(전)</dt>
-                    <dd className="tabular-nums">
-                      {formatCurrency(taxRelief.incomeTaxBeforeRelief)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">감면(90%)</dt>
-                    <dd className="tabular-nums text-emerald-700">
-                      −{formatCurrency(taxRelief.incomeTaxRelief)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">실수령 추정</dt>
-                    <dd className="tabular-nums font-medium">
-                      {formatCurrency(taxRelief.estimatedNetPay)}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            )}
-          </div>
-        </details>
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function PersonnelDataRow({
-  entry,
-  onUpdate,
-}: {
-  entry: PersonnelEntry;
-  onUpdate: (patch: Partial<PersonnelEntry>) => void;
-}) {
-  const overseas = isOverseasTeam(entry.name);
-  const overseasCurrency = overseas ? getOverseasCurrency(entry.name) : null;
-  const monthlyCost = getPersonnelMonthlyCost(entry);
-  const salaryBreakdown = getPersonnelSalaryBreakdown(entry);
-  const breakdown = salaryBreakdown?.employer ?? null;
-  const employerInsurance = breakdown?.totalEmployerContributions ?? 0;
-
-  return (
-    <>
-      <TableRow>
-        <TableCell>
-          <NameCell entry={entry} />
-        </TableCell>
-        <TableCell className="w-[5.25rem] max-w-[5.25rem]">
-          {overseas && overseasCurrency ? (
-            <OverseasSalaryCell
-              entry={entry}
-              currency={overseasCurrency}
-              onUpdate={onUpdate}
-            />
-          ) : entry.inputMode === "direct" ? (
-            <Input
-              inputMode="numeric"
-              placeholder="월"
-              className={SALARY_INPUT_CLASS}
-              aria-label={`${entry.name} 월 비용`}
-              value={formatAmountInputValue(entry.directMonthlyAmount)}
-              onChange={(e) =>
-                onUpdate({
-                  directMonthlyAmount: parseAmountInput(e.target.value),
-                })
-              }
-            />
-          ) : (
-            <Input
-              inputMode="numeric"
-              placeholder="연봉"
-              className={SALARY_INPUT_CLASS}
-              aria-label={`${entry.name} 연봉`}
-              value={formatAmountInputValue(entry.salaryAmount)}
-              onChange={(e) =>
-                onUpdate({
-                  salaryAmount: parseAmountInput(e.target.value),
-                  salaryBasis: "annual",
-                })
-              }
-            />
-          )}
-        </TableCell>
-        <TableCell className="text-right tabular-nums text-xs text-muted-foreground sm:text-sm">
-          {employerInsurance > 0 ? formatCurrency(employerInsurance) : "—"}
-        </TableCell>
-        <TableCell className="text-right text-sm font-semibold tabular-nums sm:text-base">
-          {monthlyCost > 0 ? formatCurrency(monthlyCost) : "—"}
-        </TableCell>
-      </TableRow>
-      <PersonnelDetailRow entry={entry} onUpdate={onUpdate} />
-    </>
+    </section>
   );
 }
 
@@ -281,60 +72,32 @@ export function PersonnelSection() {
     );
   }
 
-  const renderGroup = (list: PersonnelEntry[], label: string) =>
-    list.length > 0 ? (
-      <>
-        <TableRow className="hover:bg-transparent bg-muted/30">
-          <TableCell
-            colSpan={4}
-            className="py-1.5 text-xs font-semibold text-muted-foreground"
-          >
-            {label}
-          </TableCell>
-        </TableRow>
-        {list.map((entry) => (
-          <PersonnelDataRow
-            key={entry.id}
-            entry={entry}
-            onUpdate={(patch) => handleUpdate(entry.id, patch)}
-          />
-        ))}
-      </>
-    ) : null;
-
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        연봉·월급만 입력하면 월 비용이 자동 계산됩니다. 상세는 행 아래{" "}
-        <span className="font-medium text-foreground">▶ 상세</span>에서
-        확인하세요.
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        연봉·월급만 입력하면 월 비용이 자동 계산됩니다. 카드 하단에서 상세를
+        펼칠 수 있습니다.
       </p>
 
-      <div className="overflow-hidden rounded-lg border border-border/80">
-        <Table className="table-fixed">
-          <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-[22%]">이름</TableHead>
-              <TableHead className="w-[5.25rem]">연봉</TableHead>
-              <TableHead className="text-right">회사 보험</TableHead>
-              <TableHead className="w-[26%] text-right">월 비용</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {renderGroup(domestic, `국내 ${domestic.length}명`)}
-            {renderGroup(overseasList, `해외 ${overseasList.length}명`)}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell colSpan={3} className="font-medium">
-                월 합계 ({personnel.length}명)
-              </TableCell>
-              <TableCell className="text-right text-base font-bold tabular-nums">
-                {formatCurrency(personnelMonthlyTotal)}
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
+      <PersonnelGroup
+        label={`국내 · ${domestic.length}명`}
+        entries={domestic}
+        onUpdate={handleUpdate}
+      />
+      <PersonnelGroup
+        label={`해외 · ${overseasList.length}명`}
+        entries={overseasList}
+        onUpdate={handleUpdate}
+      />
+
+      <div className="flex items-center justify-between rounded-xl bg-slate-900 px-5 py-4 text-white shadow-sm">
+        <div>
+          <p className="text-xs font-medium text-slate-400">월 합계</p>
+          <p className="text-sm text-slate-300">{personnel.length}명</p>
+        </div>
+        <p className="text-xl font-bold tabular-nums tracking-tight">
+          {formatCurrency(personnelMonthlyTotal)}
+        </p>
       </div>
     </div>
   );

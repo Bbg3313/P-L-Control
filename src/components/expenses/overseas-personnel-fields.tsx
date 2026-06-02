@@ -15,9 +15,9 @@ import {
 } from "@/lib/overseas-fx";
 import type { PersonnelEntry } from "@/lib/personnel";
 
-/** 연봉·월급 입력 — 고정 폭 */
+/** 카드 내 월급 입력 */
 export const SALARY_INPUT_CLASS =
-  "h-8 w-[5.25rem] shrink-0 tabular-nums px-1.5 text-sm";
+  "h-9 w-full max-w-[11rem] tabular-nums border-slate-200/80 bg-white text-sm shadow-sm";
 
 interface OverseasSalaryCellProps {
   entry: PersonnelEntry;
@@ -38,25 +38,30 @@ export function OverseasSalaryCell({
       : entry.salaryAmount;
 
   return (
-    <Input
-      inputMode="numeric"
-      placeholder={currency === "THB" ? "바트" : "동"}
-      className={SALARY_INPUT_CLASS}
-      aria-label={`${entry.name} 월급 (${currencyLabel})`}
-      value={formatAmountInputValue(amount)}
-      onChange={(e) => {
-        const next = parseAmountInput(e.target.value);
-        if (entry.inputMode === "direct") {
-          onUpdate({ directMonthlyAmount: next });
-        } else {
-          onUpdate({
-            salaryAmount: next,
-            salaryBasis: "monthly",
-            inputMode: "salary",
-          });
-        }
-      }}
-    />
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <Input
+        inputMode="numeric"
+        placeholder={currency === "THB" ? "바트" : "동"}
+        className={SALARY_INPUT_CLASS}
+        aria-label={`${entry.name} 월급 (${currencyLabel})`}
+        value={formatAmountInputValue(amount)}
+        onChange={(e) => {
+          const next = parseAmountInput(e.target.value);
+          if (entry.inputMode === "direct") {
+            onUpdate({ directMonthlyAmount: next });
+          } else {
+            onUpdate({
+              salaryAmount: next,
+              salaryBasis: "monthly",
+              inputMode: "salary",
+            });
+          }
+        }}
+      />
+      <span className="shrink-0 text-[11px] font-medium text-slate-500">
+        {currencyLabel}
+      </span>
+    </div>
   );
 }
 
