@@ -6,6 +6,7 @@ import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
 import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor";
 import { useFinancial } from "@/contexts/financial-context";
+import { ENTITY_REVENUE_LABEL } from "@/lib/brand";
 import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import { summarizeRevenueVat } from "@/lib/vat";
@@ -29,7 +30,8 @@ export function RevenuePage() {
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">매출</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              ◀ ▶ 로 집계·저장 월을 바꾼 뒤 해당 월 항목을 입력·저장하세요.
+              {ENTITY_REVENUE_LABEL} 매출 · ◀ ▶ 로 집계·저장 월을 바꾼 뒤
+              입력·저장하세요.
             </p>
             <div className="mt-3">
               <ImportRevenueDialog />
@@ -54,7 +56,7 @@ export function RevenuePage() {
               </p>
               {vatSummary.vatTotal > 0 && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  계산서 {vatSummary.vatIncludedCount}건 · 세액{" "}
+                  계산서 {vatSummary.vatIncludedCount}건 · 매출세액{" "}
                   {formatCurrency(vatSummary.vatTotal)}
                 </p>
               )}

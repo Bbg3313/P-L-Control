@@ -10,7 +10,7 @@ export interface FinancialRecord {
   description: string;
   amount: number;
   type: TransactionType;
-  /** 매출만 — 입력 금액이 부가세 포함(합계)인지 */
+  /** 계산서 발행(포함)=true, 무자료=false */
   amountIncludesVat?: boolean;
 }
 
@@ -27,8 +27,15 @@ export interface DashboardMetrics {
   totalRevenueVat: number;
   /** 매출 + 세액 */
   totalRevenueGross: number;
-  /** 부가세 포함으로 등록된 매출 건수 */
+  /** 계산서 발행 매출 건수 */
   totalRevenueVatIncludedCount: number;
+  /** 매입세액 (기타 비용·계산서 수취) */
+  totalExpenseVat: number;
+  totalExpenseVatIncludedCount: number;
+  /** 납부세액 max(0, 매출세−매입세) */
+  vatPayable: number;
+  /** 환급세액 max(0, 매입세−매출세) */
+  vatRefund: number;
   totalExpenses: number;
   netProfit: number;
   investmentCapacity: number;

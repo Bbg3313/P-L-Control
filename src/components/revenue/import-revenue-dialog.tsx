@@ -15,7 +15,7 @@ import {
 import { useFinancial } from "@/contexts/financial-context";
 import { formatCurrency } from "@/lib/format";
 import { formatPeriodLabel } from "@/lib/calculations";
-import { splitRevenueAmount } from "@/lib/vat";
+import { splitVatAmount } from "@/lib/vat";
 import {
   downloadRevenueTemplate,
   parseRevenueSpreadsheet,
@@ -84,7 +84,7 @@ export function ImportRevenueDialog() {
 
   const previewVatSummary = preview.reduce(
     (acc, row) => {
-      const parts = splitRevenueAmount(row.amount, amountIncludesVat);
+      const parts = splitVatAmount(row.amount, amountIncludesVat);
       return {
         supply: acc.supply + parts.supply,
         vat: amountIncludesVat ? acc.vat + parts.vat : acc.vat,

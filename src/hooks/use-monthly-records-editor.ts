@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFinancial } from "@/contexts/financial-context";
 import { parseAmountInput } from "@/lib/calculations";
 import { formatAmountInputValue } from "@/lib/format";
-import type { RevenueVatSummary } from "@/lib/vat";
-import { splitRevenueAmount } from "@/lib/vat";
+import type { VatSummary } from "@/lib/vat";
+import { splitVatAmount } from "@/lib/vat";
 import type { FinancialRecord, TransactionType } from "@/lib/types";
 
 export type MonthlyRecordKind = "revenue" | "expense";
@@ -61,7 +61,7 @@ function recordToRow(
     primary: record.description || record.category,
     secondary: "",
     amount: formatAmountInputValue(record.amount),
-    amountIncludesVat: false,
+    amountIncludesVat: record.amountIncludesVat ?? false,
     recordDate: record.date,
   };
 }
@@ -152,26 +152,30 @@ export function useMonthlyRecordsEditor(
           const category = row.secondary.trim();
           if (!primary || !category || amount <= 0) return sum;
           return (
-            sum +
-            splitRevenueAmount(amount, row.amountIncludesVat).supply
+            sum + splitVatAmount(amount, row.amountIncludesVat).supply
           );
         }
-        return primary && amount > 0 ? sum + amount : sum;
+        return primary && amount > 0
+          ? sum + splitVatAmount(amount, row.amountIncludesVat).supply
+          : sum;
       }, 0),
     [rows, kind]
   );
 
-  const draftVatSummary = useMemo((): RevenueVatSummary | null => {
-    if (kind !== "revenue") return null;
+  const draftVatSummary = useMemo((): VatSummary | null => {
     let supplyTotal = 0;
     let vatTotal = 0;
     let vatIncludedCount = 0;
     for (const row of rows) {
       const amount = parseAmountInput(row.amount);
       const primary = row.primary.trim();
-      const category = row.secondary.trim();
-      if (!primary || !category || amount <= 0) continue;
-      const parts = splitRevenueAmount(amount, row.amountIncludesVat);
+      if (kind === "revenue") {
+        const category = row.secondary.trim();
+        if (!primary || !category || amount <= 0) continue;
+      } else if (!primary || amount <= 0) {
+        continue;
+      }
+      const parts = splitVatAmount(amount, row.amountIncludesVat);
       supplyTotal += parts.supply;
       if (row.amountIncludesVat) {
         vatTotal += parts.vat;
@@ -273,6 +277,7 @@ export function useMonthlyRecordsEditor(
             description: primary,
             amount,
             type: recordType,
+            amountIncludesVat: row.amountIncludesVat,
           });
           savedCount += 1;
         } else if (!row.recordId) {
@@ -282,6 +287,7 @@ export function useMonthlyRecordsEditor(
             description: primary,
             amount,
             type: recordType,
+            amountIncludesVat: row.amountIncludesVat,
           });
           savedCount += 1;
         }

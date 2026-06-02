@@ -38,6 +38,7 @@ export function normalizeFinancialRecord(
     description,
     amount: raw.amount,
     type: "expense",
+    amountIncludesVat: raw.amountIncludesVat === true,
   };
 }
 

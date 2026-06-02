@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { CurrencyDisplay } from "@/components/dashboard/currency-display";
 import { MomBadge } from "@/components/dashboard/mom-badge";
+import { ENTITY_PURCHASE_LABEL, ENTITY_REVENUE_LABEL } from "@/lib/brand";
 import { formatCurrency } from "@/lib/format";
 import type { DashboardInsights } from "@/lib/types";
 import {
@@ -18,6 +19,8 @@ import {
   CircleDollarSign,
   PiggyBank,
   Receipt,
+  FileInput,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +66,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
   const capacityShortfall = metrics.investmentCapacity < 0;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
       <Card size="sm" className={cardShell}>
         <CardHeader className={cardHeaderClass}>
           <div
@@ -77,7 +80,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
                 총 매출
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                {metrics.periodLabel}
+                {ENTITY_REVENUE_LABEL} · {metrics.periodLabel}
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10">
@@ -108,10 +111,10 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
           >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
-                부가세 (세액)
+                매출세액
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                계산서 발행 매출 10% · {metrics.periodLabel}
+                {ENTITY_REVENUE_LABEL} 계산서 · {metrics.periodLabel}
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10">
@@ -185,6 +188,48 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
           >
             <div className="space-y-1">
               <CardTitle className="text-sm font-medium text-slate-700">
+                매입세액
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                {ENTITY_PURCHASE_LABEL} 계산서 · {metrics.periodLabel}
+              </CardDescription>
+            </div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
+              <FileInput className="h-4 w-4 text-indigo-600" strokeWidth={2} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.totalExpenseVat}
+              valueClassName="text-2xl font-semibold text-slate-900"
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            {metrics.totalExpenseVatIncludedCount > 0 ? (
+              <p className="block text-xs leading-5 text-slate-500">
+                계산서 {metrics.totalExpenseVatIncludedCount}건
+              </p>
+            ) : (
+              <p className="block text-xs leading-5 text-slate-500">
+                계산서 수취 매입 없음
+              </p>
+            )}
+          </SummaryCardFooter>
+        </CardContent>
+      </Card>
+
+      <Card size="sm" className={cardShell}>
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium text-slate-700">
                 순이익
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
@@ -221,6 +266,49 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
           </SummaryCardAmount>
           <SummaryCardFooter>
             <MomBadge mom={netProfitMom} />
+          </SummaryCardFooter>
+        </CardContent>
+      </Card>
+
+      <Card size="sm" className={cardShell}>
+        <CardHeader className={cardHeaderClass}>
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              cardHeaderInnerClass
+            )}
+          >
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium text-slate-700">
+                환급세액
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                매입세 − 매출세 · {metrics.periodLabel}
+              </CardDescription>
+            </div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10">
+              <RotateCcw className="h-4 w-4 text-cyan-600" strokeWidth={2} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className={cardContentClass}>
+          <SummaryCardAmount>
+            <CurrencyDisplay
+              amount={metrics.vatRefund}
+              valueClassName="text-2xl font-semibold text-slate-900"
+            />
+          </SummaryCardAmount>
+          <SummaryCardFooter>
+            <p className="block text-xs leading-5 text-slate-500">
+              매출세 {formatCurrency(metrics.totalRevenueVat)} · 매입세{" "}
+              {formatCurrency(metrics.totalExpenseVat)}
+              {metrics.vatPayable > 0 && (
+                <>
+                  {" "}
+                  · 납부 {formatCurrency(metrics.vatPayable)}
+                </>
+              )}
+            </p>
           </SummaryCardFooter>
         </CardContent>
       </Card>

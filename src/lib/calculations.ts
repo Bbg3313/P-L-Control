@@ -14,7 +14,14 @@ import {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
 } from "./constants";
-import { getRevenueSupplyAmount, splitRevenueAmount, summarizeRevenueVat } from "./vat";
+import {
+  getExpenseSupplyAmount,
+  getRevenueSupplyAmount,
+  splitVatAmount,
+  summarizeExpenseVat,
+  summarizeRevenueVat,
+  summarizeVatSettlement,
+} from "./vat";
 
 export {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
@@ -35,7 +42,9 @@ function sumByMonth(
     .reduce(
       (sum, r) =>
         sum +
-        (type === "revenue" ? getRevenueSupplyAmount(r) : r.amount),
+        (type === "revenue"
+          ? getRevenueSupplyAmount(r)
+          : getExpenseSupplyAmount(r)),
       0
     );
 }
@@ -285,9 +294,9 @@ export function getRevenueBreakdown(
       record.client.trim() ||
       record.category.trim() ||
       "미지정 매출처";
-    const supply = splitRevenueAmount(
+    const supply = splitVatAmount(
       record.amount,
-      record.amountIncludesVat ?? false
+      record.amountIncludesVat === true
     ).supply;
     totals.set(label, (totals.get(label) ?? 0) + supply);
   }
@@ -467,7 +476,7 @@ export function getExpenseBreakdown(
       record.category.trim() ||
       record.description.trim() ||
       "기타 비용";
-    totals.set(label, (totals.get(label) ?? 0) + record.amount);
+    totals.set(label, (totals.get(label) ?? 0) + getExpenseSupplyAmount(record));
   }
 
   const grandTotal = Array.from(totals.values()).reduce((sum, n) => sum + n, 0);
@@ -487,6 +496,8 @@ export function getDashboardMetrics(
   personnelMonthly = 0
 ): DashboardMetrics {
   const revenueVat = summarizeRevenueVat(records, yearMonth);
+  const expenseVat = summarizeExpenseVat(records, yearMonth);
+  const vatSettlement = summarizeVatSettlement(records, yearMonth);
   const totalRevenue = revenueVat.supplyTotal;
   const totalExpenses = getMonthlyOperatingBurn(
     records,
@@ -511,6 +522,10 @@ export function getDashboardMetrics(
     totalRevenueVat: revenueVat.vatTotal,
     totalRevenueGross: revenueVat.grossTotal,
     totalRevenueVatIncludedCount: revenueVat.vatIncludedCount,
+    totalExpenseVat: expenseVat.vatTotal,
+    totalExpenseVatIncludedCount: expenseVat.vatIncludedCount,
+    vatPayable: vatSettlement.vatPayable,
+    vatRefund: vatSettlement.vatRefund,
     totalExpenses,
     netProfit,
     investmentCapacity,

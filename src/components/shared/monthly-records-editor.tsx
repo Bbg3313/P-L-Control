@@ -45,9 +45,9 @@ const CONFIG: Record<
     primaryLabel: "비용 항목",
     primaryPlaceholder: "예: 사무실비, 광고비",
     gridClass:
-      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(9rem,1fr)_2.5rem]",
+      "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_5.5rem_minmax(8rem,1fr)_2.5rem]",
     gridClassWithMonth:
-      "grid-cols-1 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(9rem,1fr)_2.5rem]",
+      "grid-cols-1 sm:grid-cols-[7rem_minmax(0,1fr)_5.5rem_minmax(9rem,1fr)_2.5rem]",
   },
 };
 
@@ -128,7 +128,7 @@ export function MonthlyRecordsEditor({
         </div>
       </div>
 
-      {kind === "revenue" && editMode && (
+      {editMode && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">신규 항목:</span>
           <Button
@@ -159,7 +159,7 @@ export function MonthlyRecordsEditor({
           )}
           <span>{config.primaryLabel}</span>
           {kind === "revenue" && <span>{config.secondaryLabel}</span>}
-          {kind === "revenue" && <span className="whitespace-nowrap">구분</span>}
+          <span className="whitespace-nowrap">구분</span>
           <span>금액 (원)</span>
           <span />
         </div>
@@ -202,22 +202,20 @@ export function MonthlyRecordsEditor({
                 </datalist>
               </>
             )}
-            {kind === "revenue" && (
-              <select
-                className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!editMode}
-                aria-label="과세 구분"
-                value={row.amountIncludesVat ? "invoice" : "taxfree"}
-                onChange={(e) =>
-                  updateRow(row.key, {
-                    amountIncludesVat: e.target.value === "invoice",
-                  })
-                }
-              >
-                <option value="taxfree">무자료</option>
-                <option value="invoice">계산서</option>
-              </select>
-            )}
+            <select
+              className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!editMode}
+              aria-label="과세 구분"
+              value={row.amountIncludesVat ? "invoice" : "taxfree"}
+              onChange={(e) =>
+                updateRow(row.key, {
+                  amountIncludesVat: e.target.value === "invoice",
+                })
+              }
+            >
+              <option value="taxfree">무자료</option>
+              <option value="invoice">계산서</option>
+            </select>
             <Input
               inputMode="numeric"
               placeholder="0"
@@ -265,18 +263,17 @@ export function MonthlyRecordsEditor({
               <span className="font-medium text-foreground">
                 {formatCurrency(draftTotal)}
               </span>
-              {kind === "revenue" && (
-                <span className="ml-1 text-xs">(매출)</span>
-              )}
+              <span className="ml-1 text-xs">
+                ({kind === "revenue" ? "매출" : "비용"})
+              </span>
               {!editMode && recordsCount > 0 && (
                 <span className="ml-2">· 저장 {recordsCount}건</span>
               )}
             </p>
-            {kind === "revenue" &&
-              draftVatSummary &&
-              draftVatSummary.vatTotal > 0 && (
+            {draftVatSummary && draftVatSummary.vatTotal > 0 && (
               <p className="text-xs text-muted-foreground">
-                계산서 {draftVatSummary.vatIncludedCount}건 · 세액{" "}
+                계산서 {draftVatSummary.vatIncludedCount}건 ·{" "}
+                {kind === "revenue" ? "매출" : "매입"}세액{" "}
                 {formatCurrency(draftVatSummary.vatTotal)}
               </p>
             )}

@@ -1,14 +1,17 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { CollapsibleExpenseCard } from "@/components/expenses/collapsible-expense-card";
 import { PersonnelSection } from "@/components/expenses/personnel-section";
 import { MonthlyRecordsEditor } from "@/components/shared/monthly-records-editor";
 import { useFinancial } from "@/contexts/financial-context";
+import { ENTITY_PURCHASE_LABEL } from "@/lib/brand";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
+import { summarizeExpenseVat } from "@/lib/vat";
 
 export function ExpensesPage() {
   const { getByType, personnel, personnelMonthlyTotal, reportingMonth } =
@@ -17,19 +20,25 @@ export function ExpensesPage() {
   const monthExpenseRecords = allExpenseRecords.filter(
     (r) => r.date.slice(0, 7) === reportingMonth
   );
-  const otherTotal = monthExpenseRecords.reduce((sum, r) => sum + r.amount, 0);
+  const expenseVat = useMemo(
+    () => summarizeExpenseVat(monthExpenseRecords),
+    [monthExpenseRecords]
+  );
+  const otherTotal = expenseVat.supplyTotal;
   const grandTotal = otherTotal + personnelMonthlyTotal;
-  const allOtherTotal = allExpenseRecords.reduce((s, r) => s + r.amount, 0);
+  const allOtherTotal = useMemo(
+    () => summarizeExpenseVat(allExpenseRecords).supplyTotal,
+    [allExpenseRecords]
+  );
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
-      {/* 스크롤해도 상단 고정 */}
       <header className="sticky top-0 z-30 w-full max-w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start lg:gap-6">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">비용</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              ◀ ▶ 로 집계·저장 월을 바꿉니다.
+              {ENTITY_PURCHASE_LABEL} 매입 · ◀ ▶ 로 집계·저장 월을 바꿉니다.
             </p>
           </div>
           <ReportingMonthNav className="w-full lg:justify-self-end" />
@@ -45,9 +54,17 @@ export function ExpensesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 pt-0 sm:flex-row sm:items-baseline sm:gap-x-6">
-            <p className="shrink-0 text-2xl font-semibold tabular-nums">
-              {formatCurrency(grandTotal)}
-            </p>
+            <div>
+              <p className="shrink-0 text-2xl font-semibold tabular-nums">
+                {formatCurrency(grandTotal)}
+              </p>
+              {expenseVat.vatTotal > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  계산서 {expenseVat.vatIncludedCount}건 · 매입세액{" "}
+                  {formatCurrency(expenseVat.vatTotal)}
+                </p>
+              )}
+            </div>
             <p className="min-w-0 text-sm leading-relaxed text-muted-foreground">
               인건비 {formatCurrency(personnelMonthlyTotal)}
               <span className="mx-2 text-border">·</span>
@@ -71,7 +88,7 @@ export function ExpensesPage() {
 
         <CollapsibleExpenseCard
           title="기타 비용"
-          description={`전체 ${allExpenseRecords.length}건 · ${formatPeriodLabel(reportingMonth)} 합계 ${formatCurrency(otherTotal)}`}
+          description={`${ENTITY_PURCHASE_LABEL} · 전체 ${allExpenseRecords.length}건 · ${formatPeriodLabel(reportingMonth)} 합계 ${formatCurrency(otherTotal)}`}
           amount={allOtherTotal}
           meta={
             allExpenseRecords.length > 0

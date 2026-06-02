@@ -1,22 +1,38 @@
-import type { FinancialRecord } from "@/lib/types";
+import type { FinancialRecord, TransactionType } from "@/lib/types";
 
 export const VAT_RATE = 0.1;
 
-export interface RevenueAmountParts {
-  /** 손익 집계용 매출액 */
+export interface VatAmountParts {
+  /** 손익 집계용 금액 */
   supply: number;
-  /** 부가세 (포함 항목만) */
+  /** 세액 (계산서 항목만) */
   vat: number;
-  /** 부가세 포함 항목의 입력 합계 */
+  /** 계산서 항목 입력 합계 */
   gross: number;
 }
 
-export interface RevenueVatSummary {
+/** @deprecated VatAmountParts 와 동일 */
+export type RevenueAmountParts = VatAmountParts;
+
+export interface VatSummary {
   supplyTotal: number;
   vatTotal: number;
   grossTotal: number;
-  /** 부가세 포함으로 표시된 건수 */
   vatIncludedCount: number;
+}
+
+/** @deprecated VatSummary 와 동일 */
+export type RevenueVatSummary = VatSummary;
+
+export interface VatSettlement {
+  /** 매출세액 (블루브릿지 계산서 발행) */
+  outputVat: number;
+  /** 매입세액 (골드펜더 등 계산서 수취) */
+  inputVat: number;
+  /** 납부세액 max(0, 매출−매입) */
+  vatPayable: number;
+  /** 환급세액 max(0, 매입−매출) */
+  vatRefund: number;
 }
 
 function truncateWon(amount: number): number {
@@ -24,14 +40,14 @@ function truncateWon(amount: number): number {
 }
 
 /**
- * 매출 금액 분리.
- * - 계산서 발행(부가세 포함): 입력 합계에서 10% 세액 역산
- * - 무자료(부가세 미포함): 입력 금액 그대로 매출, 세액 0
+ * 금액 분리.
+ * - 계산서: 입력 합계에서 10% 세액 역산
+ * - 무자료: 입력 금액 그대로, 세액 0
  */
-export function splitRevenueAmount(
+export function splitVatAmount(
   amount: number,
   amountIncludesVat = false
-): RevenueAmountParts {
+): VatAmountParts {
   if (amount <= 0) {
     return { supply: 0, vat: 0, gross: 0 };
   }
@@ -45,37 +61,53 @@ export function splitRevenueAmount(
   return { supply: amount, vat: 0, gross: amount };
 }
 
-export function recordIncludesVat(record: FinancialRecord): boolean {
-  return record.type === "revenue" && record.amountIncludesVat === true;
+export const splitRevenueAmount = splitVatAmount;
+
+export function recordHasTaxInvoice(record: FinancialRecord): boolean {
+  return record.amountIncludesVat === true;
+}
+
+function getSupplyAmount(record: FinancialRecord): number {
+  return splitVatAmount(record.amount, record.amountIncludesVat === true).supply;
 }
 
 /** 손익·대시보드 집계용 매출액 */
 export function getRevenueSupplyAmount(record: FinancialRecord): number {
   if (record.type !== "revenue") return record.amount;
-  return splitRevenueAmount(record.amount, record.amountIncludesVat === true)
-    .supply;
+  return getSupplyAmount(record);
 }
 
-/** 부가세 포함 항목만 세액 반환 */
+/** 손익·대시보드 집계용 비용(기타) */
+export function getExpenseSupplyAmount(record: FinancialRecord): number {
+  if (record.type !== "expense") return record.amount;
+  return getSupplyAmount(record);
+}
+
 export function getRevenueVatAmount(record: FinancialRecord): number {
-  if (record.type !== "revenue" || !recordIncludesVat(record)) return 0;
-  return splitRevenueAmount(record.amount, true).vat;
+  if (record.type !== "revenue" || !recordHasTaxInvoice(record)) return 0;
+  return splitVatAmount(record.amount, true).vat;
 }
 
-export function summarizeRevenueVat(
+export function getExpenseVatAmount(record: FinancialRecord): number {
+  if (record.type !== "expense" || !recordHasTaxInvoice(record)) return 0;
+  return splitVatAmount(record.amount, true).vat;
+}
+
+function summarizeVatByType(
   records: FinancialRecord[],
+  type: TransactionType,
   yearMonth?: string
-): RevenueVatSummary {
+): VatSummary {
   let supplyTotal = 0;
   let vatTotal = 0;
   let vatIncludedCount = 0;
 
   for (const record of records) {
-    if (record.type !== "revenue") continue;
+    if (record.type !== type) continue;
     if (yearMonth && record.date.slice(0, 7) !== yearMonth) continue;
 
     const includesVat = record.amountIncludesVat === true;
-    const parts = splitRevenueAmount(record.amount, includesVat);
+    const parts = splitVatAmount(record.amount, includesVat);
     supplyTotal += parts.supply;
     if (includesVat) {
       vatTotal += parts.vat;
@@ -88,5 +120,35 @@ export function summarizeRevenueVat(
     vatTotal,
     grossTotal: supplyTotal + vatTotal,
     vatIncludedCount,
+  };
+}
+
+export function summarizeRevenueVat(
+  records: FinancialRecord[],
+  yearMonth?: string
+): VatSummary {
+  return summarizeVatByType(records, "revenue", yearMonth);
+}
+
+export function summarizeExpenseVat(
+  records: FinancialRecord[],
+  yearMonth?: string
+): VatSummary {
+  return summarizeVatByType(records, "expense", yearMonth);
+}
+
+export function summarizeVatSettlement(
+  records: FinancialRecord[],
+  yearMonth: string
+): VatSettlement {
+  const outputVat = summarizeRevenueVat(records, yearMonth).vatTotal;
+  const inputVat = summarizeExpenseVat(records, yearMonth).vatTotal;
+  const net = outputVat - inputVat;
+
+  return {
+    outputVat,
+    inputVat,
+    vatPayable: Math.max(0, net),
+    vatRefund: Math.max(0, -net),
   };
 }

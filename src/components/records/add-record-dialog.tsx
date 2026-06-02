@@ -72,7 +72,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
       description,
       amount,
       type,
-      ...(type === "revenue" ? { amountIncludesVat: form.amountIncludesVat } : {}),
+      amountIncludesVat: form.amountIncludesVat,
     });
 
     setForm(emptyForm());
@@ -153,8 +153,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
 
             <div className="grid gap-2">
               <Label htmlFor="amount">금액 (원)</Label>
-              {!isExpense && (
-                <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant={form.amountIncludesVat ? "outline" : "default"}
@@ -175,8 +174,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
                   >
                     계산서 발행
                   </Button>
-                </div>
-              )}
+              </div>
               <Input
                 id="amount"
                 inputMode="numeric"
