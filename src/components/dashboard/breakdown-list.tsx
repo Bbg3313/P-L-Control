@@ -28,7 +28,7 @@ export function BreakdownList({
   emptyMessage,
 }: BreakdownListProps) {
   return (
-    <Card className="border-slate-200/80 bg-white shadow-sm">
+    <Card className="min-w-0 w-full border-slate-200/80 bg-white shadow-sm ring-0">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold text-slate-900">
           {title}

@@ -61,11 +61,11 @@ export function KpiStrip({ insights }: KpiStripProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid w-full min-w-0 grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm"
+          className="min-w-0 w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm"
         >
           <p className="text-xs font-medium text-slate-500">{item.label}</p>
           <p
