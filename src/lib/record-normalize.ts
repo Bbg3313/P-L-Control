@@ -1,3 +1,4 @@
+import { normalizeRevenueDetailCategory } from "@/lib/revenue-detail-categories";
 import type { FinancialRecord } from "@/lib/types";
 import { isTaxInvoice } from "@/lib/vat";
 
@@ -24,6 +25,7 @@ export function normalizeFinancialRecord(
       date,
       client: resolvedClient,
       category: (raw.category ?? "").trim(),
+      detailCategory: normalizeRevenueDetailCategory(raw.detailCategory),
       description: client ? description : "",
       amount: raw.amount,
       type: "revenue",

@@ -43,6 +43,8 @@ export interface NewFinancialRecord {
   type: TransactionType;
   /** 계산서 발행(포함)=true */
   amountIncludesVat?: boolean;
+  /** 매출: 상세 카테고리 */
+  detailCategory?: string;
 }
 
 export type DataSyncStatus = "loading" | "cloud" | "local-only" | "error";
@@ -219,6 +221,9 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
           amount: input.amount,
           type: input.type,
           amountIncludesVat: input.amountIncludesVat ?? false,
+          ...(input.type === "revenue"
+            ? { detailCategory: input.detailCategory }
+            : {}),
         },
       ])[0],
     []
@@ -265,6 +270,14 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
                 input.amountIncludesVat !== undefined
                   ? input.amountIncludesVat
                   : r.amountIncludesVat,
+              ...(r.type === "revenue" || input.type === "revenue"
+                ? {
+                    detailCategory:
+                      input.detailCategory !== undefined
+                        ? input.detailCategory
+                        : r.detailCategory,
+                  }
+                : {}),
             },
           ])[0];
         })

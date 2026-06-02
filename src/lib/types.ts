@@ -6,6 +6,8 @@ export interface FinancialRecord {
   /** 매출: 매출처 / 비용: 빈 문자열 가능 */
   client: string;
   category: string;
+  /** 매출: 상세 카테고리 (화장품·병원·기타·한약) */
+  detailCategory?: string;
   /** 비용: 상세 내역 / 매출: 보조 메모(선택) */
   description: string;
   amount: number;
@@ -96,5 +98,6 @@ export interface NextMonthRevenueForecast {
   /** 기준 월 비용 수준 가정 시 예상 순이익 */
   projectedNetProfit: number;
   baseExpenses: number;
-  topClients: BreakdownItem[];
+  /** 상세 카테고리별 Top */
+  topDetailCategories: BreakdownItem[];
 }

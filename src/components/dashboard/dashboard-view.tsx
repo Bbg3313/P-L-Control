@@ -106,7 +106,7 @@ export function DashboardView() {
           className="grid w-full min-w-0 gap-4 lg:grid-cols-2"
         >
           <BreakdownList
-            title="매출 Top"
+            title="매출 Top (상세 카테고리)"
             periodLabel={metrics.periodLabel}
             totalLabel={formatCurrency(metrics.totalRevenue)}
             items={revenueBreakdown}

@@ -18,6 +18,10 @@ import { useFinancial } from "@/contexts/financial-context";
 import { getCategorySuggestions } from "@/lib/category-suggestions";
 import { parseAmountInput } from "@/lib/calculations";
 import { normalizeAmountInputString } from "@/lib/format";
+import {
+  REVENUE_DETAIL_CATEGORIES,
+  type RevenueDetailCategory,
+} from "@/lib/revenue-detail-categories";
 import type { TransactionType } from "@/lib/types";
 
 interface AddRecordDialogProps {
@@ -28,6 +32,7 @@ const emptyForm = () => ({
   date: new Date().toISOString().slice(0, 10),
   category: "",
   description: "",
+  detailCategory: REVENUE_DETAIL_CATEGORIES[0] as RevenueDetailCategory,
   amount: "",
   amountIncludesVat: false,
 });
@@ -73,6 +78,7 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
       amount,
       type,
       amountIncludesVat: form.amountIncludesVat,
+      ...(!isExpense ? { detailCategory: form.detailCategory } : {}),
     });
 
     setForm(emptyForm());
@@ -114,41 +120,83 @@ export function AddRecordDialog({ type }: AddRecordDialogProps) {
               />
             </div>
 
+            {!isExpense && (
+              <div className="grid gap-2">
+                <Label htmlFor="detailCategory">상세 카테고리</Label>
+                <select
+                  id="detailCategory"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={form.detailCategory}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      detailCategory: e.target.value as RevenueDetailCategory,
+                    }))
+                  }
+                >
+                  {REVENUE_DETAIL_CATEGORIES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid gap-2">
-              <Label htmlFor="category">카테고리</Label>
+              <Label htmlFor="category">
+                {isExpense ? "카테고리" : "매출처"}
+              </Label>
               <Input
                 id="category"
-                list={`category-suggestions-${type}`}
+                list={isExpense ? `category-suggestions-${type}` : undefined}
                 placeholder={
-                  isExpense ? "예: 인건비, 사무실비용, 광고비" : "예: 대행 수수료"
+                  isExpense ? "예: 인건비, 사무실비용, 광고비" : "예: OO브랜드"
                 }
                 required
-                value={form.category}
+                value={isExpense ? form.category : form.description}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, category: e.target.value }))
+                  setForm((f) =>
+                    isExpense
+                      ? { ...f, category: e.target.value }
+                      : { ...f, description: e.target.value }
+                  )
                 }
               />
-              <datalist id={`category-suggestions-${type}`}>
-                {suggestions.map((item) => (
-                  <option key={item} value={item} />
-                ))}
-              </datalist>
-              <p className="text-xs text-muted-foreground">
-                목록에서 고르거나 원하는 이름을 직접 입력하세요.
-              </p>
+              {isExpense && (
+                <datalist id={`category-suggestions-${type}`}>
+                  {suggestions.map((item) => (
+                    <option key={item} value={item} />
+                  ))}
+                </datalist>
+              )}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">내역</Label>
+              <Label htmlFor="description">
+                {isExpense ? "내역" : "카테고리"}
+              </Label>
               <Input
                 id="description"
-                placeholder="상세 설명"
+                list={!isExpense ? `category-suggestions-${type}` : undefined}
+                placeholder={isExpense ? "상세 설명" : "예: 대행 수수료"}
                 required
-                value={form.description}
+                value={isExpense ? form.description : form.category}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
+                  setForm((f) =>
+                    isExpense
+                      ? { ...f, description: e.target.value }
+                      : { ...f, category: e.target.value }
+                  )
                 }
               />
+              {!isExpense && (
+                <datalist id={`category-suggestions-${type}`}>
+                  {suggestions.map((item) => (
+                    <option key={item} value={item} />
+                  ))}
+                </datalist>
+              )}
             </div>
 
             <div className="grid gap-2">

@@ -60,7 +60,7 @@ export function RevenuePage() {
       <div className="w-full max-w-full space-y-3 pb-4 pt-4">
         <CollapsibleExpenseCard
           title={`${formatPeriodLabel(reportingMonth)} 매출`}
-          description="매출처 · 카테고리 · 금액"
+          description="매출처 · 상세 카테고리 · 카테고리 · 금액"
           amount={total}
           meta={records.length > 0 ? `${records.length}건` : "미등록"}
           defaultOpen

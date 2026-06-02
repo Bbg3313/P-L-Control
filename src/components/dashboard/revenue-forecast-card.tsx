@@ -26,7 +26,7 @@ export function RevenueForecastCard({ forecast }: RevenueForecastCardProps) {
     actualRevenueInTarget,
     projectedNetProfit,
     baseExpenses,
-    topClients,
+    topDetailCategories,
   } = forecast;
 
   const hasBase = baseRevenue > 0;
@@ -115,13 +115,13 @@ export function RevenueForecastCard({ forecast }: RevenueForecastCardProps) {
               </div>
             )}
 
-            {topClients.length > 0 && (
+            {topDetailCategories.length > 0 && (
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {baseMonthLabel} 매출처 기준 Top
+                  {baseMonthLabel} 상세 카테고리별
                 </p>
                 <ul className="space-y-2.5">
-                  {topClients.map((item) => (
+                  {topDetailCategories.map((item) => (
                     <li key={item.category}>
                       <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
                         <span className="truncate font-medium text-slate-800">

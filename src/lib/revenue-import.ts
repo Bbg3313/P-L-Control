@@ -1,9 +1,11 @@
 import * as XLSX from "xlsx";
 import { parseAmountInput } from "@/lib/calculations";
+import { normalizeRevenueDetailCategory } from "@/lib/revenue-detail-categories";
 
 export interface RevenueImportRow {
   date: string;
   client: string;
+  detailCategory: string;
   category: string;
   amount: number;
 }
@@ -21,6 +23,12 @@ export interface RevenueImportResult {
 const HEADER_ALIASES: Record<keyof RevenueImportRow, string[]> = {
   date: ["날짜", "date", "일자", "거래일"],
   client: ["매출처", "거래처", "client", "고객사", "매출처명"],
+  detailCategory: [
+    "상세카테고리",
+    "상세 카테고리",
+    "detailcategory",
+    "세부카테고리",
+  ],
   category: ["카테고리", "category", "분류", "항목"],
   amount: ["금액", "amount", "매출액", "매출", "공급가액"],
 };
@@ -132,6 +140,7 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
     const labels: Record<keyof RevenueImportRow, string> = {
       date: "날짜",
       client: "매출처",
+      detailCategory: "상세 카테고리",
       category: "카테고리",
       amount: "금액",
     };
@@ -158,6 +167,11 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
     const date = parseDateCell(row[columns.date!]);
     const client = String(row[columns.client!] ?? "").trim();
     const category = String(row[columns.category!] ?? "").trim();
+    const detailRaw =
+      columns.detailCategory !== undefined
+        ? String(row[columns.detailCategory] ?? "").trim()
+        : "";
+    const detailCategory = normalizeRevenueDetailCategory(detailRaw);
     const amount = parseAmountCell(row[columns.amount!]);
 
     if (!date) {
@@ -177,18 +191,24 @@ export function parseRevenueSpreadsheet(buffer: ArrayBuffer): RevenueImportResul
       continue;
     }
 
-    rows.push({ date, client, category, amount });
+    rows.push({ date, client, detailCategory, category, amount });
   }
 
   return { rows, errors };
 }
 
-export const REVENUE_TEMPLATE_HEADERS = ["날짜", "매출처", "카테고리", "금액"] as const;
+export const REVENUE_TEMPLATE_HEADERS = [
+  "날짜",
+  "매출처",
+  "상세 카테고리",
+  "카테고리",
+  "금액",
+] as const;
 
 export function buildRevenueTemplateCsv(): string {
   const bom = "\uFEFF";
   const sample = [
-    ["2026-06-15", "예시 거래처", "대행 수수료", "5000000"],
+    ["2026-06-15", "예시 거래처", "화장품", "대행 수수료", "5000000"],
   ];
   const lines = [
     REVENUE_TEMPLATE_HEADERS.join(","),

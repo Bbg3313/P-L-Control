@@ -6,6 +6,10 @@ import { parseAmountInput } from "@/lib/calculations";
 import { formatAmountInputValue } from "@/lib/format";
 import type { VatSummary } from "@/lib/vat";
 import { splitVatAmount } from "@/lib/vat";
+import {
+  getRevenueDetailCategoryLabel,
+  REVENUE_DETAIL_CATEGORIES,
+} from "@/lib/revenue-detail-categories";
 import type { FinancialRecord, TransactionType } from "@/lib/types";
 
 export type MonthlyRecordKind = "revenue" | "expense";
@@ -16,6 +20,8 @@ export interface MonthlyEditorRow {
   primary: string;
   secondary: string;
   amount: string;
+  /** 매출: 상세 카테고리 */
+  detailCategory: string;
   /** 매출: 입력 금액이 부가세 포함인지 */
   amountIncludesVat: boolean;
   /** 기존 행의 저장 날짜 (YYYY-MM-DD) */
@@ -35,6 +41,7 @@ function emptyRow(amountIncludesVat = false): MonthlyEditorRow {
     recordId: null,
     primary: "",
     secondary: "",
+    detailCategory: REVENUE_DETAIL_CATEGORIES[0],
     amount: "",
     amountIncludesVat,
   };
@@ -50,6 +57,7 @@ function recordToRow(
       recordId: record.id,
       primary: record.client,
       secondary: record.category,
+      detailCategory: getRevenueDetailCategoryLabel(record),
       amount: formatAmountInputValue(record.amount),
       amountIncludesVat: record.amountIncludesVat ?? false,
       recordDate: record.date,
@@ -61,6 +69,7 @@ function recordToRow(
     primary: record.description || record.category,
     secondary: "",
     amount: formatAmountInputValue(record.amount),
+    detailCategory: "",
     amountIncludesVat: record.amountIncludesVat ?? false,
     recordDate: record.date,
   };
@@ -113,7 +122,7 @@ export function useMonthlyRecordsEditor(
     () =>
       records
         .map((r) =>
-          `${r.id}|${r.date}|${r.client}|${r.category}|${r.description}|${r.amount}|${r.amountIncludesVat ?? false}`
+          `${r.id}|${r.date}|${r.client}|${r.detailCategory ?? ""}|${r.category}|${r.description}|${r.amount}|${r.amountIncludesVat ?? false}`
         )
         .join(";;"),
     [records]
@@ -150,7 +159,8 @@ export function useMonthlyRecordsEditor(
         const primary = row.primary.trim();
         if (kind === "revenue") {
           const category = row.secondary.trim();
-          if (!primary || !category || amount <= 0) return sum;
+          const detail = row.detailCategory.trim();
+          if (!primary || !detail || !category || amount <= 0) return sum;
           return (
             sum + splitVatAmount(amount, row.amountIncludesVat).supply
           );
@@ -171,7 +181,8 @@ export function useMonthlyRecordsEditor(
       const primary = row.primary.trim();
       if (kind === "revenue") {
         const category = row.secondary.trim();
-        if (!primary || !category || amount <= 0) continue;
+        const detail = row.detailCategory.trim();
+        if (!primary || !detail || !category || amount <= 0) continue;
       } else if (!primary || amount <= 0) {
         continue;
       }
@@ -221,7 +232,9 @@ export function useMonthlyRecordsEditor(
       const primary = row.primary.trim();
       const amount = parseAmountInput(row.amount);
       if (kind === "revenue") {
-        return primary && row.secondary.trim() && amount > 0;
+        return (
+          primary && row.detailCategory.trim() && row.secondary.trim() && amount > 0
+        );
       }
       return primary && amount > 0;
     });
@@ -246,11 +259,13 @@ export function useMonthlyRecordsEditor(
 
       if (kind === "revenue") {
         const category = row.secondary.trim();
+        const detailCategory = row.detailCategory.trim();
         if (row.recordId && !removedIds.includes(row.recordId)) {
           updateRecord(row.recordId, {
             date: applyDate,
             client: primary,
             category,
+            detailCategory,
             amount,
             type: recordType,
             amountIncludesVat: row.amountIncludesVat,
@@ -261,6 +276,7 @@ export function useMonthlyRecordsEditor(
             date: applyDate,
             client: primary,
             category,
+            detailCategory,
             amount,
             type: recordType,
             amountIncludesVat: row.amountIncludesVat,
@@ -311,6 +327,7 @@ export function useMonthlyRecordsEditor(
       rows.length === 0 ||
       (rows.length === 1 &&
         !rows[0].primary &&
+        !rows[0].detailCategory &&
         !rows[0].secondary &&
         !rows[0].amount)
     ) {

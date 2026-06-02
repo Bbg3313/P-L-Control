@@ -71,6 +71,7 @@ export function ImportRevenueDialog() {
       preview.map((row) => ({
         date: applyDate,
         client: row.client,
+        detailCategory: row.detailCategory,
         category: row.category,
         amount: row.amount,
         type: "revenue" as const,
@@ -113,7 +114,8 @@ export function ImportRevenueDialog() {
         <DialogHeader>
           <DialogTitle>엑셀에서 매출 가져오기</DialogTitle>
           <DialogDescription>
-            첫 행에 <strong>날짜, 매출처, 카테고리, 금액</strong> 열을 두고
+            첫 행에 <strong>날짜, 매출처, 상세 카테고리, 카테고리, 금액</strong>{" "}
+            열을 두고
             업로드하세요. 선택한 월(
             <strong>{formatPeriodLabel(reportingMonth)}</strong>)에 모두
             등록됩니다. (.xlsx, .xls, .csv)
@@ -207,6 +209,7 @@ export function ImportRevenueDialog() {
                     <tr>
                       <th className="px-2 py-1.5 text-left font-medium">날짜</th>
                       <th className="px-2 py-1.5 text-left font-medium">매출처</th>
+                      <th className="px-2 py-1.5 text-left font-medium">상세</th>
                       <th className="px-2 py-1.5 text-left font-medium">카테고리</th>
                       <th className="px-2 py-1.5 text-right font-medium">금액</th>
                     </tr>
@@ -216,6 +219,7 @@ export function ImportRevenueDialog() {
                       <tr key={`${row.date}-${row.client}-${i}`} className="border-t">
                         <td className="px-2 py-1.5">{row.date}</td>
                         <td className="px-2 py-1.5">{row.client}</td>
+                        <td className="px-2 py-1.5">{row.detailCategory}</td>
                         <td className="px-2 py-1.5">{row.category}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums">
                           {formatCurrency(row.amount)}

@@ -14,6 +14,7 @@ import {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
 } from "./constants";
+import { getRevenueDetailCategoryLabel } from "./revenue-detail-categories";
 import {
   getExpenseSupplyAmount,
   getRevenueSupplyAmount,
@@ -278,7 +279,7 @@ export function getYearToDateTotals(
   return { revenue, expenses, netProfit: revenue - expenses };
 }
 
-/** 매출처별 합계 (상위 N건) */
+/** 매출 상세 카테고리별 합계 */
 export function getRevenueBreakdown(
   records: FinancialRecord[],
   yearMonth: string,
@@ -290,10 +291,7 @@ export function getRevenueBreakdown(
     if (record.type !== "revenue") continue;
     if (parseYearMonth(record.date) !== yearMonth) continue;
 
-    const label =
-      record.client.trim() ||
-      record.category.trim() ||
-      "미지정 매출처";
+    const label = getRevenueDetailCategoryLabel(record);
     const supply = splitVatAmount(
       record.amount,
       record.amountIncludesVat === true
@@ -303,18 +301,12 @@ export function getRevenueBreakdown(
 
   const sorted = Array.from(totals.entries())
     .map(([category, amount]) => ({ category, amount }))
-    .sort((a, b) => b.amount - a.amount);
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
 
-  const top = sorted.slice(0, limit);
-  const other = sorted.slice(limit).reduce((sum, r) => sum + r.amount, 0);
-  const items =
-    other > 0
-      ? [...top, { category: "기타", amount: other }]
-      : top;
+  const grandTotal = sorted.reduce((sum, i) => sum + i.amount, 0);
 
-  const grandTotal = items.reduce((sum, i) => sum + i.amount, 0);
-
-  return items.map(({ category, amount }) => ({
+  return sorted.map(({ category, amount }) => ({
     category,
     amount,
     share: grandTotal > 0 ? amount / grandTotal : 0,
@@ -349,7 +341,7 @@ export function getNextMonthRevenueForecast(
     actualRevenueInTarget,
     projectedNetProfit: baseRevenue - baseExpenses,
     baseExpenses,
-    topClients: getRevenueBreakdown(records, baseMonth, 5),
+    topDetailCategories: getRevenueBreakdown(records, baseMonth, 4),
   };
 }
 
