@@ -36,6 +36,9 @@ export interface DashboardMetrics {
   vatPayable: number;
   /** 환급세액 max(0, 매입세−매출세) */
   vatRefund: number;
+  /** 정산용 매출세·매입세 (카드·환급 계산과 동일) */
+  vatOutputTotal: number;
+  vatInputTotal: number;
   totalExpenses: number;
   netProfit: number;
   investmentCapacity: number;

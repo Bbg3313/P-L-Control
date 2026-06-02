@@ -11,11 +11,16 @@ import { ENTITY_PURCHASE_LABEL } from "@/lib/brand";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatPeriodLabel } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
-import { summarizeExpenseVat } from "@/lib/vat";
+import { summarizeExpenseVat, summarizeVatSettlement } from "@/lib/vat";
 
 export function ExpensesPage() {
-  const { getByType, personnel, personnelMonthlyTotal, reportingMonth } =
-    useFinancial();
+  const {
+    records,
+    getByType,
+    personnel,
+    personnelMonthlyTotal,
+    reportingMonth,
+  } = useFinancial();
   const allExpenseRecords = getByType("expense");
   const monthExpenseRecords = allExpenseRecords.filter(
     (r) => r.date.slice(0, 7) === reportingMonth
@@ -23,6 +28,10 @@ export function ExpensesPage() {
   const expenseVat = useMemo(
     () => summarizeExpenseVat(monthExpenseRecords),
     [monthExpenseRecords]
+  );
+  const vatSettlement = useMemo(
+    () => summarizeVatSettlement(records, reportingMonth),
+    [records, reportingMonth]
   );
   const otherTotal = expenseVat.supplyTotal;
   const grandTotal = otherTotal + personnelMonthlyTotal;
@@ -58,10 +67,12 @@ export function ExpensesPage() {
               <p className="shrink-0 text-2xl font-semibold tabular-nums">
                 {formatCurrency(grandTotal)}
               </p>
-              {expenseVat.vatTotal > 0 && (
+              {(expenseVat.vatTotal > 0 || vatSettlement.vatRefund > 0) && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  계산서 {expenseVat.vatIncludedCount}건 · 매입세액{" "}
+                  계산서 {expenseVat.vatIncludedCount}건 · 매입세 합산{" "}
                   {formatCurrency(expenseVat.vatTotal)}
+                  <span className="mx-1 text-border">·</span>
+                  대시보드 환급 {formatCurrency(vatSettlement.vatRefund)}
                 </p>
               )}
             </div>

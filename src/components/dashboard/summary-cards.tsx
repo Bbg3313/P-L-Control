@@ -283,7 +283,7 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
                 환급세액
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                매입세 − 매출세 · {metrics.periodLabel}
+                매입세 합산 − 매출세 · {metrics.periodLabel}
               </CardDescription>
             </div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10">
@@ -300,15 +300,29 @@ export function SummaryCards({ insights }: SummaryCardsProps) {
           </SummaryCardAmount>
           <SummaryCardFooter>
             <p className="block text-xs leading-5 text-slate-500">
-              매출세 {formatCurrency(metrics.totalRevenueVat)} · 매입세{" "}
-              {formatCurrency(metrics.totalExpenseVat)}
-              {metrics.vatPayable > 0 && (
-                <>
-                  {" "}
-                  · 납부 {formatCurrency(metrics.vatPayable)}
-                </>
-              )}
+              매입세 합산 {formatCurrency(metrics.vatInputTotal)}
+              {metrics.totalExpenseVatIncludedCount > 0 &&
+                ` (${metrics.totalExpenseVatIncludedCount}건)`}
+              {" · "}매출세 {formatCurrency(metrics.vatOutputTotal)}
             </p>
+            {metrics.vatRefund > 0 ? (
+              <p className="mt-0.5 block text-xs leading-5 text-cyan-700">
+                계산서 매입 {formatCurrency(metrics.vatInputTotal)} 반영
+              </p>
+            ) : metrics.vatInputTotal > 0 ? (
+              <p className="mt-0.5 block text-xs leading-5 text-slate-400">
+                매입세 반영됨 · 매출세가 더 커 환급 0원
+              </p>
+            ) : (
+              <p className="mt-0.5 block text-xs leading-5 text-slate-400">
+                집계월 계산서 매입 없음
+              </p>
+            )}
+            {metrics.vatPayable > 0 && (
+              <p className="mt-0.5 block text-xs leading-5 text-rose-600">
+                납부 {formatCurrency(metrics.vatPayable)}
+              </p>
+            )}
           </SummaryCardFooter>
         </CardContent>
       </Card>

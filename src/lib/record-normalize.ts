@@ -1,4 +1,5 @@
 import type { FinancialRecord } from "@/lib/types";
+import { isTaxInvoice } from "@/lib/vat";
 
 /** YYYY-M-D → YYYY-MM-DD (월별 집계 호환) */
 function normalizeIsoDate(date: string): string {
@@ -26,7 +27,7 @@ export function normalizeFinancialRecord(
       description: client ? description : "",
       amount: raw.amount,
       type: "revenue",
-      amountIncludesVat: raw.amountIncludesVat === true,
+      amountIncludesVat: isTaxInvoice(raw.amountIncludesVat),
     };
   }
 
@@ -38,7 +39,7 @@ export function normalizeFinancialRecord(
     description,
     amount: raw.amount,
     type: "expense",
-    amountIncludesVat: raw.amountIncludesVat === true,
+    amountIncludesVat: isTaxInvoice(raw.amountIncludesVat),
   };
 }
 

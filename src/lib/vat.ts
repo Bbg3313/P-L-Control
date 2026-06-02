@@ -63,12 +63,17 @@ export function splitVatAmount(
 
 export const splitRevenueAmount = splitVatAmount;
 
+/** 저장·API 호환 — 계산서(부가세 포함) 여부 */
+export function isTaxInvoice(value: unknown): boolean {
+  return value === true || value === "true" || value === 1;
+}
+
 export function recordHasTaxInvoice(record: FinancialRecord): boolean {
-  return record.amountIncludesVat === true;
+  return isTaxInvoice(record.amountIncludesVat);
 }
 
 function getSupplyAmount(record: FinancialRecord): number {
-  return splitVatAmount(record.amount, record.amountIncludesVat === true).supply;
+  return splitVatAmount(record.amount, recordHasTaxInvoice(record)).supply;
 }
 
 /** 손익·대시보드 집계용 매출액 */
@@ -106,7 +111,7 @@ function summarizeVatByType(
     if (record.type !== type) continue;
     if (yearMonth && record.date.slice(0, 7) !== yearMonth) continue;
 
-    const includesVat = record.amountIncludesVat === true;
+    const includesVat = recordHasTaxInvoice(record);
     const parts = splitVatAmount(record.amount, includesVat);
     supplyTotal += parts.supply;
     if (includesVat) {

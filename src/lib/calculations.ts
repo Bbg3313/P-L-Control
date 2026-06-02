@@ -526,6 +526,8 @@ export function getDashboardMetrics(
     totalExpenseVatIncludedCount: expenseVat.vatIncludedCount,
     vatPayable: vatSettlement.vatPayable,
     vatRefund: vatSettlement.vatRefund,
+    vatOutputTotal: vatSettlement.outputVat,
+    vatInputTotal: vatSettlement.inputVat,
     totalExpenses,
     netProfit,
     investmentCapacity,
