@@ -75,6 +75,11 @@ export function formatHrAnnualSalaryLabel(doc: HrDocumentMeta): string {
     return "PDF 읽기 실패";
   }
   if (doc.salaryExtractStatus === "unsupported") {
+    const ext = getFileExtension(doc.name);
+    const mime = doc.mimeType.toLowerCase();
+    if (ext === "pdf" || mime.includes("pdf")) {
+      return "↻ 재인식 필요";
+    }
     return formatHrUnsupportedSalaryHint(doc.name);
   }
   if (doc.salaryExtractStatus === "not_found") {

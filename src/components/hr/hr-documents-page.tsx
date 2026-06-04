@@ -178,6 +178,12 @@ export function HrDocumentsPage() {
       await loadDocuments();
       if (data.annualSalary && data.annualSalary > 0) {
         setMessage(`「${doc.name}」 연봉을 인식했습니다.`);
+      } else if (data.status === "unsupported") {
+        setMessage(
+          `「${doc.name}」 형식을 인식하지 못했습니다. PDF·DOCX로 저장한 뒤 다시 업로드해 주세요.`
+        );
+      } else if (data.status === "extract_failed") {
+        setMessage(`「${doc.name}」 PDF를 열지 못했습니다. 파일이 손상되었는지 확인해 주세요.`);
       } else if ((data.textLength ?? 0) === 0) {
         setMessage(
           `「${doc.name}」 PDF에서 글자를 읽지 못했습니다. 스캔본이면 텍스트 PDF로 다시 저장해 주세요.`

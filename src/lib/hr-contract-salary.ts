@@ -1,5 +1,8 @@
 import { getFileExtension } from "@/lib/hr-file-utils";
-import { extractPdfTextFromBuffer } from "@/lib/hr-pdf-text.server";
+import {
+  extractPdfTextFromBuffer,
+  isPdfBuffer,
+} from "@/lib/hr-pdf-text.server";
 import type {
   HrDocumentCategory,
   HrSalaryExtractStatus,
@@ -300,13 +303,22 @@ export type HrTextExtractionFormat = "pdf" | "docx" | "txt" | "unsupported";
 
 export function getHrTextExtractionFormat(
   filename: string,
-  mimeType: string
+  mimeType: string,
+  buffer?: Buffer
 ): HrTextExtractionFormat {
+  if (buffer && isPdfBuffer(buffer)) return "pdf";
+
   const ext = getFileExtension(filename);
   const mime = mimeType.toLowerCase();
 
   if (mime.includes("pdf") || ext === "pdf") return "pdf";
-  if (mime.includes("wordprocessingml") || ext === "docx") return "docx";
+  if (
+    mime.includes("wordprocessingml") ||
+    mime.includes("msword") ||
+    ext === "docx"
+  ) {
+    return "docx";
+  }
   if (ext === "txt" || mime.startsWith("text/")) return "txt";
 
   return "unsupported";
@@ -317,7 +329,11 @@ export async function extractTextFromHrDocument(input: {
   mimeType: string;
   filename: string;
 }): Promise<{ text: string; extractFailed: boolean } | { unsupported: true }> {
-  const format = getHrTextExtractionFormat(input.filename, input.mimeType);
+  const format = getHrTextExtractionFormat(
+    input.filename,
+    input.mimeType,
+    input.buffer
+  );
   if (format === "unsupported") return { unsupported: true };
 
   try {
