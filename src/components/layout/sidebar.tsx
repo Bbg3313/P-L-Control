@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   TrendingDown,
+  Users,
   Settings,
 } from "lucide-react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
   { href: "/revenue", label: "매출", icon: TrendingUp },
   { href: "/expenses", label: "비용", icon: TrendingDown },
+  { href: "/hr", label: "인사", icon: Users },
   { href: "/settings", label: "설정", icon: Settings },
 ] as const;
 
