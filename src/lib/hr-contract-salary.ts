@@ -64,11 +64,12 @@ function collectCandidatesFromLine(line: string): SalaryCandidate[] {
   const contextScore = scoreLineContext(line);
 
   const amountPatterns: RegExp[] = [
-    /연봉\s*(?:총\s*)?(?:금액|액)?\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
-    /(?:총\s*)?연봉\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
-    /급여\s*총액\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
-    /보수\s*총액\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
+    /연\s*봉\s*(?:총\s*)?(?:금액|액|금)?\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
+    /(?:총\s*)?연\s*봉\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
+    /급\s*여\s*(?:총\s*)?(?:금액|액)?\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
+    /보\s*수\s*총\s*액\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
     /연\s*봉\s*금?\s*[:：]?\s*([0-9,]+)\s*(만\s*)?원?/gi,
+    /임\s*금\s*[:：]?\s*(?:연\s*)?([0-9,]+)\s*(만\s*)?원?/gi,
   ];
 
   for (const regex of amountPatterns) {
@@ -126,10 +127,20 @@ function collectCandidatesFromLine(line: string): SalaryCandidate[] {
   return candidates;
 }
 
+/** PDF 추출 텍스트 정규화 — 끊긴 숫자·공백 보정 */
+function normalizeContractText(text: string): string {
+  return text
+    .replace(/\u00a0/g, " ")
+    .replace(/[₩￦]/g, "")
+    .replace(/\d[\d,\s]*\d|\d[\d,]+/g, (segment) =>
+      segment.replace(/[\s,]+/g, "")
+    );
+}
+
 export function parseAnnualSalaryFromContractText(
   text: string
 ): HrSalaryExtractionResult {
-  const normalized = text.replace(/\u00a0/g, " ").trim();
+  const normalized = normalizeContractText(text).trim();
   if (!normalized) {
     return { annualSalary: null, status: "not_found" };
   }
@@ -157,18 +168,13 @@ export function parseAnnualSalaryFromContractText(
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const pdfModule = await import("pdf-parse");
-  const pdfParse =
-    typeof pdfModule === "function"
-      ? pdfModule
-      : "default" in pdfModule &&
-          typeof (pdfModule as { default: unknown }).default === "function"
-        ? (pdfModule as { default: (buf: Buffer) => Promise<{ text?: string }> })
-            .default
-        : null;
-  if (!pdfParse) return "";
-  const result = await pdfParse(buffer);
-  return result.text ?? "";
+  const mod = await import("pdf-parse");
+  const parsePdf =
+    typeof mod === "function"
+      ? (mod as (buf: Buffer) => Promise<{ text?: string }>)
+      : (mod as { default: (buf: Buffer) => Promise<{ text?: string }> }).default;
+  const result = await parsePdf(buffer);
+  return (result.text ?? "").trim();
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {
@@ -177,33 +183,42 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
   return result.value ?? "";
 }
 
+export type HrTextExtractionFormat = "pdf" | "docx" | "txt" | "unsupported";
+
+/** 서버에서 글자를 뽑을 수 있는 형식인지 */
+export function getHrTextExtractionFormat(
+  filename: string,
+  mimeType: string
+): HrTextExtractionFormat {
+  const ext = getFileExtension(filename);
+  const mime = mimeType.toLowerCase();
+
+  if (mime.includes("pdf") || ext === "pdf") return "pdf";
+  if (mime.includes("wordprocessingml") || ext === "docx") return "docx";
+  if (ext === "txt" || mime.startsWith("text/")) return "txt";
+
+  return "unsupported";
+}
+
 export async function extractTextFromHrDocument(input: {
   buffer: Buffer;
   mimeType: string;
   filename: string;
-}): Promise<string | null> {
-  const ext = getFileExtension(input.filename);
-  const mime = input.mimeType.toLowerCase();
+}): Promise<{ text: string; extractFailed: boolean } | { unsupported: true }> {
+  const format = getHrTextExtractionFormat(input.filename, input.mimeType);
+  if (format === "unsupported") return { unsupported: true };
 
   try {
-    if (mime.includes("pdf") || ext === "pdf") {
-      return await extractPdfText(input.buffer);
+    if (format === "pdf") {
+      return { text: await extractPdfText(input.buffer), extractFailed: false };
     }
-    if (
-      mime.includes("wordprocessingml") ||
-      mime.includes("msword") ||
-      ext === "docx"
-    ) {
-      return await extractDocxText(input.buffer);
+    if (format === "docx") {
+      return { text: await extractDocxText(input.buffer), extractFailed: false };
     }
-    if (ext === "txt" || mime.startsWith("text/")) {
-      return input.buffer.toString("utf-8");
-    }
+    return { text: input.buffer.toString("utf-8"), extractFailed: false };
   } catch {
-    return null;
+    return { text: "", extractFailed: true };
   }
-
-  return null;
 }
 
 export async function extractAnnualSalaryFromContract(input: {
@@ -216,10 +231,16 @@ export async function extractAnnualSalaryFromContract(input: {
     return { annualSalary: null, status: "skipped" };
   }
 
-  const text = await extractTextFromHrDocument(input);
-  if (text === null) {
+  const extracted = await extractTextFromHrDocument(input);
+  if ("unsupported" in extracted) {
     return { annualSalary: null, status: "unsupported" };
   }
+  if (extracted.extractFailed) {
+    return { annualSalary: null, status: "extract_failed" };
+  }
+  if (!extracted.text.trim()) {
+    return { annualSalary: null, status: "not_found" };
+  }
 
-  return parseAnnualSalaryFromContractText(text);
+  return parseAnnualSalaryFromContractText(extracted.text);
 }

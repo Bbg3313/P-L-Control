@@ -52,15 +52,35 @@ export function validateHrUploadFile(file: File): string | null {
   return null;
 }
 
+export function formatHrUnsupportedSalaryHint(filename: string): string {
+  const ext = getFileExtension(filename);
+  if (ext === "hwp" || ext === "hwpx") {
+    return "HWP → PDF 변환 필요";
+  }
+  if (ext === "doc") {
+    return "DOC → DOCX/PDF 권장";
+  }
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+    return "이미지는 PDF 권장";
+  }
+  return "PDF·DOCX만 자동";
+}
+
 export function formatHrAnnualSalaryLabel(doc: HrDocumentMeta): string {
   if (doc.category !== "근로계약서") return "—";
   if (doc.annualSalary && doc.annualSalary > 0) {
     return formatCurrency(doc.annualSalary);
   }
+  if (doc.salaryExtractStatus === "extract_failed") {
+    return "PDF 읽기 실패";
+  }
   if (doc.salaryExtractStatus === "unsupported") {
-    return "자동 추출 불가";
+    return formatHrUnsupportedSalaryHint(doc.name);
   }
   if (doc.salaryExtractStatus === "not_found") {
+    const ext = getFileExtension(doc.name);
+    if (ext === "pdf") return "스캔 PDF·연봉 없음";
+    if (ext === "docx") return "연봉 문구 없음";
     return "미확인";
   }
   return "—";

@@ -208,6 +208,7 @@ export function HrDocumentsPage() {
   }
 
   const filterOptions: FilterCategory[] = ["전체", ...HR_DOCUMENT_CATEGORIES];
+  const showSalaryColumn = filter === "전체" || filter === "근로계약서";
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
@@ -216,7 +217,8 @@ export function HrDocumentsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">인사</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             근로계약서·비밀유지서약서 등 서류를 업로드하고 팀과 공유합니다.
-            근로계약서(PDF·DOCX)는 연봉 총액을 자동으로 읽어 표시합니다.
+            근로계약서는 PDF·DOCX에서 연봉을 자동 인식합니다. HWP는 PDF로
+            변환 후 업로드해 주세요.
             (대시보드 미반영)
           </p>
         </div>
@@ -335,12 +337,19 @@ export function HrDocumentsPage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
+              <table
+                className={cn(
+                  "w-full text-sm",
+                  showSalaryColumn ? "min-w-[760px]" : "min-w-[640px]"
+                )}
+              >
                 <thead className="border-b bg-slate-50/80 text-left text-xs font-medium text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">이름</th>
                     <th className="px-4 py-3">분류</th>
-                    <th className="px-4 py-3">연봉(계약)</th>
+                    {showSalaryColumn && (
+                      <th className="px-4 py-3">연봉(계약)</th>
+                    )}
                     <th className="px-4 py-3">크기</th>
                     <th className="px-4 py-3">업로드</th>
                     <th className="px-4 py-3 text-right">작업</th>
@@ -361,37 +370,41 @@ export function HrDocumentsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{doc.category}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "tabular-nums",
-                              doc.annualSalary
-                                ? "font-medium text-violet-900"
-                                : "text-slate-500"
-                            )}
-                          >
-                            {formatHrAnnualSalaryLabel(doc)}
-                          </span>
-                          {doc.category === "근로계약서" && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="연봉 다시 읽기"
-                              disabled={extractingId === doc.id}
-                              onClick={() => void handleReextractSalary(doc)}
-                            >
-                              <RefreshCw
+                      {showSalaryColumn && (
+                        <td className="px-4 py-3">
+                          {doc.category === "근로계약서" ? (
+                            <div className="flex items-center gap-2">
+                              <span
                                 className={cn(
-                                  "h-3.5 w-3.5 text-muted-foreground",
-                                  extractingId === doc.id && "animate-spin"
+                                  "tabular-nums",
+                                  doc.annualSalary
+                                    ? "font-medium text-violet-900"
+                                    : "text-slate-500"
                                 )}
-                              />
-                            </Button>
+                              >
+                                {formatHrAnnualSalaryLabel(doc)}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="연봉 다시 읽기"
+                                disabled={extractingId === doc.id}
+                                onClick={() => void handleReextractSalary(doc)}
+                              >
+                                <RefreshCw
+                                  className={cn(
+                                    "h-3.5 w-3.5 text-muted-foreground",
+                                    extractingId === doc.id && "animate-spin"
+                                  )}
+                                />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">—</span>
                           )}
-                        </div>
-                      </td>
+                        </td>
+                      )}
                       <td className="px-4 py-3 tabular-nums text-slate-600">
                         {formatFileSize(doc.size)}
                       </td>

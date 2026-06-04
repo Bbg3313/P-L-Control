@@ -10,6 +10,7 @@ export type HrSalaryExtractStatus =
   | "found"
   | "not_found"
   | "unsupported"
+  | "extract_failed"
   | "skipped";
 
 /** 예전 분류(중요서류) → 비밀유지서약서 */
@@ -42,6 +43,7 @@ export function normalizeHrDocumentMeta(
     status === "found" ||
     status === "not_found" ||
     status === "unsupported" ||
+    status === "extract_failed" ||
     status === "skipped"
       ? status
       : annualSalary
