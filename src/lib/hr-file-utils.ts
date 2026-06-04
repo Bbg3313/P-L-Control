@@ -78,10 +78,10 @@ export function formatHrAnnualSalaryLabel(doc: HrDocumentMeta): string {
     return formatHrUnsupportedSalaryHint(doc.name);
   }
   if (doc.salaryExtractStatus === "not_found") {
-    const ext = getFileExtension(doc.name);
-    if (ext === "pdf") return "스캔 PDF·연봉 없음";
-    if (ext === "docx") return "연봉 문구 없음";
-    return "미확인";
+    const len = doc.salaryTextLength ?? 0;
+    if (len === 0) return "스캔 PDF(글자 없음)";
+    if (len < 80) return "텍스트 부족";
+    return "연봉 문구 없음";
   }
   return "—";
 }

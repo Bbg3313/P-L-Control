@@ -100,6 +100,7 @@ export async function POST(request: Request) {
     data: buffer,
     annualSalary: salaryExtraction.annualSalary,
     salaryExtractStatus: salaryExtraction.status,
+    salaryTextLength: salaryExtraction.textLength,
   });
 
   if (backend === "unavailable") {

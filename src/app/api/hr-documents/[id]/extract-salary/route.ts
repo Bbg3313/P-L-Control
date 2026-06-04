@@ -57,6 +57,7 @@ export async function POST(
   const result = await updateHrDocumentSalary(params.id, {
     annualSalary: extraction.annualSalary,
     salaryExtractStatus: extraction.status,
+    salaryTextLength: extraction.textLength,
   });
 
   if (result === "not-found") {
@@ -73,5 +74,6 @@ export async function POST(
     ok: true,
     annualSalary: extraction.annualSalary,
     status: extraction.status,
+    textLength: extraction.textLength ?? 0,
   });
 }

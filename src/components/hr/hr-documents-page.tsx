@@ -170,6 +170,7 @@ export function HrDocumentsPage() {
         error?: string;
         annualSalary?: number | null;
         status?: string;
+        textLength?: number;
       };
       if (!res.ok) {
         throw new Error(data.error ?? "연봉을 읽지 못했습니다.");
@@ -177,8 +178,14 @@ export function HrDocumentsPage() {
       await loadDocuments();
       if (data.annualSalary && data.annualSalary > 0) {
         setMessage(`「${doc.name}」 연봉을 인식했습니다.`);
+      } else if ((data.textLength ?? 0) === 0) {
+        setMessage(
+          `「${doc.name}」 PDF에서 글자를 읽지 못했습니다. 스캔본이면 텍스트 PDF로 다시 저장해 주세요.`
+        );
       } else {
-        setMessage(`「${doc.name}」에서 연봉 문구를 찾지 못했습니다.`);
+        setMessage(
+          `「${doc.name}」에서 연봉 문구를 찾지 못했습니다. (문서 ${data.textLength}자 추출됨)`
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "연봉을 읽지 못했습니다.");

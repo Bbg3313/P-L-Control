@@ -196,6 +196,7 @@ export async function saveHrDocument(input: {
   data: Buffer;
   annualSalary?: number | null;
   salaryExtractStatus?: HrSalaryExtractStatus;
+  salaryTextLength?: number;
 }): Promise<{ meta: HrDocumentMeta; backend: "redis" | "dev-file" | "unavailable" }> {
   if (!isHrDocumentsStorageAvailable()) {
     return {
@@ -221,6 +222,7 @@ export async function saveHrDocument(input: {
     uploadedAt: new Date().toISOString(),
     annualSalary: input.annualSalary ?? null,
     salaryExtractStatus: input.salaryExtractStatus,
+    salaryTextLength: input.salaryTextLength,
   };
 
   if (isCloudStorageConfigured()) {
@@ -270,7 +272,10 @@ export async function deleteHrDocument(
 
 export async function updateHrDocumentSalary(
   id: string,
-  salary: Pick<HrDocumentMeta, "annualSalary" | "salaryExtractStatus">
+  salary: Pick<
+    HrDocumentMeta,
+    "annualSalary" | "salaryExtractStatus" | "salaryTextLength"
+  >
 ): Promise<"redis" | "dev-file" | "unavailable" | "not-found"> {
   const { manifest } = await loadManifest();
   const doc = manifest.documents.find((d) => d.id === id);
@@ -278,6 +283,7 @@ export async function updateHrDocumentSalary(
 
   doc.annualSalary = salary.annualSalary ?? null;
   doc.salaryExtractStatus = salary.salaryExtractStatus;
+  doc.salaryTextLength = salary.salaryTextLength;
 
   return saveManifest(manifest);
 }

@@ -28,6 +28,8 @@ export interface HrDocumentMeta {
   /** 근로계약서에서 추출한 연봉(원) */
   annualSalary?: number | null;
   salaryExtractStatus?: HrSalaryExtractStatus;
+  /** 연봉 추출 시 PDF/문서에서 읽은 글자 수 */
+  salaryTextLength?: number;
 }
 
 export function normalizeHrDocumentMeta(
@@ -59,6 +61,10 @@ export function normalizeHrDocumentMeta(
     uploadedAt: String(raw.uploadedAt ?? new Date().toISOString()),
     annualSalary,
     salaryExtractStatus,
+    salaryTextLength:
+      typeof raw.salaryTextLength === "number" && raw.salaryTextLength >= 0
+        ? Math.floor(raw.salaryTextLength)
+        : undefined,
   };
 }
 
