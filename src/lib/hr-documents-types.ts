@@ -1,10 +1,15 @@
 export const HR_DOCUMENT_CATEGORIES = [
   "근로계약서",
-  "중요서류",
+  "비밀유지서약서",
   "기타",
 ] as const;
 
 export type HrDocumentCategory = (typeof HR_DOCUMENT_CATEGORIES)[number];
+
+/** 예전 분류(중요서류) → 비밀유지서약서 */
+const LEGACY_CATEGORY_MAP: Record<string, HrDocumentCategory> = {
+  중요서류: "비밀유지서약서",
+};
 
 export interface HrDocumentMeta {
   id: string;
@@ -26,5 +31,9 @@ export function isHrDocumentCategory(value: string): value is HrDocumentCategory
 
 export function normalizeHrDocumentCategory(value: unknown): HrDocumentCategory {
   const trimmed = typeof value === "string" ? value.trim() : "";
-  return isHrDocumentCategory(trimmed) ? trimmed : "기타";
+  if (isHrDocumentCategory(trimmed)) return trimmed;
+  if (trimmed && LEGACY_CATEGORY_MAP[trimmed]) {
+    return LEGACY_CATEGORY_MAP[trimmed];
+  }
+  return "기타";
 }
