@@ -8,8 +8,11 @@ import {
   saveHrDocument,
 } from "@/lib/hr-documents-store";
 import { normalizeHrDocumentCategory } from "@/lib/hr-documents-types";
+import { extractAnnualSalaryFromContract } from "@/lib/hr-contract-salary";
 import { validateHrUploadFile } from "@/lib/hr-file-utils";
 import { isCloudStorageConfigured } from "@/lib/workspace-store";
+
+export const runtime = "nodejs";
 
 function unauthorized() {
   return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -83,11 +86,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const salaryExtraction = await extractAnnualSalaryFromContract({
+    buffer,
+    mimeType: file.type || "application/octet-stream",
+    filename: file.name,
+    category,
+  });
+
   const { meta, backend } = await saveHrDocument({
     name: file.name,
     category,
     mimeType: file.type || "application/octet-stream",
     data: buffer,
+    annualSalary: salaryExtraction.annualSalary,
+    salaryExtractStatus: salaryExtraction.status,
   });
 
   if (backend === "unavailable") {

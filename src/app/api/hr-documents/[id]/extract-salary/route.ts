@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, isAuthenticated } from "@/lib/auth";
+import { extractAnnualSalaryFromContract } from "@/lib/hr-contract-salary";
 import {
-  deleteHrDocument,
   getHrDocumentMeta,
   readHrDocumentBuffer,
+  updateHrDocumentSalary,
 } from "@/lib/hr-documents-store";
 
 export const runtime = "nodejs";
@@ -19,11 +20,7 @@ function checkAuth() {
   return null;
 }
 
-function encodeFilename(filename: string): string {
-  return encodeURIComponent(filename).replace(/['()]/g, escape);
-}
-
-export async function GET(
+export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -35,6 +32,13 @@ export async function GET(
     return NextResponse.json({ error: "파일을 찾을 수 없습니다." }, { status: 404 });
   }
 
+  if (meta.category !== "근로계약서") {
+    return NextResponse.json(
+      { error: "근로계약서만 연봉을 추출할 수 있습니다." },
+      { status: 400 }
+    );
+  }
+
   const buffer = await readHrDocumentBuffer(params.id);
   if (!buffer) {
     return NextResponse.json(
@@ -43,34 +47,31 @@ export async function GET(
     );
   }
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": meta.mimeType,
-      "Content-Length": String(buffer.length),
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeFilename(meta.name)}`,
-      "Cache-Control": "private, no-store",
-    },
+  const extraction = await extractAnnualSalaryFromContract({
+    buffer,
+    mimeType: meta.mimeType,
+    filename: meta.name,
+    category: meta.category,
   });
-}
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
-  const authError = checkAuth();
-  if (authError) return authError;
+  const result = await updateHrDocumentSalary(params.id, {
+    annualSalary: extraction.annualSalary,
+    salaryExtractStatus: extraction.status,
+  });
 
-  const result = await deleteHrDocument(params.id);
   if (result === "not-found") {
     return NextResponse.json({ error: "파일을 찾을 수 없습니다." }, { status: 404 });
   }
   if (result === "unavailable") {
     return NextResponse.json(
-      { error: "저장소에서 삭제하지 못했습니다." },
+      { error: "저장소에 반영하지 못했습니다." },
       { status: 503 }
     );
   }
 
-  return NextResponse.json({ ok: true, backend: result });
+  return NextResponse.json({
+    ok: true,
+    annualSalary: extraction.annualSalary,
+    status: extraction.status,
+  });
 }

@@ -6,7 +6,8 @@ import {
   type HrDocumentCategory,
   type HrDocumentMeta,
   type HrDocumentsManifest,
-  normalizeHrDocumentCategory,
+  normalizeHrDocumentMeta,
+  type HrSalaryExtractStatus,
 } from "@/lib/hr-documents-types";
 import { isCloudStorageConfigured } from "@/lib/workspace-store";
 
@@ -54,14 +55,9 @@ async function readDevManifest(): Promise<HrDocumentsManifest | null> {
     const raw = await fs.readFile(DEV_MANIFEST, "utf-8");
     const parsed = JSON.parse(raw) as Partial<HrDocumentsManifest>;
     const documents = Array.isArray(parsed.documents)
-      ? parsed.documents.map((d) => ({
-          id: String(d.id),
-          name: String(d.name),
-          category: normalizeHrDocumentCategory(d.category),
-          mimeType: String(d.mimeType ?? "application/octet-stream"),
-          size: Number(d.size) || 0,
-          uploadedAt: String(d.uploadedAt ?? new Date().toISOString()),
-        }))
+      ? parsed.documents.map((d) =>
+          normalizeHrDocumentMeta(d as Partial<HrDocumentMeta>)
+        )
       : [];
     return {
       documents: sortDocuments(documents),
@@ -96,14 +92,9 @@ async function loadManifest(): Promise<{
       return { manifest: emptyManifest(), backend: "redis" };
     }
     const documents = Array.isArray(raw.documents)
-      ? raw.documents.map((d) => ({
-          id: String(d.id),
-          name: String(d.name),
-          category: normalizeHrDocumentCategory(d.category),
-          mimeType: String(d.mimeType ?? "application/octet-stream"),
-          size: Number(d.size) || 0,
-          uploadedAt: String(d.uploadedAt ?? new Date().toISOString()),
-        }))
+      ? raw.documents.map((d) =>
+          normalizeHrDocumentMeta(d as Partial<HrDocumentMeta>)
+        )
       : [];
     return {
       manifest: {
@@ -203,6 +194,8 @@ export async function saveHrDocument(input: {
   category: HrDocumentCategory;
   mimeType: string;
   data: Buffer;
+  annualSalary?: number | null;
+  salaryExtractStatus?: HrSalaryExtractStatus;
 }): Promise<{ meta: HrDocumentMeta; backend: "redis" | "dev-file" | "unavailable" }> {
   if (!isHrDocumentsStorageAvailable()) {
     return {
@@ -226,6 +219,8 @@ export async function saveHrDocument(input: {
     mimeType: input.mimeType || "application/octet-stream",
     size: input.data.length,
     uploadedAt: new Date().toISOString(),
+    annualSalary: input.annualSalary ?? null,
+    salaryExtractStatus: input.salaryExtractStatus,
   };
 
   if (isCloudStorageConfigured()) {
@@ -271,4 +266,18 @@ export async function deleteHrDocument(
   }
 
   return "unavailable";
+}
+
+export async function updateHrDocumentSalary(
+  id: string,
+  salary: Pick<HrDocumentMeta, "annualSalary" | "salaryExtractStatus">
+): Promise<"redis" | "dev-file" | "unavailable" | "not-found"> {
+  const { manifest } = await loadManifest();
+  const doc = manifest.documents.find((d) => d.id === id);
+  if (!doc) return "not-found";
+
+  doc.annualSalary = salary.annualSalary ?? null;
+  doc.salaryExtractStatus = salary.salaryExtractStatus;
+
+  return saveManifest(manifest);
 }

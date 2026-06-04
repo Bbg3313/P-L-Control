@@ -1,3 +1,6 @@
+import { formatCurrency } from "@/lib/format";
+import type { HrDocumentMeta } from "@/lib/hr-documents-types";
+
 /** 업로드 1건당 최대 크기 (8MB) */
 export const HR_DOCUMENT_MAX_BYTES = 8 * 1024 * 1024;
 
@@ -47,6 +50,20 @@ export function validateHrUploadFile(file: File): string | null {
     return `파일 크기는 ${formatFileSize(HR_DOCUMENT_MAX_BYTES)} 이하여야 합니다.`;
   }
   return null;
+}
+
+export function formatHrAnnualSalaryLabel(doc: HrDocumentMeta): string {
+  if (doc.category !== "근로계약서") return "—";
+  if (doc.annualSalary && doc.annualSalary > 0) {
+    return formatCurrency(doc.annualSalary);
+  }
+  if (doc.salaryExtractStatus === "unsupported") {
+    return "자동 추출 불가";
+  }
+  if (doc.salaryExtractStatus === "not_found") {
+    return "미확인";
+  }
+  return "—";
 }
 
 export function formatUploadTimestamp(iso: string): string {
