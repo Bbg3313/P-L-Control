@@ -16,10 +16,6 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "블루브릿지글로벌 손익관리",
   description: "블루브릿지글로벌 매출·비용·손익 대시보드",
-  icons: {
-    icon: [{ url: "/favicon.ico", sizes: "any" }, { url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", type: "image/png" }],
-  },
 };
 
 export default function RootLayout({
