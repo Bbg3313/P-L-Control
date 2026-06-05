@@ -19,18 +19,50 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  iconTone: string;
   /** true면 href와 pathname이 정확히 일치할 때만 활성 */
   exact?: boolean;
-  indent?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { href: "/", label: "대시보드", icon: LayoutDashboard, exact: true },
-  { href: "/revenue", label: "매출", icon: TrendingUp },
-  { href: "/expenses", label: "비용", icon: TrendingDown },
-  { href: "/hr", label: "인사", icon: Users, exact: true },
-  { href: "/hr/records", label: "인사기록부", icon: ClipboardList, indent: true },
-  { href: "/settings", label: "설정", icon: Settings },
+  {
+    href: "/",
+    label: "대시보드",
+    icon: LayoutDashboard,
+    iconTone: "bg-indigo-100 text-indigo-600",
+    exact: true,
+  },
+  {
+    href: "/revenue",
+    label: "매출",
+    icon: TrendingUp,
+    iconTone: "bg-emerald-100 text-emerald-600",
+  },
+  {
+    href: "/expenses",
+    label: "비용",
+    icon: TrendingDown,
+    iconTone: "bg-rose-100 text-rose-600",
+  },
+  {
+    href: "/hr",
+    label: "인사",
+    icon: Users,
+    iconTone: "bg-violet-100 text-violet-600",
+    exact: true,
+  },
+  {
+    href: "/hr/records",
+    label: "인사기록부",
+    icon: ClipboardList,
+    iconTone: "bg-sky-100 text-sky-600",
+  },
+  {
+    href: "/settings",
+    label: "설정",
+    icon: Settings,
+    iconTone: "bg-slate-200 text-slate-600",
+  },
 ];
 
 function isNavActive(pathname: string, item: NavItem): boolean {
@@ -65,7 +97,7 @@ export function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {navItems.map((item) => {
-          const { href, label, icon: Icon, indent } = item;
+          const { href, label, icon: Icon, iconTone } = item;
           const isActive = isNavActive(pathname, item);
 
           return (
@@ -73,15 +105,21 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors",
-                indent ? "pl-8 pr-3" : "px-3",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium leading-none transition-colors",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              <span
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                  iconTone
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="truncate">{label}</span>
             </Link>
           );
         })}

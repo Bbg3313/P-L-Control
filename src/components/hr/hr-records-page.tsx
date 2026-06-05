@@ -86,8 +86,8 @@ function EmployeeCard({
   );
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-4">
+    <article className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ function EmployeeCard({
         </div>
       </div>
 
-      <dl className="grid flex-1 gap-4 px-5 py-4 sm:grid-cols-2">
+      <dl className="grid flex-1 gap-3 px-4 py-3.5 sm:grid-cols-2">
         <FieldRow label="입사일자" value={formatHrRecordDate(record.acquiredDate)} />
         <FieldRow label="상실일자" value={formatHrRecordDate(record.lostDate)} />
         <FieldRow
@@ -144,7 +144,7 @@ function EmployeeCard({
         </div>
       </dl>
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+      <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5">
         <Button type="button" variant="outline" size="sm" onClick={onEdit}>
           <Pencil data-icon="inline-start" />
           수정
@@ -394,7 +394,7 @@ export function HrRecordsPage() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
       <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">인사기록부</h1>
@@ -463,7 +463,7 @@ export function HrRecordsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4">
           {records.map((record) => (
             <EmployeeCard
               key={record.id}
