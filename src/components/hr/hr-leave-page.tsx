@@ -151,11 +151,14 @@ function LeaveDayBlocks({
   used,
   entries = [],
   size = "md",
+  scrollable = false,
 }: {
   granted: number;
   used: number;
   entries?: HrLeaveEntry[];
   size?: "md" | "sm";
+  /** 팀 현황처럼 칸이 잘리지 않게 한 줄 + 가로 스크롤 */
+  scrollable?: boolean;
 }) {
   const [hoverTip, setHoverTip] = useState<LeaveHoverTip | null>(null);
   const cells = buildLeaveDayCells(entries, granted, used);
@@ -183,13 +186,16 @@ function LeaveDayBlocks({
 
   const cellClass =
     size === "sm"
-      ? "h-4 w-4 rounded-[3px]"
-      : "h-5 w-5 rounded-[4px] sm:h-6 sm:w-6";
+      ? "h-4 w-4 shrink-0 rounded-[3px]"
+      : "h-5 w-5 shrink-0 rounded-[4px] sm:h-6 sm:w-6";
 
   return (
     <>
       <div
-        className="flex flex-wrap gap-0.5"
+        className={cn(
+          "flex gap-0.5",
+          scrollable ? "w-max shrink-0 flex-nowrap" : "flex-wrap"
+        )}
         role="img"
         aria-label={`발생 ${formatDays(granted)}일 중 ${formatDays(used)}일 사용`}
       >
@@ -241,7 +247,7 @@ function LeaveDayBlocks({
 
 function TeamLeaveRow({ employee }: { employee: LeaveEmployeeRow }) {
   return (
-    <div className="grid gap-3 border-b border-slate-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,9rem)_1fr_minmax(0,6.5rem)] sm:items-center">
+    <div className="grid gap-3 border-b border-slate-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,6.5rem)] sm:items-center">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-slate-900">
           {employee.name}
@@ -252,13 +258,16 @@ function TeamLeaveRow({ employee }: { employee: LeaveEmployeeRow }) {
         </p>
       </div>
 
-      <LeaveDayBlocks
-        granted={employee.grantedDays}
-        used={employee.usedDays}
-        entries={employee.entries}
-      />
+      <div className="min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-gutter:stable]">
+        <LeaveDayBlocks
+          granted={employee.grantedDays}
+          used={employee.usedDays}
+          entries={employee.entries}
+          scrollable
+        />
+      </div>
 
-      <div className="text-right text-xs tabular-nums text-slate-600 sm:text-sm">
+      <div className="shrink-0 text-right text-xs tabular-nums text-slate-600 sm:text-sm">
         <p>
           <span className="font-medium text-slate-800">
             {formatDays(employee.usedDays)}
@@ -514,14 +523,14 @@ export function HrLeavePage() {
           </Card>
         ) : (
           <>
-            <Card>
+            <Card className="overflow-visible">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">팀 연차 현황</CardTitle>
                 <CardDescription>
                   가로 일수 칸 · 사용분은 회색, 잔여는 청록색
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-visible">
                 <div className="mb-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-3.5 w-3.5 rounded-[3px] border border-teal-200 bg-teal-50" />
