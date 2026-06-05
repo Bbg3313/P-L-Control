@@ -10,11 +10,22 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+function isPublicAsset(pathname: string): boolean {
+  return (
+    pathname === "/favicon.ico" ||
+    pathname === "/icon.png" ||
+    pathname === "/apple-icon.png" ||
+    pathname === "/bluebridge-global-logo.png" ||
+    /\.(?:png|jpe?g|gif|svg|ico|webp)$/i.test(pathname)
+  );
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
     isPublicPath(pathname) ||
+    isPublicAsset(pathname) ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) {
