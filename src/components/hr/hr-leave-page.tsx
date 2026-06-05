@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,22 @@ interface LeaveEmployeeRow {
 
 function formatDays(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+/** 입사일 기준 근무일수(근속) 내림차순 — 입사일이 빠를수록 위 */
+function sortEmployeesByTenureDesc(
+  employees: LeaveEmployeeRow[]
+): LeaveEmployeeRow[] {
+  return [...employees].sort((a, b) => {
+    const aDate = a.acquiredDate?.trim() ?? "";
+    const bDate = b.acquiredDate?.trim() ?? "";
+    if (!aDate && !bDate) return a.name.localeCompare(b.name, "ko");
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    const byHireDate = aDate.localeCompare(bDate);
+    if (byHireDate !== 0) return byHireDate;
+    return a.name.localeCompare(b.name, "ko");
+  });
 }
 
 function formatEntryTooltip(entry: HrLeaveEntry): string {
@@ -468,6 +484,11 @@ export function HrLeavePage() {
     void load();
   }, [load]);
 
+  const teamEmployees = useMemo(
+    () => sortEmployeesByTenureDesc(employees),
+    [employees]
+  );
+
   async function saveEntries(employeeId: string, entries: HrLeaveEntry[]) {
     setSavingId(employeeId);
     setError(null);
@@ -527,7 +548,7 @@ export function HrLeavePage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">팀 연차 현황</CardTitle>
                 <CardDescription>
-                  가로 일수 칸 · 사용분은 회색, 잔여는 청록색
+                  입사일 기준 근속 오래된 순 · 사용분은 회색, 잔여는 청록색
                 </CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">
@@ -546,7 +567,7 @@ export function HrLeavePage() {
                   </span>
                 </div>
                 <div>
-                  {employees.map((employee) => (
+                  {teamEmployees.map((employee) => (
                     <TeamLeaveRow key={employee.id} employee={employee} />
                   ))}
                 </div>
