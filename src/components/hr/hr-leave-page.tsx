@@ -37,17 +37,75 @@ function formatDays(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
+function formatEntryTooltip(entry: HrLeaveEntry): string {
+  return `${entry.date} · ${entry.type} (${formatDays(entry.days)}일)`;
+}
+
+interface LeaveCellPart {
+  entry: HrLeaveEntry;
+  leftPct: number;
+  widthPct: number;
+}
+
+interface LeaveDayCell {
+  isGranted: boolean;
+  usedInCell: number;
+  parts: LeaveCellPart[];
+}
+
+function buildLeaveDayCells(
+  entries: HrLeaveEntry[],
+  granted: number,
+  used: number
+): LeaveDayCell[] {
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const placements: { entry: HrLeaveEntry; start: number; end: number }[] = [];
+  let cursor = 0;
+  for (const entry of sorted) {
+    placements.push({ entry, start: cursor, end: cursor + entry.days });
+    cursor += entry.days;
+  }
+
+  const totalCells = Math.max(Math.ceil(granted), Math.ceil(used), Math.ceil(cursor));
+  return Array.from({ length: totalCells }, (_, index) => {
+    const usedInCell = Math.min(1, Math.max(0, used - index));
+    const parts: LeaveCellPart[] = [];
+
+    if (usedInCell > 0) {
+      for (const placement of placements) {
+        const overlapStart = Math.max(index, placement.start);
+        const overlapEnd = Math.min(index + usedInCell, placement.end);
+        if (overlapEnd > overlapStart) {
+          parts.push({
+            entry: placement.entry,
+            leftPct: ((overlapStart - index) / usedInCell) * 100,
+            widthPct: ((overlapEnd - overlapStart) / usedInCell) * 100,
+          });
+        }
+      }
+    }
+
+    return {
+      isGranted: index < granted,
+      usedInCell,
+      parts,
+    };
+  });
+}
+
 function LeaveDayBlocks({
   granted,
   used,
+  entries = [],
   size = "md",
 }: {
   granted: number;
   used: number;
+  entries?: HrLeaveEntry[];
   size?: "md" | "sm";
 }) {
-  const totalCells = Math.max(Math.ceil(granted), Math.ceil(used));
-  if (totalCells <= 0) {
+  const cells = buildLeaveDayCells(entries, granted, used);
+  if (cells.length <= 0) {
     return (
       <span className="text-xs text-muted-foreground">발생 연차 없음</span>
     );
@@ -64,32 +122,42 @@ function LeaveDayBlocks({
       role="img"
       aria-label={`발생 ${formatDays(granted)}일 중 ${formatDays(used)}일 사용`}
     >
-      {Array.from({ length: totalCells }, (_, index) => {
-        const cellStart = index;
-        const usedInCell = Math.min(1, Math.max(0, used - cellStart));
-        const isGranted = cellStart < granted;
-
-        return (
-          <div
-            key={index}
-            className={cn(
-              cellClass,
-              "relative overflow-hidden border",
-              isGranted
-                ? "border-teal-200/80 bg-teal-50"
-                : "border-slate-200 bg-slate-100"
-            )}
-            title={`${index + 1}일차`}
-          >
-            {usedInCell > 0 && (
-              <div
-                className="absolute inset-y-0 left-0 bg-slate-400"
-                style={{ width: `${usedInCell * 100}%` }}
-              />
-            )}
-          </div>
-        );
-      })}
+      {cells.map((cell, index) => (
+        <div
+          key={index}
+          className={cn(
+            cellClass,
+            "relative overflow-hidden border",
+            cell.isGranted
+              ? "border-teal-200/80 bg-teal-50"
+              : "border-slate-200 bg-slate-100"
+          )}
+          title={cell.usedInCell <= 0 ? `${index + 1}일차` : undefined}
+        >
+          {cell.usedInCell > 0 && (
+            <div
+              className="absolute inset-y-0 left-0"
+              style={{ width: `${cell.usedInCell * 100}%` }}
+            >
+              {cell.parts.length > 0 ? (
+                cell.parts.map((part) => (
+                  <div
+                    key={`${part.entry.id}-${part.leftPct}`}
+                    className="absolute inset-y-0 cursor-default bg-slate-400"
+                    style={{
+                      left: `${part.leftPct}%`,
+                      width: `${part.widthPct}%`,
+                    }}
+                    title={formatEntryTooltip(part.entry)}
+                  />
+                ))
+              ) : (
+                <div className="h-full w-full bg-slate-400" />
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -107,7 +175,11 @@ function TeamLeaveRow({ employee }: { employee: LeaveEmployeeRow }) {
         </p>
       </div>
 
-      <LeaveDayBlocks granted={employee.grantedDays} used={employee.usedDays} />
+      <LeaveDayBlocks
+        granted={employee.grantedDays}
+        used={employee.usedDays}
+        entries={employee.entries}
+      />
 
       <div className="text-right text-xs tabular-nums text-slate-600 sm:text-sm">
         <p>
@@ -186,6 +258,7 @@ function LeaveEntryForm({
         <LeaveDayBlocks
           granted={employee.grantedDays}
           used={employee.usedDays}
+          entries={employee.entries}
           size="sm"
         />
       </div>
