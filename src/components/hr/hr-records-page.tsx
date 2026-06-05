@@ -382,7 +382,17 @@ export function HrRecordsPage() {
   }
 
   return (
-    <div className="w-full max-w-full space-y-4 px-0 pb-6 pt-4">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
+      <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">인사기록부</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            직원 1명씩 인사카드로 등록·관리합니다.
+          </p>
+        </div>
+      </header>
+
+      <div className="w-full max-w-full space-y-4 pb-6 pt-4">
       {!storageConfigured && (
         <div
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
@@ -394,8 +404,8 @@ export function HrRecordsPage() {
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          직원 1명씩 인사카드로 등록·관리합니다. ({records.length}명)
+        <p className="text-sm text-muted-foreground tabular-nums">
+          등록 {records.length}명
         </p>
         <Button
           type="button"
@@ -479,6 +489,7 @@ export function HrRecordsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

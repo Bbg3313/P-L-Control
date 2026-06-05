@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ClipboardList,
   LayoutDashboard,
   TrendingUp,
   TrendingDown,
@@ -14,13 +15,28 @@ import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { href: "/", label: "대시보드", icon: LayoutDashboard },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** true면 href와 pathname이 정확히 일치할 때만 활성 */
+  exact?: boolean;
+  indent?: boolean;
+};
+
+const navItems: NavItem[] = [
+  { href: "/", label: "대시보드", icon: LayoutDashboard, exact: true },
   { href: "/revenue", label: "매출", icon: TrendingUp },
   { href: "/expenses", label: "비용", icon: TrendingDown },
-  { href: "/hr", label: "인사", icon: Users },
+  { href: "/hr", label: "인사", icon: Users, exact: true },
+  { href: "/hr/records", label: "인사기록부", icon: ClipboardList, indent: true },
   { href: "/settings", label: "설정", icon: Settings },
-] as const;
+];
+
+function isNavActive(pathname: string, item: NavItem): boolean {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -48,16 +64,17 @@ export function Sidebar() {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+        {navItems.map((item) => {
+          const { href, label, icon: Icon, indent } = item;
+          const isActive = isNavActive(pathname, item);
 
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors",
+                indent ? "pl-8 pr-3" : "px-3",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
