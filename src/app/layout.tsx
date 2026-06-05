@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { APP_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -14,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "블루브릿지글로벌 손익관리",
-  description: "블루브릿지글로벌 매출·비용·손익 대시보드",
+  title: APP_NAME,
+  description: "블루브릿지글로벌 매출·비용·경영관리 대시보드",
 };
 
 export default function RootLayout({

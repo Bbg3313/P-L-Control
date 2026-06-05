@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   ClipboardList,
   LayoutDashboard,
   TrendingUp,
@@ -56,6 +57,12 @@ const navItems: NavItem[] = [
     label: "인사기록부",
     icon: ClipboardList,
     iconTone: "bg-sky-100 text-sky-600",
+  },
+  {
+    href: "/hr/leave",
+    label: "연차현황",
+    icon: CalendarDays,
+    iconTone: "bg-teal-100 text-teal-600",
   },
   {
     href: "/settings",
