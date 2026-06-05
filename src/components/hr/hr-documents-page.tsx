@@ -6,7 +6,6 @@ import {
   FileText,
   FolderOpen,
   Loader2,
-  RefreshCw,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import {
 } from "@/lib/hr-documents-types";
 import {
   formatFileSize,
-  formatHrAnnualSalaryLabel,
   formatUploadTimestamp,
   validateHrUploadFile,
 } from "@/lib/hr-file-utils";
@@ -38,7 +36,6 @@ export function HrDocumentsPage() {
   const [category, setCategory] = useState<HrDocumentCategory>("근로계약서");
   const [filter, setFilter] = useState<FilterCategory>("전체");
   const [dragOver, setDragOver] = useState(false);
-  const [extractingId, setExtractingId] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -90,7 +87,6 @@ export function HrDocumentsPage() {
     setMessage(null);
 
     let success = 0;
-    let salaryFound = 0;
     const failures: string[] = [];
 
     for (const file of list) {
@@ -114,12 +110,6 @@ export function HrDocumentsPage() {
           failures.push(`${file.name}: ${data.error ?? "업로드 실패"}`);
           continue;
         }
-        const data = (await res.json()) as {
-          document?: { annualSalary?: number | null };
-        };
-        if (data.document?.annualSalary && data.document.annualSalary > 0) {
-          salaryFound += 1;
-        }
         success += 1;
       } catch {
         failures.push(`${file.name}: 네트워크 오류`);
@@ -130,11 +120,7 @@ export function HrDocumentsPage() {
     setUploading(false);
 
     if (success > 0) {
-      setMessage(
-        salaryFound > 0
-          ? `${success}건 업로드 · 근로계약서 연봉 ${salaryFound}건 자동 인식`
-          : `${success}건 업로드했습니다.`
-      );
+      setMessage(`${success}건 업로드했습니다.`);
     }
     if (failures.length > 0) {
       setError(failures.slice(0, 3).join(" · ") + (failures.length > 3 ? " …" : ""));
@@ -153,50 +139,6 @@ export function HrDocumentsPage() {
     if (uploading) return;
     if (e.dataTransfer.files.length > 0) {
       void uploadFiles(e.dataTransfer.files);
-    }
-  }
-
-  async function handleReextractSalary(doc: HrDocumentMeta) {
-    if (doc.category !== "근로계약서") return;
-
-    setExtractingId(doc.id);
-    setError(null);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/hr-documents/${doc.id}/extract-salary`, {
-        method: "POST",
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        annualSalary?: number | null;
-        status?: string;
-        textLength?: number;
-      };
-      if (!res.ok) {
-        throw new Error(data.error ?? "연봉을 읽지 못했습니다.");
-      }
-      await loadDocuments();
-      if (data.annualSalary && data.annualSalary > 0) {
-        setMessage(`「${doc.name}」 연봉을 인식했습니다.`);
-      } else if (data.status === "unsupported") {
-        setMessage(
-          `「${doc.name}」 형식을 인식하지 못했습니다. PDF·DOCX로 저장한 뒤 다시 업로드해 주세요.`
-        );
-      } else if (data.status === "extract_failed") {
-        setMessage(`「${doc.name}」 PDF를 열지 못했습니다. 파일이 손상되었는지 확인해 주세요.`);
-      } else if ((data.textLength ?? 0) === 0) {
-        setMessage(
-          `「${doc.name}」 PDF에서 글자를 읽지 못했습니다. 스캔본이면 텍스트 PDF로 다시 저장해 주세요.`
-        );
-      } else {
-        setMessage(
-          `「${doc.name}」에서 연봉 문구를 찾지 못했습니다. (문서 ${data.textLength}자 추출됨)`
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "연봉을 읽지 못했습니다.");
-    } finally {
-      setExtractingId(null);
     }
   }
 
@@ -221,7 +163,6 @@ export function HrDocumentsPage() {
   }
 
   const filterOptions: FilterCategory[] = ["전체", ...HR_DOCUMENT_CATEGORIES];
-  const showSalaryColumn = filter === "전체" || filter === "근로계약서";
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
@@ -230,8 +171,6 @@ export function HrDocumentsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">인사</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             근로계약서·비밀유지서약서 등 서류를 업로드하고 팀과 공유합니다.
-            근로계약서는 PDF·DOCX에서 연봉을 자동 인식합니다. HWP는 PDF로
-            변환 후 업로드해 주세요.
             (대시보드 미반영)
           </p>
         </div>
@@ -350,19 +289,11 @@ export function HrDocumentsPage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table
-                className={cn(
-                  "w-full text-sm",
-                  showSalaryColumn ? "min-w-[760px]" : "min-w-[640px]"
-                )}
-              >
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="border-b bg-slate-50/80 text-left text-xs font-medium text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">이름</th>
                     <th className="px-4 py-3">분류</th>
-                    {showSalaryColumn && (
-                      <th className="px-4 py-3">연봉(계약)</th>
-                    )}
                     <th className="px-4 py-3">크기</th>
                     <th className="px-4 py-3">업로드</th>
                     <th className="px-4 py-3 text-right">작업</th>
@@ -383,41 +314,6 @@ export function HrDocumentsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{doc.category}</td>
-                      {showSalaryColumn && (
-                        <td className="px-4 py-3">
-                          {doc.category === "근로계약서" ? (
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "tabular-nums",
-                                  doc.annualSalary
-                                    ? "font-medium text-violet-900"
-                                    : "text-slate-500"
-                                )}
-                              >
-                                {formatHrAnnualSalaryLabel(doc)}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label="연봉 다시 읽기"
-                                disabled={extractingId === doc.id}
-                                onClick={() => void handleReextractSalary(doc)}
-                              >
-                                <RefreshCw
-                                  className={cn(
-                                    "h-3.5 w-3.5 text-muted-foreground",
-                                    extractingId === doc.id && "animate-spin"
-                                  )}
-                                />
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                      )}
                       <td className="px-4 py-3 tabular-nums text-slate-600">
                         {formatFileSize(doc.size)}
                       </td>
