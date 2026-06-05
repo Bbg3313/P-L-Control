@@ -10,6 +10,7 @@ import {
   isEmploymentStatus,
   type HrEmployeeRecordInput,
 } from "@/lib/hr-records-types";
+import { formatKoreanPhone } from "@/lib/hr-records-utils";
 import { isCloudStorageConfigured } from "@/lib/workspace-store";
 
 export const runtime = "nodejs";
@@ -50,7 +51,7 @@ function parseRecordInput(body: unknown): HrEmployeeRecordInput | string {
     residentId: text("residentId"),
     bank: text("bank"),
     accountNumber: text("accountNumber"),
-    phone: text("phone"),
+    phone: formatKoreanPhone(text("phone")),
     address: text("address"),
   };
 }

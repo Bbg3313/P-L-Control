@@ -22,7 +22,7 @@ import {
 import {
   formatEmploymentTenure,
   formatHrRecordDate,
-  maskResidentId,
+  formatKoreanPhone,
   statusBadgeClass,
 } from "@/lib/hr-records-utils";
 import { cn } from "@/lib/utils";
@@ -124,12 +124,12 @@ function EmployeeCard({
       <dl className="grid flex-1 gap-3 px-4 py-3.5 sm:grid-cols-2">
         <FieldRow label="입사일자" value={formatHrRecordDate(record.acquiredDate)} />
         <FieldRow label="상실일자" value={formatHrRecordDate(record.lostDate)} />
+        <FieldRow label="주민번호" value={record.residentId} mono />
         <FieldRow
-          label="주민번호"
-          value={maskResidentId(record.residentId)}
+          label="연락처"
+          value={formatKoreanPhone(record.phone) || record.phone}
           mono
         />
-        <FieldRow label="연락처" value={record.phone} mono />
         <FieldRow
           label="은행"
           value={record.bank}
@@ -224,8 +224,10 @@ function EmployeeForm({
         <Input
           id="hr-phone"
           value={value.phone}
-          onChange={(e) => set("phone", e.target.value)}
+          onChange={(e) => set("phone", formatKoreanPhone(e.target.value))}
           placeholder="010-0000-0000"
+          inputMode="tel"
+          className="font-mono"
         />
       </div>
       <div className="space-y-1.5">

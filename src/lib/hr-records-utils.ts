@@ -64,15 +64,42 @@ export function formatEmploymentTenure(
   return `${duration} 재직중`;
 }
 
-export function maskResidentId(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return "—";
-  const digits = trimmed.replace(/[^\d]/g, "");
-  if (digits.length < 7) return trimmed;
-  const front = digits.slice(0, 6);
-  const dash = trimmed.includes("-") ? "-" : "-";
-  const gender = digits[6];
-  return `${front}${dash}${gender}******`;
+/** 숫자만 입력해도 한국 전화번호 형식으로 하이픈 삽입 */
+export function formatKoreanPhone(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (digits.startsWith("02")) {
+    const body = digits.slice(2);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return `02-${body}`;
+    if (digits.length <= 9) {
+      return `02-${body.slice(0, body.length - 4)}-${body.slice(-4)}`;
+    }
+    return `02-${body.slice(0, 4)}-${body.slice(4, 8)}`;
+  }
+
+  if (digits.startsWith("01")) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    }
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  }
+
+  if (digits.startsWith("0")) {
+    const area = digits.slice(0, 3);
+    const body = digits.slice(3);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${area}-${body}`;
+    return `${area}-${body.slice(0, body.length - 4)}-${body.slice(-4)}`;
+  }
+
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 8) {
+    return `${digits.slice(0, digits.length - 4)}-${digits.slice(-4)}`;
+  }
+  return `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8, 12)}`;
 }
 
 export function formatHrRecordDate(value: string): string {
