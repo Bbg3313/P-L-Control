@@ -34,12 +34,18 @@ function emptyManifest(): HrRecordsManifest {
   return { records: [], updatedAt: new Date().toISOString() };
 }
 
+function acquiredDateSortKey(value: string): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.POSITIVE_INFINITY;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+}
+
+/** 입사일(재직 시작) 오래된 순 → 이름순 */
 function sortRecords(records: HrEmployeeRecord[]): HrEmployeeRecord[] {
   return [...records].sort((a, b) => {
-    const statusOrder = (s: HrEmployeeRecord["status"]) =>
-      s === "재직" ? 0 : s === "휴직" ? 1 : 2;
-    const byStatus = statusOrder(a.status) - statusOrder(b.status);
-    if (byStatus !== 0) return byStatus;
+    const byAcquired =
+      acquiredDateSortKey(a.acquiredDate) - acquiredDateSortKey(b.acquiredDate);
+    if (byAcquired !== 0) return byAcquired;
     return a.name.localeCompare(b.name, "ko");
   });
 }
