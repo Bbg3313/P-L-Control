@@ -12,7 +12,7 @@ export interface HrEmployeeRecord {
   position: string;
   /** 이름 */
   name: string;
-  /** 취득일자 (YYYY-MM-DD) */
+  /** 입사일자 (YYYY-MM-DD) */
   acquiredDate: string;
   /** 상실일자 (YYYY-MM-DD) */
   lostDate: string;

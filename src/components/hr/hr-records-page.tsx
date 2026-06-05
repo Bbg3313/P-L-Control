@@ -20,6 +20,7 @@ import {
   type HrEmployeeRecordInput,
 } from "@/lib/hr-records-types";
 import {
+  formatEmploymentTenure,
   formatHrRecordDate,
   maskResidentId,
   statusBadgeClass,
@@ -78,6 +79,12 @@ function EmployeeCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const tenure = formatEmploymentTenure(
+    record.acquiredDate,
+    record.lostDate,
+    record.status
+  );
+
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-4">
@@ -95,6 +102,11 @@ function EmployeeCard({
                   {[record.position, record.department].filter(Boolean).join(" · ") ||
                     "직위·소속 미입력"}
                 </p>
+                {tenure && (
+                  <p className="mt-1 text-sm font-medium text-violet-700">
+                    {tenure}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -110,7 +122,7 @@ function EmployeeCard({
       </div>
 
       <dl className="grid flex-1 gap-4 px-5 py-4 sm:grid-cols-2">
-        <FieldRow label="취득일자" value={formatHrRecordDate(record.acquiredDate)} />
+        <FieldRow label="입사일자" value={formatHrRecordDate(record.acquiredDate)} />
         <FieldRow label="상실일자" value={formatHrRecordDate(record.lostDate)} />
         <FieldRow
           label="주민번호"
@@ -217,7 +229,7 @@ function EmployeeForm({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="hr-acquired">취득일자</Label>
+        <Label htmlFor="hr-acquired">입사일자</Label>
         <Input
           id="hr-acquired"
           type="date"
