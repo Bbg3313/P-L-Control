@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,58 @@ function formatDays(value: number): string {
 
 function formatEntryTooltip(entry: HrLeaveEntry): string {
   return `${entry.date} · ${entry.type} (${formatDays(entry.days)}일)`;
+}
+
+interface LeaveHoverTip {
+  lines: string[];
+  x: number;
+  y: number;
+}
+
+function createHoverTip(lines: string[], x: number, y: number): LeaveHoverTip {
+  const uniqueLines = Array.from(new Set(lines));
+  const tooltipWidth = 260;
+  const tooltipHeight = uniqueLines.length * 20 + 12;
+  let nextX = x + 12;
+  let nextY = y + 16;
+
+  if (typeof window !== "undefined") {
+    if (nextX + tooltipWidth > window.innerWidth - 8) {
+      nextX = window.innerWidth - tooltipWidth - 8;
+    }
+    if (nextY + tooltipHeight > window.innerHeight - 8) {
+      nextY = y - tooltipHeight - 12;
+    }
+    nextX = Math.max(8, nextX);
+    nextY = Math.max(8, nextY);
+  }
+
+  return { lines: uniqueLines, x: nextX, y: nextY };
+}
+
+function LeaveUsageTooltip({ tip }: { tip: LeaveHoverTip | null }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !tip || tip.lines.length === 0) return null;
+
+  return createPortal(
+    <div
+      className="pointer-events-none fixed z-[200] max-w-[16rem] rounded-md border border-slate-700/30 bg-slate-900 px-2.5 py-1.5 text-xs leading-relaxed text-white shadow-lg"
+      style={{ left: tip.x, top: tip.y }}
+      role="tooltip"
+    >
+      {tip.lines.map((line) => (
+        <p key={line} className="whitespace-nowrap">
+          {line}
+        </p>
+      ))}
+    </div>,
+    document.body
+  );
 }
 
 interface LeaveCellPart {
@@ -104,7 +157,24 @@ function LeaveDayBlocks({
   entries?: HrLeaveEntry[];
   size?: "md" | "sm";
 }) {
+  const [hoverTip, setHoverTip] = useState<LeaveHoverTip | null>(null);
   const cells = buildLeaveDayCells(entries, granted, used);
+
+  function showTip(event: React.MouseEvent, parts: LeaveCellPart[]) {
+    if (parts.length === 0) return;
+    setHoverTip(
+      createHoverTip(
+        parts.map((part) => formatEntryTooltip(part.entry)),
+        event.clientX,
+        event.clientY
+      )
+    );
+  }
+
+  function moveTip(event: React.MouseEvent) {
+    setHoverTip((prev) => (prev ? createHoverTip(prev.lines, event.clientX, event.clientY) : null));
+  }
+
   if (cells.length <= 0) {
     return (
       <span className="text-xs text-muted-foreground">발생 연차 없음</span>
@@ -117,48 +187,55 @@ function LeaveDayBlocks({
       : "h-5 w-5 rounded-[4px] sm:h-6 sm:w-6";
 
   return (
-    <div
-      className="flex flex-wrap gap-0.5"
-      role="img"
-      aria-label={`발생 ${formatDays(granted)}일 중 ${formatDays(used)}일 사용`}
-    >
-      {cells.map((cell, index) => (
-        <div
-          key={index}
-          className={cn(
-            cellClass,
-            "relative overflow-hidden border",
-            cell.isGranted
-              ? "border-teal-200/80 bg-teal-50"
-              : "border-slate-200 bg-slate-100"
-          )}
-          title={cell.usedInCell <= 0 ? `${index + 1}일차` : undefined}
-        >
-          {cell.usedInCell > 0 && (
-            <div
-              className="absolute inset-y-0 left-0"
-              style={{ width: `${cell.usedInCell * 100}%` }}
-            >
-              {cell.parts.length > 0 ? (
-                cell.parts.map((part) => (
-                  <div
-                    key={`${part.entry.id}-${part.leftPct}`}
-                    className="absolute inset-y-0 cursor-default bg-slate-400"
-                    style={{
-                      left: `${part.leftPct}%`,
-                      width: `${part.widthPct}%`,
-                    }}
-                    title={formatEntryTooltip(part.entry)}
-                  />
-                ))
-              ) : (
-                <div className="h-full w-full bg-slate-400" />
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+    <>
+      <div
+        className="flex flex-wrap gap-0.5"
+        role="img"
+        aria-label={`발생 ${formatDays(granted)}일 중 ${formatDays(used)}일 사용`}
+      >
+        {cells.map((cell, index) => (
+          <div
+            key={index}
+            className={cn(
+              cellClass,
+              "relative overflow-hidden border",
+              cell.isGranted
+                ? "border-teal-200/80 bg-teal-50"
+                : "border-slate-200 bg-slate-100"
+            )}
+          >
+            {cell.usedInCell > 0 && (
+              <div
+                className={cn(
+                  "absolute inset-y-0 left-0 z-10 h-full",
+                  cell.parts.length > 0 ? "cursor-help" : "cursor-default"
+                )}
+                style={{ width: `${cell.usedInCell * 100}%` }}
+                onMouseEnter={(event) => showTip(event, cell.parts)}
+                onMouseMove={moveTip}
+                onMouseLeave={() => setHoverTip(null)}
+              >
+                {cell.parts.length > 0 ? (
+                  cell.parts.map((part) => (
+                    <div
+                      key={`${part.entry.id}-${part.leftPct}`}
+                      className="pointer-events-none absolute inset-y-0 bg-slate-400"
+                      style={{
+                        left: `${part.leftPct}%`,
+                        width: `${part.widthPct}%`,
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="pointer-events-none h-full w-full bg-slate-400" />
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <LeaveUsageTooltip tip={hoverTip} />
+    </>
   );
 }
 
