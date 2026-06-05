@@ -404,7 +404,7 @@ export function HrRecordsPage() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
       <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">인사기록부</h1>
@@ -473,7 +473,7 @@ export function HrRecordsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(260px,300px))] justify-center gap-4">
+        <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(260px,300px))] gap-4">
           {records.map((record) => (
             <EmployeeCard
               key={record.id}
