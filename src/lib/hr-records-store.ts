@@ -8,6 +8,10 @@ import {
   type HrRecordsManifest,
   normalizeHrEmployeeRecord,
 } from "@/lib/hr-records-types";
+import {
+  formatKoreanPhone,
+  formatKoreanResidentId,
+} from "@/lib/hr-records-utils";
 import { isCloudStorageConfigured } from "@/lib/workspace-store";
 
 const MANIFEST_REDIS_KEY = "pl-control-hr-records";
@@ -34,6 +38,26 @@ function emptyManifest(): HrRecordsManifest {
   return { records: [], updatedAt: new Date().toISOString() };
 }
 
+function polishRecordFields(
+  record: HrEmployeeRecord
+): HrEmployeeRecord {
+  return {
+    ...record,
+    phone: formatKoreanPhone(record.phone),
+    residentId: formatKoreanResidentId(record.residentId),
+  };
+}
+
+function polishRecordInput(
+  input: HrEmployeeRecordInput
+): HrEmployeeRecordInput {
+  return {
+    ...input,
+    phone: formatKoreanPhone(input.phone),
+    residentId: formatKoreanResidentId(input.residentId),
+  };
+}
+
 function acquiredDateSortKey(value: string): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.POSITIVE_INFINITY;
   const time = new Date(value).getTime();
@@ -50,19 +74,40 @@ function sortRecords(records: HrEmployeeRecord[]): HrEmployeeRecord[] {
   });
 }
 
+function buildManifestFromRaw(raw: Partial<HrRecordsManifest>): {
+  manifest: HrRecordsManifest;
+  needsPersist: boolean;
+} {
+  const normalized = Array.isArray(raw.records)
+    ? raw.records.map((r) =>
+        normalizeHrEmployeeRecord(r as Partial<HrEmployeeRecord>)
+      )
+    : [];
+  const records = normalized.map((record) => polishRecordFields(record));
+  const needsPersist = normalized.some(
+    (record, index) =>
+      record.residentId !== records[index].residentId ||
+      record.phone !== records[index].phone
+  );
+
+  return {
+    manifest: {
+      records: sortRecords(records),
+      updatedAt: raw.updatedAt ?? new Date().toISOString(),
+    },
+    needsPersist,
+  };
+}
+
 async function readDevManifest(): Promise<HrRecordsManifest | null> {
   try {
     const raw = await fs.readFile(DEV_FILE, "utf-8");
     const parsed = JSON.parse(raw) as Partial<HrRecordsManifest>;
-    const records = Array.isArray(parsed.records)
-      ? parsed.records.map((r) =>
-          normalizeHrEmployeeRecord(r as Partial<HrEmployeeRecord>)
-        )
-      : [];
-    return {
-      records: sortRecords(records),
-      updatedAt: parsed.updatedAt ?? new Date().toISOString(),
-    };
+    const { manifest, needsPersist } = buildManifestFromRaw(parsed);
+    if (needsPersist) {
+      await writeDevManifest(manifest);
+    }
+    return manifest;
   } catch {
     return null;
   }
@@ -91,18 +136,11 @@ async function loadManifest(): Promise<{
     if (!raw) {
       return { manifest: emptyManifest(), backend: "redis" };
     }
-    const records = Array.isArray(raw.records)
-      ? raw.records.map((r) =>
-          normalizeHrEmployeeRecord(r as Partial<HrEmployeeRecord>)
-        )
-      : [];
-    return {
-      manifest: {
-        records: sortRecords(records),
-        updatedAt: raw.updatedAt ?? new Date().toISOString(),
-      },
-      backend: "redis",
-    };
+    const { manifest, needsPersist } = buildManifestFromRaw(raw);
+    if (needsPersist) {
+      await saveManifest(manifest);
+    }
+    return { manifest, backend: "redis" };
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -161,13 +199,16 @@ export async function createHrRecord(
     return { record: normalizeHrEmployeeRecord({ id: "", ...input }), backend: "unavailable" };
   }
 
+  const polished = polishRecordInput(input);
   const now = new Date().toISOString();
-  const record = normalizeHrEmployeeRecord({
-    id: randomUUID(),
-    ...input,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const record = polishRecordFields(
+    normalizeHrEmployeeRecord({
+      id: randomUUID(),
+      ...polished,
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
 
   const { manifest } = await loadManifest();
   manifest.records.push(record);
@@ -184,13 +225,16 @@ export async function updateHrRecord(
   if (index < 0) return "not-found";
 
   const existing = manifest.records[index];
-  manifest.records[index] = normalizeHrEmployeeRecord({
-    ...existing,
-    ...input,
-    id,
-    createdAt: existing.createdAt,
-    updatedAt: new Date().toISOString(),
-  });
+  const polished = polishRecordInput(input);
+  manifest.records[index] = polishRecordFields(
+    normalizeHrEmployeeRecord({
+      ...existing,
+      ...polished,
+      id,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString(),
+    })
+  );
 
   return saveManifest(manifest);
 }

@@ -64,6 +64,14 @@ export function formatEmploymentTenure(
   return `${duration} 재직중`;
 }
 
+/** 숫자만 입력해도 주민번호 형식(######-#######)으로 하이픈 삽입 */
+export function formatKoreanResidentId(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  if (!digits) return "";
+  if (digits.length <= 6) return digits;
+  return `${digits.slice(0, 6)}-${digits.slice(6)}`;
+}
+
 /** 숫자만 입력해도 한국 전화번호 형식으로 하이픈 삽입 */
 export function formatKoreanPhone(value: string): string {
   const digits = value.replace(/\D/g, "");

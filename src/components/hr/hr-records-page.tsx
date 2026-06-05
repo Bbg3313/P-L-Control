@@ -23,6 +23,7 @@ import {
   formatEmploymentTenure,
   formatHrRecordDate,
   formatKoreanPhone,
+  formatKoreanResidentId,
   statusBadgeClass,
 } from "@/lib/hr-records-utils";
 import { cn } from "@/lib/utils";
@@ -124,7 +125,11 @@ function EmployeeCard({
       <dl className="grid flex-1 gap-3 px-4 py-3.5 sm:grid-cols-2">
         <FieldRow label="입사일자" value={formatHrRecordDate(record.acquiredDate)} />
         <FieldRow label="상실일자" value={formatHrRecordDate(record.lostDate)} />
-        <FieldRow label="주민번호" value={record.residentId} mono />
+        <FieldRow
+          label="주민번호"
+          value={formatKoreanResidentId(record.residentId) || record.residentId}
+          mono
+        />
         <FieldRow
           label="연락처"
           value={formatKoreanPhone(record.phone) || record.phone}
@@ -253,7 +258,10 @@ function EmployeeForm({
         <Input
           id="hr-resident"
           value={value.residentId}
-          onChange={(e) => set("residentId", e.target.value)}
+          onChange={(e) =>
+            set("residentId", formatKoreanResidentId(e.target.value))
+          }
+          inputMode="numeric"
           placeholder="000000-0000000"
           className="font-mono"
         />
@@ -396,7 +404,7 @@ export function HrRecordsPage() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable_both-edges]">
       <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">인사기록부</h1>
@@ -406,7 +414,7 @@ export function HrRecordsPage() {
         </div>
       </header>
 
-      <div className="w-full max-w-full space-y-4 pb-6 pt-4">
+      <div className="w-full min-w-0 space-y-4 pb-6 pt-4">
       {!storageConfigured && (
         <div
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
@@ -465,7 +473,7 @@ export function HrRecordsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {records.map((record) => (
             <EmployeeCard
               key={record.id}

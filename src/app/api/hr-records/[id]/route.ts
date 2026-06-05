@@ -10,7 +10,10 @@ import {
   isEmploymentStatus,
   type HrEmployeeRecordInput,
 } from "@/lib/hr-records-types";
-import { formatKoreanPhone } from "@/lib/hr-records-utils";
+import {
+  formatKoreanPhone,
+  formatKoreanResidentId,
+} from "@/lib/hr-records-utils";
 
 export const runtime = "nodejs";
 
@@ -47,7 +50,7 @@ function parseRecordInput(body: unknown): HrEmployeeRecordInput | string {
     position: text("position"),
     acquiredDate: text("acquiredDate"),
     lostDate: text("lostDate"),
-    residentId: text("residentId"),
+    residentId: formatKoreanResidentId(text("residentId")),
     bank: text("bank"),
     accountNumber: text("accountNumber"),
     phone: formatKoreanPhone(text("phone")),
