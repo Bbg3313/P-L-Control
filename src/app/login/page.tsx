@@ -12,6 +12,7 @@ import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/li
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,7 +26,7 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = (await res.json()) as { error?: string };
@@ -66,11 +67,23 @@ function LoginForm() {
             </span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            손익 데이터 보호를 위해 비밀번호를 입력하세요.
+            경영 데이터 보호를 위해 로그인하세요.
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="username">아이디</Label>
+              <Input
+                id="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="아이디"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="password">비밀번호</Label>
               <Input
@@ -91,7 +104,7 @@ function LoginForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "확인 중…" : "접속"}
+              {loading ? "확인 중…" : "로그인"}
             </Button>
           </form>
         </CardContent>

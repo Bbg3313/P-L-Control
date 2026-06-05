@@ -9,9 +9,14 @@ export function getSessionToken(): string {
   );
 }
 
+/** 로그인 아이디 (서버 API에서만 사용) */
+export function getAuthUsername(): string {
+  return process.env.PL_AUTH_USERNAME ?? "bbg3313";
+}
+
 /** 로그인 비밀번호 (서버 API에서만 사용) */
 export function getAuthPassword(): string {
-  return process.env.PL_AUTH_PASSWORD ?? "3313";
+  return process.env.PL_AUTH_PASSWORD ?? "dhflrhrl92!";
 }
 
 export function isAuthenticated(cookieValue: string | undefined): boolean {

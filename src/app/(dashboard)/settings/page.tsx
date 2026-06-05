@@ -21,7 +21,7 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-muted-foreground">확인 중…</p>
         ) : syncStatus === "cloud" ? (
           <p className="mt-2 text-sm text-emerald-700">
-            서버에 저장 중입니다. 같은 URL·비밀번호로 접속하면 모두 같은
+            서버에 저장 중입니다. 같은 URL·로그인 계정으로 접속하면 모두 같은
             매출·비용·인건비를 봅니다.
           </p>
         ) : (
