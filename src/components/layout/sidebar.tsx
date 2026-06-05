@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
   },
   {
     href: "/hr",
-    label: "인사",
+    label: "근로계약",
     icon: Users,
     iconTone: "bg-violet-100 text-violet-600",
     exact: true,

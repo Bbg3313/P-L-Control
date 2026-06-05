@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { Redis } from "@upstash/redis";
 import {
+  type HrLeaveEntry,
   type HrLeaveManifest,
   type HrLeaveUsage,
   normalizeHrLeaveUsage,
@@ -101,15 +102,15 @@ export async function listHrLeaveUsages(): Promise<HrLeaveUsage[]> {
   return manifest.usages;
 }
 
-export async function upsertHrLeaveUsage(
+export async function upsertHrLeaveEntries(
   employeeId: string,
-  usedDays: number
+  entries: HrLeaveEntry[]
 ): Promise<"redis" | "dev-file" | "unavailable"> {
   const manifest = await loadManifest();
   const index = manifest.usages.findIndex((u) => u.employeeId === employeeId);
   const entry = normalizeHrLeaveUsage({
     employeeId,
-    usedDays,
+    entries,
     updatedAt: new Date().toISOString(),
   });
 

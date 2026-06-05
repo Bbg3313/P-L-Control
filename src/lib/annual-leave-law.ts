@@ -13,15 +13,6 @@ export interface AnnualLeaveEntitlement {
   ruleLabel: string;
 }
 
-export interface AnnualLeaveTimelinePoint {
-  /** 입사 후 N개월 */
-  monthIndex: number;
-  label: string;
-  /** 해당 시점 누적·발생 연차 */
-  days: number;
-  phase: "monthly" | "annual";
-}
-
 function parseLocalDate(value: string): Date | null {
   const [y, m, d] = value.split("-").map((part) => Number.parseInt(part, 10));
   if (!y || !m || !d) return null;
@@ -35,12 +26,6 @@ function parseLocalDate(value: string): Date | null {
     return null;
   }
   return date;
-}
-
-function addMonths(base: Date, months: number): Date {
-  const next = new Date(base);
-  next.setMonth(next.getMonth() + months);
-  return next;
 }
 
 export function calcTenureMonths(start: Date, end: Date): number {
@@ -106,42 +91,3 @@ export function calcStatutoryAnnualLeave(
   };
 }
 
-/** 입사 후 월별 연차 발생 추이 (그래프용) */
-export function buildAnnualLeaveTimeline(
-  hireDate: string,
-  spanMonths = 36
-): AnnualLeaveTimelinePoint[] {
-  const start = parseLocalDate(hireDate);
-  if (!start) return [];
-
-  const points: AnnualLeaveTimelinePoint[] = [];
-  for (let m = 1; m <= spanMonths; m += 1) {
-    const asOf = addMonths(start, m);
-    const ent = calcStatutoryAnnualLeave(hireDate, asOf);
-    if (!ent) continue;
-    points.push({
-      monthIndex: m,
-      label:
-        m < 12 ? `${m}개월` : m === 12 ? "1년" : `${Math.floor(m / 12)}년`,
-      days: ent.days,
-      phase: ent.phase,
-    });
-  }
-  return points;
-}
-
-/** 근속 연수별 법정 연차 표 (교육용) */
-export function buildLawReferenceSeries(): {
-  years: number;
-  days: number;
-  label: string;
-}[] {
-  return Array.from({ length: 11 }, (_, i) => {
-    const years = i + 1;
-    return {
-      years,
-      days: annualLeaveDaysAfterOneYear(years),
-      label: `${years}년`,
-    };
-  });
-}

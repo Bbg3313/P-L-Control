@@ -168,7 +168,7 @@ export function HrDocumentsPage() {
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
       <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">인사</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">근로계약</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             근로계약서·비밀유지서약서 등 서류를 업로드하고 팀과 공유합니다.
             (대시보드 미반영)
