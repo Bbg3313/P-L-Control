@@ -18,6 +18,7 @@ import {
   type LeaveEntryType,
   leaveDaysForType,
 } from "@/lib/hr-leave-types";
+import { formatHrRecordDate } from "@/lib/hr-records-utils";
 import { cn } from "@/lib/utils";
 
 interface LeaveEmployeeRow {
@@ -31,6 +32,9 @@ interface LeaveEmployeeRow {
   usedDays: number;
   remainingDays: number;
   entries: HrLeaveEntry[];
+  phase: "monthly" | "annual" | null;
+  tenureMonths: number;
+  useByDate: string | null;
   ruleLabel: string;
 }
 
@@ -262,8 +266,11 @@ function LeaveDayBlocks({
 }
 
 function TeamLeaveRow({ employee }: { employee: LeaveEmployeeRow }) {
+  const isMonthly = employee.phase === "monthly";
+  const showUseBy = Boolean(employee.useByDate);
+
   return (
-    <div className="grid gap-3 border-b border-slate-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,6.5rem)] sm:items-center">
+    <div className="grid gap-3 border-b border-slate-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,7.5rem)] sm:items-center">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-slate-900">
           {employee.name}
@@ -292,6 +299,16 @@ function TeamLeaveRow({ employee }: { employee: LeaveEmployeeRow }) {
           {formatDays(employee.grantedDays)}일
         </p>
         <p className="text-teal-700">잔여 {formatDays(employee.remainingDays)}일</p>
+        {isMonthly && (
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            월 1일 · 현재 {formatDays(employee.grantedDays)}일
+          </p>
+        )}
+        {showUseBy && (
+          <p className="mt-0.5 text-[11px] text-amber-700">
+            소진 {formatHrRecordDate(employee.useByDate!)}까지
+          </p>
+        )}
       </div>
     </div>
   );
@@ -548,7 +565,8 @@ export function HrLeavePage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">팀 연차 현황</CardTitle>
                 <CardDescription>
-                  입사일 기준 근속 오래된 순 · 사용분은 회색, 잔여는 청록색
+                  입사일 기준 근속 오래된 순 · 1년 미만은 월별 발생, 모두 소진기한
+                  표시
                 </CardDescription>
               </CardHeader>
               <CardContent className="overflow-visible">

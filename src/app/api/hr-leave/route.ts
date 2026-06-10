@@ -92,6 +92,7 @@ export async function GET() {
         phase: entitlement?.phase ?? null,
         tenureMonths: entitlement?.tenureMonths ?? 0,
         tenureYears: entitlement?.tenureYears ?? 0,
+        useByDate: entitlement?.useByDate ?? null,
         ruleLabel: entitlement?.ruleLabel ?? "입사일을 등록해 주세요.",
       };
     })

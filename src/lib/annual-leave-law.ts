@@ -9,6 +9,8 @@ export interface AnnualLeaveEntitlement {
   tenureMonths: number;
   /** 근속 연수(만) */
   tenureYears: number;
+  /** 연차 소진 기한 (YYYY-MM-DD) — 1년 미만: 입사 1주년 전날, 1년 이상: 입사기념일 전날 */
+  useByDate: string | null;
   /** 안내 문구 */
   ruleLabel: string;
 }
@@ -26,6 +28,66 @@ function parseLocalDate(value: string): Date | null {
     return null;
   }
   return date;
+}
+
+function formatDateYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * 연차 소진 기한 (입사일 기준)
+ * - 1년 미만: 입사 1주년 전날까지
+ * - 1년 이상: 다음 입사기념일 전날까지
+ */
+export function calcLeaveUseByDate(
+  hireDate: string,
+  asOf: Date = new Date()
+): string | null {
+  const start = parseLocalDate(hireDate);
+  if (!start || asOf < start) return null;
+
+  const tenureMonths = calcTenureMonths(start, asOf);
+
+  if (tenureMonths < 12) {
+    const firstAnniversary = new Date(
+      start.getFullYear() + 1,
+      start.getMonth(),
+      start.getDate()
+    );
+    const expiry = new Date(firstAnniversary);
+    expiry.setDate(expiry.getDate() - 1);
+    return formatDateYmd(expiry);
+  }
+
+  const tenureYears = calcTenureYears(start, asOf);
+  let anniversaryYear = start.getFullYear() + tenureYears;
+  let anniversary = new Date(
+    anniversaryYear,
+    start.getMonth(),
+    start.getDate()
+  );
+
+  if (asOf < anniversary) {
+    anniversaryYear -= 1;
+    anniversary = new Date(
+      anniversaryYear,
+      start.getMonth(),
+      start.getDate()
+    );
+  }
+
+  const nextAnniversary = new Date(
+    anniversaryYear + 1,
+    start.getMonth(),
+    start.getDate()
+  );
+  const expiry = new Date(nextAnniversary);
+  expiry.setDate(expiry.getDate() - 1);
+
+  return formatDateYmd(expiry);
 }
 
 export function calcTenureMonths(start: Date, end: Date): number {
@@ -67,6 +129,8 @@ export function calcStatutoryAnnualLeave(
   const tenureMonths = calcTenureMonths(start, asOf);
   const tenureYears = calcTenureYears(start, asOf);
 
+  const useByDate = calcLeaveUseByDate(hireDate, asOf);
+
   if (tenureMonths < 12) {
     const days = Math.min(11, tenureMonths);
     return {
@@ -74,6 +138,7 @@ export function calcStatutoryAnnualLeave(
       phase: "monthly",
       tenureMonths,
       tenureYears,
+      useByDate,
       ruleLabel: "1년 미만 · 출근율 80% 이상 월 1일 (최대 11일)",
     };
   }
@@ -84,6 +149,7 @@ export function calcStatutoryAnnualLeave(
     phase: "annual",
     tenureMonths,
     tenureYears,
+    useByDate,
     ruleLabel:
       tenureYears >= 3
         ? `1년 이상 15일 + 2년마다 1일 (현재 ${days}일, 최대 25일)`
