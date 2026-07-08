@@ -74,14 +74,19 @@ export function monthlyGrossFromSalary(
   return truncateWon(salaryAmount / 12);
 }
 
-/** 한국 4대보험 사업주 부담 포함 월 인건비(급여+회사부담) */
-export function calcEmployerCostFromMonthlyGross(
-  monthlyGross: number,
-  nonTaxableMonthly = 0
-): EmployerInsuranceBreakdown {
-  if (monthlyGross <= 0) return { ...ZERO_BREAKDOWN };
-
-  const insuranceBase = Math.max(0, monthlyGross - nonTaxableMonthly);
+export function calcEmployerContributionsFromInsuranceBase(insuranceBase: number) {
+  if (insuranceBase <= 0) {
+    return {
+      pensionEmployer: 0,
+      healthEmployer: 0,
+      longTermCareEmployer: 0,
+      employmentUnemployment: 0,
+      employmentStability: 0,
+      employmentEmployer: 0,
+      industrialAccidentEmployer: 0,
+      totalEmployerContributions: 0,
+    };
+  }
 
   const pensionBase = clampPensionBase(insuranceBase);
   const pensionEmployer = truncateWon(pensionBase * PENSION_EMPLOYER_RATE);
@@ -89,7 +94,9 @@ export function calcEmployerCostFromMonthlyGross(
   const healthPremiumTotal = truncateWon(insuranceBase * HEALTH_TOTAL_RATE);
   const healthEmployer = truncateWon(healthPremiumTotal / 2);
 
-  const longTermCareTotal = truncateWon(healthPremiumTotal * LONG_TERM_CARE_ON_HEALTH);
+  const longTermCareTotal = truncateWon(
+    healthPremiumTotal * LONG_TERM_CARE_ON_HEALTH
+  );
   const longTermCareEmployer = truncateWon(longTermCareTotal / 2);
 
   const employmentUnemployment = truncateWon(
@@ -112,9 +119,6 @@ export function calcEmployerCostFromMonthlyGross(
     industrialAccidentEmployer;
 
   return {
-    monthlyGross,
-    nonTaxableMonthly,
-    insuranceBase,
     pensionEmployer,
     healthEmployer,
     longTermCareEmployer,
@@ -123,7 +127,26 @@ export function calcEmployerCostFromMonthlyGross(
     employmentEmployer,
     industrialAccidentEmployer,
     totalEmployerContributions,
-    totalMonthlyEmployerCost: monthlyGross + totalEmployerContributions,
+  };
+}
+
+/** 한국 4대보험 사업주 부담 포함 월 인건비(급여+회사부담) */
+export function calcEmployerCostFromMonthlyGross(
+  monthlyGross: number,
+  nonTaxableMonthly = 0
+): EmployerInsuranceBreakdown {
+  if (monthlyGross <= 0) return { ...ZERO_BREAKDOWN };
+
+  const insuranceBase = Math.max(0, monthlyGross - nonTaxableMonthly);
+  const contributions = calcEmployerContributionsFromInsuranceBase(insuranceBase);
+
+  return {
+    monthlyGross,
+    nonTaxableMonthly,
+    insuranceBase,
+    ...contributions,
+    totalMonthlyEmployerCost:
+      monthlyGross + contributions.totalEmployerContributions,
   };
 }
 

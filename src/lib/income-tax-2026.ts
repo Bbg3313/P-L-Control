@@ -18,10 +18,20 @@ function clampPensionBase(monthlyGross: number): number {
 }
 
 /** 4대보험 근로자 부담분 (2026년 6월분 요율, 보수월액 기준) */
-export function calcEmployeeInsuranceFromInsuranceBase(
+export interface EmployeeInsuranceBreakdown {
+  pension: number;
+  health: number;
+  longTermCare: number;
+  employment: number;
+  total: number;
+}
+
+export function calcEmployeeInsuranceBreakdown(
   insuranceBase: number
-): number {
-  if (insuranceBase <= 0) return 0;
+): EmployeeInsuranceBreakdown {
+  if (insuranceBase <= 0) {
+    return { pension: 0, health: 0, longTermCare: 0, employment: 0, total: 0 };
+  }
 
   const pensionBase = clampPensionBase(insuranceBase);
   const pension = truncateWon(pensionBase * PENSION_EMPLOYEE_RATE);
@@ -31,7 +41,47 @@ export function calcEmployeeInsuranceFromInsuranceBase(
   const longTermCare = truncateWon((healthTotal * 0.1314) / 2);
   const employment = truncateWon(insuranceBase * 0.009);
 
-  return pension + health + longTermCare + employment;
+  return {
+    pension,
+    health,
+    longTermCare,
+    employment,
+    total: pension + health + longTermCare + employment,
+  };
+}
+
+export function calcEmployeeInsuranceFromInsuranceBase(
+  insuranceBase: number
+): number {
+  return calcEmployeeInsuranceBreakdown(insuranceBase).total;
+}
+
+/** 과세표준(보수월액) 기준 월 원천징수 소득세 */
+export function calcMonthlyWithholdingTaxFromInsuranceBase(
+  insuranceBase: number
+): number {
+  if (insuranceBase <= 0) return 0;
+
+  const employeeInsurance =
+    calcEmployeeInsuranceFromInsuranceBase(insuranceBase);
+  const monthlyEarned = Math.max(0, insuranceBase - employeeInsurance);
+  const annualEarned = monthlyEarned * 12;
+
+  const earnedIncomeDeduction = calcEarnedIncomeDeduction(annualEarned);
+  const basicDeduction = 1_500_000;
+  const taxable = Math.max(
+    0,
+    annualEarned - earnedIncomeDeduction - basicDeduction
+  );
+
+  const annualTaxBeforeCredit = calcTaxOnAnnualTaxable(taxable);
+  const annualCredit = calcEarnedIncomeTaxCredit(
+    annualTaxBeforeCredit,
+    annualEarned
+  );
+  const annualTax = Math.max(0, annualTaxBeforeCredit - annualCredit);
+
+  return truncateWon(annualTax / 12);
 }
 
 /** 근로소득공제 (연간 총급여 기준) */

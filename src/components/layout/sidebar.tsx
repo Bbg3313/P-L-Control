@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Users,
   Settings,
+  Wallet,
 } from "lucide-react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/lib/brand";
@@ -63,6 +64,12 @@ const navItems: NavItem[] = [
     label: "연차현황",
     icon: CalendarDays,
     iconTone: "bg-teal-100 text-teal-600",
+  },
+  {
+    href: "/hr/payroll",
+    label: "급여대장",
+    icon: Wallet,
+    iconTone: "bg-amber-100 text-amber-600",
   },
   {
     href: "/settings",
