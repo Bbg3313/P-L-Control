@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Download,
+  FileDown,
   Landmark,
   PiggyBank,
   RotateCcw,
@@ -18,6 +19,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -27,12 +29,15 @@ import { formatPeriodLabel } from "@/lib/calculations";
 import { formatAmountInputValue, formatCurrency, formatNumber } from "@/lib/format";
 import type { HrEmployeeRecord } from "@/lib/hr-records-types";
 import { downloadPayrollLedgerExcel } from "@/lib/payroll-export";
+import { downloadPayrollPayslipExcel } from "@/lib/payroll-payslip-export";
 import {
   buildPayrollLedger,
   JUN_2026_INSURANCE_LABEL,
   PAYROLL_COMPANY_OPTIONS,
   type PayrollCompanyId,
+  type PayrollLedgerResult,
   type PayrollLedgerRow,
+  type PayrollLedgerSummary,
 } from "@/lib/payroll-ledger";
 import {
   loadPayrollTaxableOverrides,
@@ -73,7 +78,7 @@ function KpiCard({
         </div>
         <div className="min-w-0">
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-slate-900">
+          <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
             {value}
           </p>
           {sub && (
@@ -87,9 +92,21 @@ function KpiCard({
   );
 }
 
-function MoneyCell({ value }: { value: number }) {
+function MoneyCell({
+  value,
+  emphasis,
+}: {
+  value: number;
+  emphasis?: "indigo" | "rose";
+}) {
   return (
-    <span className="block text-right font-mono text-sm tabular-nums text-slate-800">
+    <span
+      className={cn(
+        "block text-right text-sm tabular-nums text-slate-800",
+        emphasis === "indigo" && "font-semibold text-indigo-700",
+        emphasis === "rose" && "font-semibold text-rose-700"
+      )}
+    >
       {formatNumber(value)}
     </span>
   );
@@ -127,7 +144,7 @@ function TaxableBaseInput({
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         className={cn(
-          "h-8 w-[7.5rem] text-right font-mono text-sm tabular-nums",
+          "h-8 w-[7.5rem] text-right text-sm tabular-nums",
           row.taxableBaseOverridden &&
             "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
         )}
@@ -151,11 +168,17 @@ function TaxableBaseInput({
 
 function PayrollTable({
   rows,
+  ledger,
+  summary,
+  reportingMonth,
   showTaxableInput,
   onTaxableChange,
   onTaxableReset,
 }: {
   rows: PayrollLedgerRow[];
+  ledger: PayrollLedgerResult;
+  summary: PayrollLedgerSummary;
+  reportingMonth: string;
   showTaxableInput: boolean;
   onTaxableChange: (id: string, value: number) => void;
   onTaxableReset: (id: string) => void;
@@ -169,12 +192,11 @@ function PayrollTable({
   }
 
   return (
-    <Table>
+    <Table className="text-sm">
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+          <TableHead className="w-16 text-center">구분번호</TableHead>
           <TableHead className="min-w-[5rem] text-center">성명</TableHead>
-          <TableHead className="min-w-[4rem] text-center">구분번호</TableHead>
-          <TableHead className="min-w-[4.5rem] text-center">직위</TableHead>
           <TableHead className="text-right">기본급</TableHead>
           <TableHead className="text-right">비과세</TableHead>
           <TableHead className="min-w-[8.5rem] text-right">과세표준</TableHead>
@@ -185,22 +207,22 @@ function PayrollTable({
           <TableHead className="text-right">4대보험(회사)</TableHead>
           <TableHead className="text-right">총인건비</TableHead>
           <TableHead className="min-w-[7rem] text-center">비고</TableHead>
+          <TableHead className="min-w-[5rem] text-center">명세서</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row, index) => (
           <TableRow key={row.id}>
+            <TableCell className="text-center tabular-nums text-slate-600">
+              {index + 1}
+            </TableCell>
             <TableCell className="text-center font-medium text-slate-900">
               <div>{row.name}</div>
               {row.department && (
-                <div className="text-xs text-muted-foreground">{row.department}</div>
+                <div className="text-xs font-normal text-muted-foreground">
+                  {row.department}
+                </div>
               )}
-            </TableCell>
-            <TableCell className="text-center text-sm tabular-nums text-slate-600">
-              {index + 1}
-            </TableCell>
-            <TableCell className="text-center text-sm text-slate-600">
-              {row.position || "—"}
             </TableCell>
             <TableCell>
               <MoneyCell value={row.monthlyGross} />
@@ -236,22 +258,79 @@ function PayrollTable({
               <MoneyCell value={row.localIncomeTax} />
             </TableCell>
             <TableCell>
-              <span className="block text-right font-mono text-sm font-semibold tabular-nums text-indigo-700">
-                {formatNumber(row.netPay)}
-              </span>
+              <MoneyCell value={row.netPay} emphasis="indigo" />
             </TableCell>
             <TableCell>
               <MoneyCell value={row.employerInsuranceTotal} />
             </TableCell>
             <TableCell>
-              <span className="block text-right font-mono text-sm font-semibold tabular-nums text-rose-700">
-                {formatNumber(row.totalEmployerCost)}
-              </span>
+              <MoneyCell value={row.totalEmployerCost} emphasis="rose" />
             </TableCell>
-            <TableCell className="text-center text-xs text-muted-foreground">{row.note || "—"}</TableCell>
+            <TableCell className="text-center text-xs text-muted-foreground">
+              {row.note || "—"}
+            </TableCell>
+            <TableCell className="text-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 text-xs"
+                onClick={() =>
+                  downloadPayrollPayslipExcel(ledger, row, index + 1)
+                }
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                다운로드
+              </Button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
+      <TableFooter className="bg-slate-50/90 text-sm">
+        <TableRow className="hover:bg-slate-50/90">
+          <TableCell colSpan={2} className="text-center font-semibold text-slate-900">
+            합계
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.grossTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.nonTaxableTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.taxableBaseTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.employeeInsuranceTotal} />
+          </TableCell>
+          <TableCell>
+            <div className="text-right">
+              <MoneyCell value={summary.incomeTaxTotal} />
+              {summary.incomeTaxReliefTotal > 0 && (
+                <p className="text-[11px] text-emerald-600">
+                  감면 −{formatNumber(summary.incomeTaxReliefTotal)}
+                </p>
+              )}
+            </div>
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.localIncomeTaxTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.netPayTotal} emphasis="indigo" />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.employerInsuranceTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.totalEmployerCost} emphasis="rose" />
+          </TableCell>
+          <TableCell className="text-center text-xs text-muted-foreground">
+            {formatPeriodLabel(reportingMonth)}
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      </TableFooter>
     </Table>
   );
 }
@@ -442,54 +521,24 @@ export function PayrollLedgerPage() {
         </div>
 
         <Card className="overflow-hidden border-slate-200/90 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-white pb-3">
+          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-white py-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-indigo-600" />
-              <CardTitle className="text-base">
+              <CardTitle className="text-base font-semibold">
                 {activeCompany.label} 급여 명세 ({ledger.domestic.length}명)
               </CardTitle>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {companyId === "goldfender"
-                ? "골드펜더 소속 — 박양근"
-                : "블루브릿지글로벌 소속 — 성수린·안효재·니키·아리·김소연·정수민"}
-              {" · "}정수민·박양근 청년소득세 90% 감면
-            </p>
           </CardHeader>
           <CardContent className="p-0">
             <PayrollTable
               rows={ledger.domestic}
+              ledger={ledger}
+              summary={summary}
+              reportingMonth={reportingMonth}
               showTaxableInput
               onTaxableChange={handleTaxableChange}
               onTaxableReset={handleTaxableReset}
             />
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200/90 bg-slate-50/50 shadow-sm">
-          <CardContent className="grid gap-3 p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs text-muted-foreground">과세표준 합계</p>
-              <p className="font-mono font-semibold tabular-nums">
-                {formatCurrency(summary.taxableBaseTotal)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">청년감면 합계</p>
-              <p className="font-mono font-semibold tabular-nums text-emerald-700">
-                {formatCurrency(summary.incomeTaxReliefTotal)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">비과세 합계</p>
-              <p className="font-mono font-semibold tabular-nums">
-                {formatCurrency(summary.nonTaxableTotal)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">집계월</p>
-              <p className="font-semibold">{formatPeriodLabel(reportingMonth)}</p>
-            </div>
           </CardContent>
         </Card>
       </div>
