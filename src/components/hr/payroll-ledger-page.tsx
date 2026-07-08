@@ -114,6 +114,10 @@ function MoneyCell({
   );
 }
 
+function PayrollAmountSlot({ children }: { children: React.ReactNode }) {
+  return <div className="payroll-amount-slot">{children}</div>;
+}
+
 function TaxableBaseInput({
   row,
   onChange,
@@ -130,7 +134,7 @@ function TaxableBaseInput({
   }, [row.taxableBase]);
 
   return (
-    <div className="payroll-taxable-slot flex items-center justify-end gap-1">
+    <>
       <Input
         value={draft}
         onChange={(e) => {
@@ -166,7 +170,7 @@ function TaxableBaseInput({
           </Button>
         ) : null}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -321,29 +325,37 @@ function PayrollTable({
               )}
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={getBasicPay(row)} />
+              <PayrollAmountSlot>
+                <MoneyCell value={getBasicPay(row)} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.nonTaxable} />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.nonTaxable} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={getTotalGrossPay(row)} />
+              <PayrollAmountSlot>
+                <MoneyCell value={getTotalGrossPay(row)} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              {showTaxableInput ? (
-                <TaxableBaseInput
-                  row={row}
-                  onChange={(value) => onTaxableChange(row.id, value)}
-                  onReset={() => onTaxableReset(row.id)}
-                />
-              ) : (
-                <div className="payroll-taxable-slot">
+              <div className="payroll-taxable-slot">
+                {showTaxableInput ? (
+                  <TaxableBaseInput
+                    row={row}
+                    onChange={(value) => onTaxableChange(row.id, value)}
+                    onReset={() => onTaxableReset(row.id)}
+                  />
+                ) : (
                   <MoneyCell value={row.taxableBase} />
-                </div>
-              )}
+                )}
+              </div>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.employeeInsuranceTotal} />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.employeeInsuranceTotal} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
               <IncomeTaxCell
@@ -352,16 +364,24 @@ function PayrollTable({
               />
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.localIncomeTax} />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.localIncomeTax} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.netPay} emphasis="indigo" />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.netPay} emphasis="indigo" />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.employerInsuranceTotal} />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.employerInsuranceTotal} />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="right">
-              <MoneyCell value={row.totalEmployerCost} emphasis="rose" />
+              <PayrollAmountSlot>
+                <MoneyCell value={row.totalEmployerCost} emphasis="rose" />
+              </PayrollAmountSlot>
             </PayrollCell>
             <PayrollCell align="center" className="text-xs text-muted-foreground">
               {row.note || "—"}
@@ -394,13 +414,19 @@ function PayrollTable({
             합계
           </TableCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.basicPayTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.basicPayTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.nonTaxableTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.nonTaxableTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.grossTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.grossTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
             <div className="payroll-taxable-slot">
@@ -408,7 +434,9 @@ function PayrollTable({
             </div>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.employeeInsuranceTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.employeeInsuranceTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
             <IncomeTaxCell
@@ -417,16 +445,24 @@ function PayrollTable({
             />
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.localIncomeTaxTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.localIncomeTaxTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.netPayTotal} emphasis="indigo" />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.netPayTotal} emphasis="indigo" />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.employerInsuranceTotal} />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.employerInsuranceTotal} />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.totalEmployerCost} emphasis="rose" />
+            <PayrollAmountSlot>
+              <MoneyCell value={summary.totalEmployerCost} emphasis="rose" />
+            </PayrollAmountSlot>
           </PayrollCell>
           <PayrollCell align="center" className="text-xs text-muted-foreground">
             {formatPeriodLabel(reportingMonth)}
