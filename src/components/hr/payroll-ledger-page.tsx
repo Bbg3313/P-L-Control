@@ -30,6 +30,8 @@ import { downloadPayrollLedgerExcel } from "@/lib/payroll-export";
 import {
   buildPayrollLedger,
   JUN_2026_INSURANCE_LABEL,
+  PAYROLL_COMPANY_OPTIONS,
+  type PayrollCompanyId,
   type PayrollLedgerRow,
 } from "@/lib/payroll-ledger";
 import {
@@ -252,6 +254,7 @@ function PayrollTable({
 
 export function PayrollLedgerPage() {
   const { personnel, reportingMonth, hydrated } = useFinancial();
+  const [companyId, setCompanyId] = useState<PayrollCompanyId>("bluebridge");
   const [overrides, setOverrides] = useState<PayrollTaxableOverrides>({});
   const [overridesReady, setOverridesReady] = useState(false);
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
@@ -297,9 +300,19 @@ export function PayrollLedgerPage() {
 
   const ledger = useMemo(
     () =>
-      buildPayrollLedger(reportingMonth, personnel, monthOverrides, hrByName),
-    [reportingMonth, personnel, monthOverrides, hrByName]
+      buildPayrollLedger(
+        reportingMonth,
+        personnel,
+        monthOverrides,
+        hrByName,
+        companyId
+      ),
+    [reportingMonth, personnel, monthOverrides, hrByName, companyId]
   );
+
+  const activeCompany =
+    PAYROLL_COMPANY_OPTIONS.find((c) => c.id === companyId) ??
+    PAYROLL_COMPANY_OPTIONS[0];
 
   const persistOverrides = useCallback((next: PayrollTaxableOverrides) => {
     setOverrides(next);
@@ -401,17 +414,42 @@ export function PayrollLedgerPage() {
       </header>
 
       <div className="flex flex-col gap-6 p-4 md:p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {PAYROLL_COMPANY_OPTIONS.map((company) => {
+            const active = company.id === companyId;
+            return (
+              <Button
+                key={company.id}
+                type="button"
+                variant={active ? "default" : "outline"}
+                className={cn(
+                  "h-10 px-4 font-semibold",
+                  active &&
+                    (company.id === "goldfender"
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-indigo-600 hover:bg-indigo-700")
+                )}
+                onClick={() => setCompanyId(company.id)}
+              >
+                {company.label}
+              </Button>
+            );
+          })}
+        </div>
+
         <Card className="overflow-hidden border-slate-200/90 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-white pb-3">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-indigo-600" />
               <CardTitle className="text-base">
-                급여 명세 ({ledger.domestic.length}명)
+                {activeCompany.label} 급여 명세 ({ledger.domestic.length}명)
               </CardTitle>
             </div>
             <p className="text-xs text-muted-foreground">
-              정수민·박양근·안효재 청년소득세 90% 감면 · 비과세는 인건비 설정
-              기준 (김소연 연 4천·비과세 20만)
+              {companyId === "goldfender"
+                ? "골드펜더 소속 — 박양근"
+                : "블루브릿지글로벌 소속 — 성수린·안효재·니키·아리·김소연·정수민"}
+              {" · "}정수민·박양근 청년소득세 90% 감면
             </p>
           </CardHeader>
           <CardContent className="p-0">

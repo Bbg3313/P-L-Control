@@ -10,7 +10,7 @@ import {
   calcMonthlyWithholdingTax,
 } from "@/lib/income-tax-2026";
 
-export const YOUTH_TAX_RELIEF_NAMES = ["박양근", "정수민", "안효재"] as const;
+export const YOUTH_TAX_RELIEF_NAMES = ["박양근", "정수민"] as const;
 
 const YOUTH_RELIEF_RATE = 0.9;
 /** 과세기간별 감면세액 한도 */

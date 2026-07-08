@@ -19,6 +19,39 @@ import {
 
 export { JUN_2026_INSURANCE_LABEL };
 
+export type PayrollCompanyId = "bluebridge" | "goldfender";
+
+export const PAYROLL_COMPANY_OPTIONS: {
+  id: PayrollCompanyId;
+  label: string;
+}[] = [
+  { id: "bluebridge", label: "블루브릿지글로벌" },
+  { id: "goldfender", label: "골드펜더" },
+];
+
+const GOLDFENDER_PERSONNEL = new Set<string>(["박양근"]);
+
+export function getPayrollCompanyForPerson(name: string): PayrollCompanyId {
+  return GOLDFENDER_PERSONNEL.has(name) ? "goldfender" : "bluebridge";
+}
+
+export function getPayrollCompanyLabel(companyId: PayrollCompanyId): string {
+  return (
+    PAYROLL_COMPANY_OPTIONS.find((c) => c.id === companyId)?.label ??
+    "블루브릿지글로벌"
+  );
+}
+
+export function filterPersonnelByPayrollCompany(
+  personnel: PersonnelEntry[],
+  companyId: PayrollCompanyId
+): PersonnelEntry[] {
+  return personnel.filter((entry) => {
+    if (isOverseasTeam(entry.name)) return false;
+    return getPayrollCompanyForPerson(entry.name) === companyId;
+  });
+}
+
 /** 비용 페이지 미입력 시 급여대장 기본 연봉·월급 */
 const PAYROLL_REFERENCE_SALARIES: Record<
   string,
@@ -83,6 +116,8 @@ export interface PayrollLedgerSummary {
 
 export interface PayrollLedgerResult {
   yearMonth: string;
+  companyId: PayrollCompanyId;
+  companyLabel: string;
   domestic: PayrollLedgerRow[];
   overseas: PayrollLedgerRow[];
   summary: PayrollLedgerSummary;
@@ -291,12 +326,13 @@ export function buildPayrollLedger(
   yearMonth: string,
   personnel: PersonnelEntry[],
   taxableOverrides: Record<string, number> = {},
-  hrByName: Record<string, { department: string; position: string }> = {}
+  hrByName: Record<string, { department: string; position: string }> = {},
+  companyId: PayrollCompanyId = "bluebridge"
 ): PayrollLedgerResult {
   const domestic: PayrollLedgerRow[] = [];
+  const filtered = filterPersonnelByPayrollCompany(personnel, companyId);
 
-  for (const entry of personnel) {
-    if (isOverseasTeam(entry.name)) continue;
+  for (const entry of filtered) {
     const hrMeta = hrByName[entry.name] ?? { department: "", position: "" };
     domestic.push(
       buildDomesticRow(entry, hrMeta, taxableOverrides[entry.id])
@@ -305,6 +341,8 @@ export function buildPayrollLedger(
 
   return {
     yearMonth,
+    companyId,
+    companyLabel: getPayrollCompanyLabel(companyId),
     domestic,
     overseas: [],
     summary: sumRows(domestic),
