@@ -104,7 +104,7 @@ function MoneyCell({
   return (
     <span
       className={cn(
-        "block text-right text-sm tabular-nums text-slate-800",
+        "tabular-nums text-sm text-slate-800",
         emphasis === "indigo" && "font-semibold text-indigo-700",
         emphasis === "rose" && "font-semibold text-rose-700"
       )}
@@ -130,7 +130,7 @@ function TaxableBaseInput({
   }, [row.taxableBase]);
 
   return (
-    <div className="flex w-full items-center justify-end gap-1">
+    <div className="payroll-taxable-slot flex items-center justify-end gap-1">
       <Input
         value={draft}
         onChange={(e) => {
@@ -170,37 +170,31 @@ function TaxableBaseInput({
   );
 }
 
-function colAlignClass(align: "center" | "right"): string {
-  return align === "center"
-    ? "px-2 text-center align-middle"
-    : "px-3 text-right align-middle";
-}
-
 const PAYROLL_TABLE_COLUMNS = [
-  { key: "no", label: "구분번호", align: "center" as const, width: "3.25rem" },
-  { key: "name", label: "성명", align: "center" as const, width: "5.5rem" },
-  { key: "basic", label: "기본급", align: "right" as const, width: "6.25rem" },
-  { key: "nontax", label: "비과세", align: "right" as const, width: "5.5rem" },
-  { key: "gross", label: "총지급액", align: "right" as const, width: "6.25rem" },
-  { key: "taxable", label: "과세표준", align: "right" as const, width: "9.5rem" },
+  { key: "no", label: "구분번호", align: "center" as const, width: "3.5%" },
+  { key: "name", label: "성명", align: "center" as const, width: "7%" },
+  { key: "basic", label: "기본급", align: "right" as const, width: "7%" },
+  { key: "nontax", label: "비과세", align: "right" as const, width: "6%" },
+  { key: "gross", label: "총지급액", align: "right" as const, width: "7%" },
+  { key: "taxable", label: "과세표준", align: "right" as const, width: "10%" },
   {
     key: "empIns",
     label: "4대보험(본인)",
     align: "right" as const,
-    width: "6.5rem",
+    width: "7.5%",
   },
-  { key: "incomeTax", label: "소득세", align: "right" as const, width: "6rem" },
-  { key: "localTax", label: "지방세", align: "right" as const, width: "5.5rem" },
-  { key: "net", label: "실지급", align: "right" as const, width: "6.25rem" },
+  { key: "incomeTax", label: "소득세", align: "right" as const, width: "7%" },
+  { key: "localTax", label: "지방세", align: "right" as const, width: "6%" },
+  { key: "net", label: "실지급", align: "right" as const, width: "7%" },
   {
     key: "erIns",
     label: "4대보험(회사)",
     align: "right" as const,
-    width: "6.5rem",
+    width: "7.5%",
   },
-  { key: "totalCost", label: "총인건비", align: "right" as const, width: "6.25rem" },
-  { key: "note", label: "비고", align: "center" as const, width: "6.5rem" },
-  { key: "payslip", label: "명세서", align: "center" as const, width: "5.5rem" },
+  { key: "totalCost", label: "총인건비", align: "right" as const, width: "7%" },
+  { key: "note", label: "비고", align: "center" as const, width: "7%" },
+  { key: "payslip", label: "명세서", align: "center" as const, width: "6.5%" },
 ];
 
 function PayrollHead({
@@ -215,8 +209,10 @@ function PayrollHead({
   return (
     <TableHead
       className={cn(
-        colAlignClass(align),
-        "whitespace-nowrap text-xs font-semibold text-slate-600",
+        "h-10 whitespace-nowrap font-semibold text-slate-600",
+        align === "center"
+          ? "payroll-col-center !text-center"
+          : "payroll-col-right !text-right",
         className
       )}
     >
@@ -235,7 +231,16 @@ function PayrollCell({
   className?: string;
 }) {
   return (
-    <TableCell className={cn(colAlignClass(align), className)}>{children}</TableCell>
+    <TableCell
+      className={cn(
+        align === "center"
+          ? "payroll-col-center !text-center"
+          : "payroll-col-right !text-right",
+        className
+      )}
+    >
+      {children}
+    </TableCell>
   );
 }
 
@@ -247,7 +252,7 @@ function IncomeTaxCell({
   relief?: number;
 }) {
   return (
-    <div className="flex min-h-[2.5rem] flex-col items-end justify-center">
+    <div className="inline-flex min-h-[2.5rem] flex-col items-end justify-center">
       <MoneyCell value={amount} />
       {relief && relief > 0 ? (
         <p className="text-[11px] leading-4 text-emerald-600">
@@ -286,7 +291,7 @@ function PayrollTable({
   }
 
   return (
-    <Table className="w-full min-w-[82rem] table-fixed text-sm">
+    <Table className="payroll-ledger-table text-sm">
       <colgroup>
         {PAYROLL_TABLE_COLUMNS.map((col) => (
           <col key={col.key} style={{ width: col.width }} />
@@ -332,7 +337,9 @@ function PayrollTable({
                   onReset={() => onTaxableReset(row.id)}
                 />
               ) : (
-                <MoneyCell value={row.taxableBase} />
+                <div className="payroll-taxable-slot">
+                  <MoneyCell value={row.taxableBase} />
+                </div>
               )}
             </PayrollCell>
             <PayrollCell align="right">
@@ -380,7 +387,9 @@ function PayrollTable({
         <TableRow className="hover:bg-slate-50/90">
           <TableCell
             colSpan={2}
-            className={cn(colAlignClass("center"), "font-semibold text-slate-900")}
+            className={cn(
+              "payroll-col-center !text-center font-semibold text-slate-900"
+            )}
           >
             합계
           </TableCell>
@@ -394,7 +403,9 @@ function PayrollTable({
             <MoneyCell value={summary.grossTotal} />
           </PayrollCell>
           <PayrollCell align="right">
-            <MoneyCell value={summary.taxableBaseTotal} />
+            <div className="payroll-taxable-slot">
+              <MoneyCell value={summary.taxableBaseTotal} />
+            </div>
           </PayrollCell>
           <PayrollCell align="right">
             <MoneyCell value={summary.employeeInsuranceTotal} />
