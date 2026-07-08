@@ -130,7 +130,7 @@ function TaxableBaseInput({
   }, [row.taxableBase]);
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex w-full items-center justify-end gap-1">
       <Input
         value={draft}
         onChange={(e) => {
@@ -146,23 +146,115 @@ function TaxableBaseInput({
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         className={cn(
-          "h-8 w-[7.5rem] text-right text-sm tabular-nums",
+          "h-8 w-[7.25rem] shrink-0 text-right text-sm tabular-nums",
           row.taxableBaseOverridden &&
             "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
         )}
         aria-label={`${row.name} 과세표준`}
       />
-      {row.taxableBaseOverridden && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0 text-muted-foreground"
-          onClick={onReset}
-          title="기본값 복원"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+        {row.taxableBaseOverridden ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground"
+            onClick={onReset}
+            title="기본값 복원"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function colAlignClass(align: "center" | "right"): string {
+  return align === "center"
+    ? "px-2 text-center align-middle"
+    : "px-3 text-right align-middle";
+}
+
+const PAYROLL_TABLE_COLUMNS = [
+  { key: "no", label: "구분번호", align: "center" as const, width: "3.25rem" },
+  { key: "name", label: "성명", align: "center" as const, width: "5.5rem" },
+  { key: "basic", label: "기본급", align: "right" as const, width: "6.25rem" },
+  { key: "nontax", label: "비과세", align: "right" as const, width: "5.5rem" },
+  { key: "gross", label: "총지급액", align: "right" as const, width: "6.25rem" },
+  { key: "taxable", label: "과세표준", align: "right" as const, width: "9.5rem" },
+  {
+    key: "empIns",
+    label: "4대보험(본인)",
+    align: "right" as const,
+    width: "6.5rem",
+  },
+  { key: "incomeTax", label: "소득세", align: "right" as const, width: "6rem" },
+  { key: "localTax", label: "지방세", align: "right" as const, width: "5.5rem" },
+  { key: "net", label: "실지급", align: "right" as const, width: "6.25rem" },
+  {
+    key: "erIns",
+    label: "4대보험(회사)",
+    align: "right" as const,
+    width: "6.5rem",
+  },
+  { key: "totalCost", label: "총인건비", align: "right" as const, width: "6.25rem" },
+  { key: "note", label: "비고", align: "center" as const, width: "6.5rem" },
+  { key: "payslip", label: "명세서", align: "center" as const, width: "5.5rem" },
+];
+
+function PayrollHead({
+  align,
+  children,
+  className,
+}: {
+  align: "center" | "right";
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <TableHead
+      className={cn(
+        colAlignClass(align),
+        "whitespace-nowrap text-xs font-semibold text-slate-600",
+        className
+      )}
+    >
+      {children}
+    </TableHead>
+  );
+}
+
+function PayrollCell({
+  align,
+  children,
+  className,
+}: {
+  align: "center" | "right";
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <TableCell className={cn(colAlignClass(align), className)}>{children}</TableCell>
+  );
+}
+
+function IncomeTaxCell({
+  amount,
+  relief,
+}: {
+  amount: number;
+  relief?: number;
+}) {
+  return (
+    <div className="flex min-h-[2.5rem] flex-col items-end justify-center">
+      <MoneyCell value={amount} />
+      {relief && relief > 0 ? (
+        <p className="text-[11px] leading-4 text-emerald-600">
+          감면 −{formatNumber(relief)}
+        </p>
+      ) : (
+        <span className="h-4" aria-hidden />
       )}
     </div>
   );
@@ -194,49 +286,45 @@ function PayrollTable({
   }
 
   return (
-    <Table className="text-sm">
+    <Table className="w-full min-w-[82rem] table-fixed text-sm">
+      <colgroup>
+        {PAYROLL_TABLE_COLUMNS.map((col) => (
+          <col key={col.key} style={{ width: col.width }} />
+        ))}
+      </colgroup>
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          <TableHead className="w-16 text-center">구분번호</TableHead>
-          <TableHead className="min-w-[5rem] text-center">성명</TableHead>
-          <TableHead className="text-right">기본급</TableHead>
-          <TableHead className="text-right">비과세</TableHead>
-          <TableHead className="text-right">총지급액</TableHead>
-          <TableHead className="min-w-[8.5rem] text-right">과세표준</TableHead>
-          <TableHead className="text-right">4대보험(본인)</TableHead>
-          <TableHead className="text-right">소득세</TableHead>
-          <TableHead className="text-right">지방세</TableHead>
-          <TableHead className="text-right">실지급</TableHead>
-          <TableHead className="text-right">4대보험(회사)</TableHead>
-          <TableHead className="text-right">총인건비</TableHead>
-          <TableHead className="min-w-[7rem] text-center">비고</TableHead>
-          <TableHead className="min-w-[5rem] text-center">명세서</TableHead>
+          {PAYROLL_TABLE_COLUMNS.map((col) => (
+            <PayrollHead key={col.key} align={col.align}>
+              {col.label}
+            </PayrollHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row, index) => (
           <TableRow key={row.id}>
-            <TableCell className="text-center tabular-nums text-slate-600">
+            <PayrollCell align="center" className="tabular-nums text-slate-600">
               {index + 1}
-            </TableCell>
-            <TableCell className="text-center font-medium text-slate-900">
+            </PayrollCell>
+            <PayrollCell align="center" className="font-medium text-slate-900">
               <div>{row.name}</div>
               {row.department && (
                 <div className="text-xs font-normal text-muted-foreground">
                   {row.department}
                 </div>
               )}
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={getBasicPay(row)} />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.nonTaxable} />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={getTotalGrossPay(row)} />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               {showTaxableInput ? (
                 <TaxableBaseInput
                   row={row}
@@ -246,36 +334,32 @@ function PayrollTable({
               ) : (
                 <MoneyCell value={row.taxableBase} />
               )}
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.employeeInsuranceTotal} />
-            </TableCell>
-            <TableCell>
-              <div className="text-right">
-                <MoneyCell value={row.incomeTax} />
-                {row.incomeTaxRelief > 0 && (
-                  <p className="text-[11px] text-emerald-600">
-                    감면 −{formatNumber(row.incomeTaxRelief)}
-                  </p>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
+              <IncomeTaxCell
+                amount={row.incomeTax}
+                relief={row.incomeTaxRelief}
+              />
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.localIncomeTax} />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.netPay} emphasis="indigo" />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.employerInsuranceTotal} />
-            </TableCell>
-            <TableCell>
+            </PayrollCell>
+            <PayrollCell align="right">
               <MoneyCell value={row.totalEmployerCost} emphasis="rose" />
-            </TableCell>
-            <TableCell className="text-center text-xs text-muted-foreground">
+            </PayrollCell>
+            <PayrollCell align="center" className="text-xs text-muted-foreground">
               {row.note || "—"}
-            </TableCell>
-            <TableCell className="text-center">
+            </PayrollCell>
+            <PayrollCell align="center">
               <Button
                 type="button"
                 variant="outline"
@@ -288,56 +372,55 @@ function PayrollTable({
                 <FileDown className="h-3.5 w-3.5" />
                 명세서
               </Button>
-            </TableCell>
+            </PayrollCell>
           </TableRow>
         ))}
       </TableBody>
       <TableFooter className="bg-slate-50/90 text-sm">
         <TableRow className="hover:bg-slate-50/90">
-          <TableCell colSpan={2} className="text-center font-semibold text-slate-900">
+          <TableCell
+            colSpan={2}
+            className={cn(colAlignClass("center"), "font-semibold text-slate-900")}
+          >
             합계
           </TableCell>
-          <TableCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.basicPayTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.nonTaxableTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.grossTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.taxableBaseTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.employeeInsuranceTotal} />
-          </TableCell>
-          <TableCell>
-            <div className="text-right">
-              <MoneyCell value={summary.incomeTaxTotal} />
-              {summary.incomeTaxReliefTotal > 0 && (
-                <p className="text-[11px] text-emerald-600">
-                  감면 −{formatNumber(summary.incomeTaxReliefTotal)}
-                </p>
-              )}
-            </div>
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
+            <IncomeTaxCell
+              amount={summary.incomeTaxTotal}
+              relief={summary.incomeTaxReliefTotal}
+            />
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.localIncomeTaxTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.netPayTotal} emphasis="indigo" />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.employerInsuranceTotal} />
-          </TableCell>
-          <TableCell>
+          </PayrollCell>
+          <PayrollCell align="right">
             <MoneyCell value={summary.totalEmployerCost} emphasis="rose" />
-          </TableCell>
-          <TableCell className="text-center text-xs text-muted-foreground">
+          </PayrollCell>
+          <PayrollCell align="center" className="text-xs text-muted-foreground">
             {formatPeriodLabel(reportingMonth)}
-          </TableCell>
-          <TableCell />
+          </PayrollCell>
+          <PayrollCell align="center">{" "}</PayrollCell>
         </TableRow>
       </TableFooter>
     </Table>
