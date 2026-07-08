@@ -6,8 +6,9 @@ import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 const HEADERS = [
   "구분",
   "성명",
-  "지급총액",
+  "기본급",
   "비과세",
+  "총지급액",
   "과세표준",
   "국민연금",
   "건강보험",
@@ -21,8 +22,8 @@ const HEADERS = [
 ] as const;
 
 const MONEY_FMT = "#,##0";
-/** 금액 컬럼 인덱스 (0-based): 지급총액 ~ 차인지급액 */
-const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+/** 금액 컬럼 인덱스 (0-based): 기본급 ~ 차인지급액 */
+const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
 function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
   const note =
@@ -35,8 +36,9 @@ function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
   return [
     index,
     row.name,
-    row.monthlyGross,
+    row.defaultTaxableBase,
     row.nonTaxable,
+    row.monthlyGross,
     row.taxableBase,
     row.employeePension,
     row.employeeHealth,
@@ -59,8 +61,9 @@ function summaryCells(ledger: PayrollLedgerResult): (string | number)[] {
   return [
     "",
     "합계",
-    s.grossTotal,
+    s.basicPayTotal,
     s.nonTaxableTotal,
+    s.grossTotal,
     s.taxableBaseTotal,
     sum((r) => r.employeePension),
     sum((r) => r.employeeHealth),
@@ -120,6 +123,7 @@ export function downloadPayrollLedgerExcel(ledger: PayrollLedgerResult): void {
     { wch: 10 },
     { wch: 12 },
     { wch: 10 },
+    { wch: 12 },
     { wch: 12 },
     { wch: 10 },
     { wch: 10 },

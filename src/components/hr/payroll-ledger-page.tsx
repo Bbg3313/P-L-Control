@@ -32,6 +32,8 @@ import { downloadPayrollLedgerExcel } from "@/lib/payroll-export";
 import { downloadPayrollPayslipExcel } from "@/lib/payroll-payslip-export";
 import {
   buildPayrollLedger,
+  getBasicPay,
+  getTotalGrossPay,
   JUN_2026_INSURANCE_LABEL,
   PAYROLL_COMPANY_OPTIONS,
   type PayrollCompanyId,
@@ -199,6 +201,7 @@ function PayrollTable({
           <TableHead className="min-w-[5rem] text-center">성명</TableHead>
           <TableHead className="text-right">기본급</TableHead>
           <TableHead className="text-right">비과세</TableHead>
+          <TableHead className="text-right">총지급액</TableHead>
           <TableHead className="min-w-[8.5rem] text-right">과세표준</TableHead>
           <TableHead className="text-right">4대보험(본인)</TableHead>
           <TableHead className="text-right">소득세</TableHead>
@@ -225,10 +228,13 @@ function PayrollTable({
               )}
             </TableCell>
             <TableCell>
-              <MoneyCell value={row.monthlyGross} />
+              <MoneyCell value={getBasicPay(row)} />
             </TableCell>
             <TableCell>
               <MoneyCell value={row.nonTaxable} />
+            </TableCell>
+            <TableCell>
+              <MoneyCell value={getTotalGrossPay(row)} />
             </TableCell>
             <TableCell>
               {showTaxableInput ? (
@@ -280,7 +286,7 @@ function PayrollTable({
                 }
               >
                 <FileDown className="h-3.5 w-3.5" />
-                다운로드
+                명세서
               </Button>
             </TableCell>
           </TableRow>
@@ -292,10 +298,13 @@ function PayrollTable({
             합계
           </TableCell>
           <TableCell>
-            <MoneyCell value={summary.grossTotal} />
+            <MoneyCell value={summary.basicPayTotal} />
           </TableCell>
           <TableCell>
             <MoneyCell value={summary.nonTaxableTotal} />
+          </TableCell>
+          <TableCell>
+            <MoneyCell value={summary.grossTotal} />
           </TableCell>
           <TableCell>
             <MoneyCell value={summary.taxableBaseTotal} />

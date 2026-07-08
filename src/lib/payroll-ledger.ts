@@ -98,9 +98,20 @@ export interface PayrollLedgerRow {
   note: string;
 }
 
+/** 비과세 제외 기본급 (과세 급여) */
+export function getBasicPay(row: PayrollLedgerRow): number {
+  return row.defaultTaxableBase;
+}
+
+/** 총지급액 (기본급 + 비과세) */
+export function getTotalGrossPay(row: PayrollLedgerRow): number {
+  return row.monthlyGross;
+}
+
 export interface PayrollLedgerSummary {
   domesticCount: number;
   overseasCount: number;
+  basicPayTotal: number;
   grossTotal: number;
   nonTaxableTotal: number;
   taxableBaseTotal: number;
@@ -291,6 +302,7 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
       domesticCount: acc.domesticCount + (row.isOverseas ? 0 : 1),
       overseasCount: acc.overseasCount + (row.isOverseas ? 1 : 0),
       grossTotal: acc.grossTotal + row.monthlyGross,
+      basicPayTotal: acc.basicPayTotal + row.defaultTaxableBase,
       nonTaxableTotal: acc.nonTaxableTotal + row.nonTaxable,
       taxableBaseTotal: acc.taxableBaseTotal + row.taxableBase,
       employeeInsuranceTotal:
@@ -307,6 +319,7 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
     {
       domesticCount: 0,
       overseasCount: 0,
+      basicPayTotal: 0,
       grossTotal: 0,
       nonTaxableTotal: 0,
       taxableBaseTotal: 0,
