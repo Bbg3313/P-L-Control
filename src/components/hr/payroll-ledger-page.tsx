@@ -172,8 +172,9 @@ function PayrollTable({
     <Table>
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          <TableHead className="min-w-[5rem]">성명</TableHead>
-          <TableHead className="min-w-[4.5rem]">직위</TableHead>
+          <TableHead className="min-w-[5rem] text-center">성명</TableHead>
+          <TableHead className="min-w-[4rem] text-center">구분번호</TableHead>
+          <TableHead className="min-w-[4.5rem] text-center">직위</TableHead>
           <TableHead className="text-right">기본급</TableHead>
           <TableHead className="text-right">비과세</TableHead>
           <TableHead className="min-w-[8.5rem] text-right">과세표준</TableHead>
@@ -183,19 +184,22 @@ function PayrollTable({
           <TableHead className="text-right">실지급</TableHead>
           <TableHead className="text-right">4대보험(회사)</TableHead>
           <TableHead className="text-right">총인건비</TableHead>
-          <TableHead className="min-w-[7rem]">비고</TableHead>
+          <TableHead className="min-w-[7rem] text-center">비고</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => (
+        {rows.map((row, index) => (
           <TableRow key={row.id}>
-            <TableCell className="font-medium text-slate-900">
+            <TableCell className="text-center font-medium text-slate-900">
               <div>{row.name}</div>
               {row.department && (
                 <div className="text-xs text-muted-foreground">{row.department}</div>
               )}
             </TableCell>
-            <TableCell className="text-sm text-slate-600">
+            <TableCell className="text-center text-sm tabular-nums text-slate-600">
+              {index + 1}
+            </TableCell>
+            <TableCell className="text-center text-sm text-slate-600">
               {row.position || "—"}
             </TableCell>
             <TableCell>
@@ -244,7 +248,7 @@ function PayrollTable({
                 {formatNumber(row.totalEmployerCost)}
               </span>
             </TableCell>
-            <TableCell className="text-xs text-muted-foreground">{row.note || "—"}</TableCell>
+            <TableCell className="text-center text-xs text-muted-foreground">{row.note || "—"}</TableCell>
           </TableRow>
         ))}
       </TableBody>
