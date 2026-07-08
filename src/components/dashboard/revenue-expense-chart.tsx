@@ -25,6 +25,7 @@ const CHART = {
   expense: "#f43f5e",
   grid: "#e2e8f0",
   axis: "#94a3b8",
+  font: "var(--font-pretendard), Pretendard, system-ui, sans-serif",
 };
 
 interface RevenueExpenseChartProps {
@@ -119,14 +120,14 @@ export function RevenueExpenseChart({
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: CHART.axis }}
+                tick={{ fontSize: 12, fill: CHART.axis, fontFamily: CHART.font }}
                 tickLine={false}
                 axisLine={{ stroke: CHART.grid }}
                 dy={8}
               />
               <YAxis
                 width={52}
-                tick={{ fontSize: 11, fill: CHART.axis }}
+                tick={{ fontSize: 11, fill: CHART.axis, fontFamily: CHART.font }}
                 tickLine={false}
                 axisLine={false}
                 tickMargin={6}

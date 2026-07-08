@@ -6,6 +6,10 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .font-chart {
+    font-family: var(--font-pretendard), Pretendard, system-ui, sans-serif;
+  }
 }
 
 @layer base {
@@ -84,9 +88,16 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "tnum";
   }
   html {
     @apply font-sans;
+  }
+
+  .recharts-cartesian-axis-tick text,
+  .recharts-legend-item-text,
+  .recharts-default-legend {
+    font-family: var(--font-pretendard), Pretendard, system-ui, sans-serif;
   }
 }

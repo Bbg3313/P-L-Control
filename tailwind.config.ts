@@ -66,8 +66,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 2px)",
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-pretendard)", "Pretendard", "system-ui", "sans-serif"],
+        mono: ["var(--font-pretendard)", "Pretendard", "system-ui", "sans-serif"],
       },
     },
   },
