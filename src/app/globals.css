@@ -36,38 +36,35 @@
     padding: 0.625rem 0.75rem !important;
   }
 
-  .payroll-ledger-table .payroll-taxable-row {
-    display: inline-flex;
+  .payroll-ledger-table .payroll-taxable-wrap {
+    position: relative;
+    display: block;
     width: 100%;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.25rem;
   }
 
-  .payroll-ledger-table .payroll-taxable-field {
-    width: 7.25rem;
-    flex-shrink: 0;
-    text-align: right;
-  }
-
-  .payroll-ledger-table .payroll-taxable-action {
-    display: flex;
-    width: 2rem;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
+  .payroll-ledger-table .payroll-taxable-wrap--with-reset .payroll-taxable-input {
+    padding-right: 2rem !important;
   }
 
   .payroll-ledger-table .payroll-taxable-input {
-    height: 2rem;
-    width: 100%;
+    display: block;
+    height: 2rem !important;
+    width: 100% !important;
     min-width: 0;
     border-radius: 0.375rem;
-    padding: 0 0.5rem;
+    padding: 0 0.5rem !important;
     font-family: inherit;
-    font-size: 0.875rem;
+    font-size: 0.875rem !important;
     font-variant-numeric: tabular-nums;
-    text-align: right;
+    text-align: right !important;
+    line-height: 2rem;
+  }
+
+  .payroll-ledger-table .payroll-taxable-reset {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
   }
 
   .payroll-ledger-page {

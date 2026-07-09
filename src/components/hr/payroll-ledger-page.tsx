@@ -114,43 +114,62 @@ function MoneyCell({
   );
 }
 
-function TaxableRow({ children }: { children: React.ReactNode }) {
-  return <div className="payroll-taxable-row">{children}</div>;
-}
-
-function TaxableField({
-  children,
-  className,
+function TaxableBaseInput({
+  row,
+  onChange,
+  onReset,
 }: {
-  children: React.ReactNode;
-  className?: string;
+  row: PayrollLedgerRow;
+  onChange: (value: number) => void;
+  onReset: () => void;
 }) {
-  return <div className={cn("payroll-taxable-field", className)}>{children}</div>;
-}
+  const [draft, setDraft] = useState(formatAmountInputValue(row.taxableBase));
 
-function TaxableAction({ children }: { children?: React.ReactNode }) {
-  return <div className="payroll-taxable-action">{children}</div>;
-}
+  useEffect(() => {
+    setDraft(formatAmountInputValue(row.taxableBase));
+  }, [row.taxableBase]);
 
-function TaxableHeader() {
   return (
-    <TaxableRow>
-      <TaxableField className="text-xs font-semibold text-slate-600">
-        과세표준
-      </TaxableField>
-      <TaxableAction />
-    </TaxableRow>
-  );
-}
-
-function TaxableFooterValue({ value }: { value: number }) {
-  return (
-    <TaxableRow>
-      <TaxableField>
-        <MoneyCell value={value} />
-      </TaxableField>
-      <TaxableAction />
-    </TaxableRow>
+    <div
+      className={cn(
+        "payroll-taxable-wrap",
+        row.taxableBaseOverridden && "payroll-taxable-wrap--with-reset"
+      )}
+    >
+      <Input
+        value={draft}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          setDraft(digits ? formatNumber(Number(digits)) : "");
+        }}
+        onBlur={() => {
+          const next = parseAmount(draft);
+          onChange(next);
+          setDraft(formatAmountInputValue(next));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        className={cn(
+          "payroll-taxable-input shadow-none",
+          row.taxableBaseOverridden &&
+            "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
+        )}
+        aria-label={`${row.name} 과세표준`}
+      />
+      {row.taxableBaseOverridden ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="payroll-taxable-reset h-7 w-7 text-muted-foreground"
+          onClick={onReset}
+          title="기본값 복원"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -199,64 +218,6 @@ function PayrollTd({
     >
       {children}
     </td>
-  );
-}
-
-function TaxableBaseInput({
-  row,
-  onChange,
-  onReset,
-}: {
-  row: PayrollLedgerRow;
-  onChange: (value: number) => void;
-  onReset: () => void;
-}) {
-  const [draft, setDraft] = useState(formatAmountInputValue(row.taxableBase));
-
-  useEffect(() => {
-    setDraft(formatAmountInputValue(row.taxableBase));
-  }, [row.taxableBase]);
-
-  return (
-    <TaxableRow>
-      <TaxableField>
-        <Input
-          value={draft}
-          onChange={(e) => {
-            const digits = e.target.value.replace(/[^\d]/g, "");
-            setDraft(digits ? formatNumber(Number(digits)) : "");
-          }}
-          onBlur={() => {
-            const next = parseAmount(draft);
-            onChange(next);
-            setDraft(formatAmountInputValue(next));
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          className={cn(
-            "payroll-taxable-input",
-            row.taxableBaseOverridden &&
-              "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
-          )}
-          aria-label={`${row.name} 과세표준`}
-        />
-      </TaxableField>
-      <TaxableAction>
-        {row.taxableBaseOverridden ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground"
-            onClick={onReset}
-            title="기본값 복원"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-        ) : null}
-      </TaxableAction>
-    </TaxableRow>
   );
 }
 
@@ -342,17 +303,11 @@ function PayrollTable({
       </colgroup>
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          {PAYROLL_TABLE_COLUMNS.map((col) =>
-            col.key === "taxable" ? (
-              <PayrollTh key={col.key} align="right">
-                <TaxableHeader />
-              </PayrollTh>
-            ) : (
-              <PayrollTh key={col.key} align={col.align}>
-                {col.label}
-              </PayrollTh>
-            )
-          )}
+          {PAYROLL_TABLE_COLUMNS.map((col) => (
+            <PayrollTh key={col.key} align={col.align}>
+              {col.label}
+            </PayrollTh>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -386,12 +341,7 @@ function PayrollTable({
                   onReset={() => onTaxableReset(row.id)}
                 />
               ) : (
-                <TaxableRow>
-                  <TaxableField>
-                    <MoneyCell value={row.taxableBase} />
-                  </TaxableField>
-                  <TaxableAction />
-                </TaxableRow>
+                <MoneyCell value={row.taxableBase} />
               )}
             </PayrollTd>
             <PayrollTd align="right">
@@ -454,7 +404,7 @@ function PayrollTable({
             <MoneyCell value={summary.grossTotal} />
           </PayrollTd>
           <PayrollTd align="right">
-            <TaxableFooterValue value={summary.taxableBaseTotal} />
+            <MoneyCell value={summary.taxableBaseTotal} />
           </PayrollTd>
           <PayrollTd align="right">
             <MoneyCell value={summary.employeeInsuranceTotal} />
