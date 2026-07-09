@@ -296,12 +296,14 @@ function buildPayslipHtml(
       height: 64px;
       vertical-align: middle;
       flex-shrink: 0;
+      background: transparent;
     }
     .corporate-seal {
       display: block;
       width: 64px;
       height: 64px;
       object-fit: contain;
+      background: transparent;
     }
     @media print {
       body { background: #fff; padding: 0; }

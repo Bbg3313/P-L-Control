@@ -181,16 +181,19 @@ function PayrollTh({
   children,
   className,
   colSpan,
+  rowSpan,
 }: {
   align: CellAlign;
   children: React.ReactNode;
   className?: string;
   colSpan?: number;
+  rowSpan?: number;
 }) {
   return (
     <th
       data-align={align}
       colSpan={colSpan}
+      rowSpan={rowSpan}
       className={cn("payroll-cell", className)}
       style={{ textAlign: align }}
     >
@@ -222,19 +225,23 @@ function PayrollTd({
   );
 }
 
-const PAYROLL_TABLE_COLUMNS = [
+const PAYROLL_LEADING_COLUMNS = [
   { key: "no", label: "구분번호", align: "center" as const, width: "3.5%" },
   { key: "name", label: "성명", align: "center" as const, width: "7%" },
   { key: "basic", label: "과세급여", align: "right" as const, width: "7%" },
   { key: "nontax", label: "비과세", align: "right" as const, width: "6%" },
   { key: "gross", label: "총지급액", align: "right" as const, width: "7%" },
-  { key: "taxable", label: "과세표준", align: "right" as const, width: "10%" },
-  {
-    key: "empIns",
-    label: "4대보험(본인)",
-    align: "right" as const,
-    width: "7.5%",
-  },
+  { key: "taxable", label: "과세표준", align: "right" as const, width: "9%" },
+] as const;
+
+const PAYROLL_DEDUCTION_COLUMNS = [
+  { key: "pension", label: "국민", rate: "4.75", align: "right" as const, width: "4.5%" },
+  { key: "health", label: "건강", rate: "3.595", align: "right" as const, width: "4.5%" },
+  { key: "ltc", label: "장기", rate: "13.14", align: "right" as const, width: "4.5%" },
+  { key: "employment", label: "고용", rate: "0.9", align: "right" as const, width: "4.5%" },
+] as const;
+
+const PAYROLL_TRAILING_COLUMNS = [
   { key: "incomeTax", label: "소득세", align: "right" as const, width: "7%" },
   { key: "localTax", label: "지방세", align: "right" as const, width: "6%" },
   { key: "net", label: "실지급", align: "right" as const, width: "7%" },
@@ -242,11 +249,17 @@ const PAYROLL_TABLE_COLUMNS = [
     key: "erIns",
     label: "4대보험(회사)",
     align: "right" as const,
-    width: "7.5%",
+    width: "7%",
   },
   { key: "totalCost", label: "총인건비", align: "right" as const, width: "7%" },
-  { key: "note", label: "비고", align: "center" as const, width: "7%" },
-  { key: "payslip", label: "명세서", align: "center" as const, width: "6.5%" },
+  { key: "note", label: "비고", align: "center" as const, width: "6.5%" },
+  { key: "payslip", label: "명세서", align: "center" as const, width: "6%" },
+] as const;
+
+const PAYROLL_TABLE_COLUMNS = [
+  ...PAYROLL_LEADING_COLUMNS,
+  ...PAYROLL_DEDUCTION_COLUMNS,
+  ...PAYROLL_TRAILING_COLUMNS,
 ];
 
 function IncomeTaxCell({
@@ -308,9 +321,27 @@ function PayrollTable({
       </colgroup>
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          {PAYROLL_TABLE_COLUMNS.map((col) => (
-            <PayrollTh key={col.key} align={col.align}>
+          {PAYROLL_LEADING_COLUMNS.map((col) => (
+            <PayrollTh key={col.key} align={col.align} rowSpan={2}>
               {col.label}
+            </PayrollTh>
+          ))}
+          <PayrollTh align="center" colSpan={PAYROLL_DEDUCTION_COLUMNS.length}>
+            공제내역
+          </PayrollTh>
+          {PAYROLL_TRAILING_COLUMNS.map((col) => (
+            <PayrollTh key={col.key} align={col.align} rowSpan={2}>
+              {col.label}
+            </PayrollTh>
+          ))}
+        </TableRow>
+        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+          {PAYROLL_DEDUCTION_COLUMNS.map((col) => (
+            <PayrollTh key={col.key} align={col.align} className="text-xs">
+              <span className="block leading-tight">{col.label}</span>
+              <span className="block text-[11px] font-normal text-muted-foreground">
+                {col.rate}
+              </span>
             </PayrollTh>
           ))}
         </TableRow>
@@ -350,7 +381,16 @@ function PayrollTable({
               )}
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.employeeInsuranceTotal} />
+              <MoneyCell value={row.employeePension} />
+            </PayrollTd>
+            <PayrollTd align="right">
+              <MoneyCell value={row.employeeHealth} />
+            </PayrollTd>
+            <PayrollTd align="right">
+              <MoneyCell value={row.employeeLongTermCare} />
+            </PayrollTd>
+            <PayrollTd align="right">
+              <MoneyCell value={row.employeeEmployment} />
             </PayrollTd>
             <PayrollTd align="right">
               <IncomeTaxCell
@@ -412,7 +452,27 @@ function PayrollTable({
             <MoneyCell value={summary.taxableBaseTotal} />
           </PayrollTd>
           <PayrollTd align="right">
-            <MoneyCell value={summary.employeeInsuranceTotal} />
+            <MoneyCell
+              value={rows.reduce((sum, row) => sum + row.employeePension, 0)}
+            />
+          </PayrollTd>
+          <PayrollTd align="right">
+            <MoneyCell
+              value={rows.reduce((sum, row) => sum + row.employeeHealth, 0)}
+            />
+          </PayrollTd>
+          <PayrollTd align="right">
+            <MoneyCell
+              value={rows.reduce(
+                (sum, row) => sum + row.employeeLongTermCare,
+                0
+              )}
+            />
+          </PayrollTd>
+          <PayrollTd align="right">
+            <MoneyCell
+              value={rows.reduce((sum, row) => sum + row.employeeEmployment, 0)}
+            />
           </PayrollTd>
           <PayrollTd align="right">
             <IncomeTaxCell

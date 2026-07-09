@@ -4,22 +4,34 @@ import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatNumber } from "@/lib/format";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 
-const HEADERS = [
+const LEADING_HEADERS = [
   "구분",
   "성명",
   "과세급여",
   "비과세",
   "총지급액",
   "과세표준",
-  "국민연금",
-  "건강보험",
-  "장기요양",
-  "고용보험",
+] as const;
+
+const DEDUCTION_HEADERS = [
+  "국민 4.75",
+  "건강 3.595",
+  "장기 13.14",
+  "고용 0.9",
+] as const;
+
+const TRAILING_HEADERS = [
   "소득세",
   "지방소득세",
   "공제합계",
   "차인지급액",
   "비고",
+] as const;
+
+const HEADERS = [
+  ...LEADING_HEADERS,
+  ...DEDUCTION_HEADERS,
+  ...TRAILING_HEADERS,
 ] as const;
 
 const COL_COUNT = HEADERS.length;
@@ -80,6 +92,14 @@ function mergeRow(ws: XLSX.WorkSheet, row: number, fromCol: number, toCol: numbe
   ws["!merges"].push({
     s: { r: row, c: fromCol },
     e: { r: row, c: toCol },
+  });
+}
+
+function mergeCol(ws: XLSX.WorkSheet, col: number, fromRow: number, toRow: number): void {
+  if (!ws["!merges"]) ws["!merges"] = [];
+  ws["!merges"].push({
+    s: { r: fromRow, c: col },
+    e: { r: toRow, c: col },
   });
 }
 
@@ -185,7 +205,8 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
   const SUBTITLE_ROW = 1;
   const KPI_ROW = 2;
   const HEADER_ROW = 4;
-  const DATA_START_ROW = HEADER_ROW + 1;
+  const HEADER_ROW_2 = HEADER_ROW + 1;
+  const DATA_START_ROW = HEADER_ROW_2 + 1;
   const dataRows = ledger.domestic.map((row, i) => rowToCells(i + 1, row));
   const SUMMARY_ROW = DATA_START_ROW + dataRows.length;
 
@@ -220,8 +241,28 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
   });
   mergeRow(ws, KPI_ROW, 0, COL_COUNT - 1);
 
-  HEADERS.forEach((label, col) => {
+  LEADING_HEADERS.forEach((label, index) => {
+    setCell(ws, HEADER_ROW, index, label, headerCellStyle(index));
+    mergeCol(ws, index, HEADER_ROW, HEADER_ROW_2);
+  });
+
+  setCell(ws, HEADER_ROW, LEADING_HEADERS.length, "공제내역", headerCellStyle(LEADING_HEADERS.length));
+  mergeRow(
+    ws,
+    HEADER_ROW,
+    LEADING_HEADERS.length,
+    LEADING_HEADERS.length + DEDUCTION_HEADERS.length - 1
+  );
+
+  DEDUCTION_HEADERS.forEach((label, index) => {
+    const col = LEADING_HEADERS.length + index;
+    setCell(ws, HEADER_ROW_2, col, label, headerCellStyle(col));
+  });
+
+  TRAILING_HEADERS.forEach((label, index) => {
+    const col = LEADING_HEADERS.length + DEDUCTION_HEADERS.length + index;
     setCell(ws, HEADER_ROW, col, label, headerCellStyle(col));
+    mergeCol(ws, col, HEADER_ROW, HEADER_ROW_2);
   });
 
   dataRows.forEach((cells, rowIndex) => {
@@ -259,7 +300,8 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
     { hpt: 22 },
     { hpt: 24 },
     { hpt: 8 },
-    { hpt: 28 },
+    { hpt: 24 },
+    { hpt: 24 },
   ];
 
   ws["!cols"] = [
