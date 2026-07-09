@@ -6,6 +6,9 @@ import {
 import { formatNumber } from "@/lib/format";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 import { PAYROLL_CORPORATE_SEAL_DATA_URI } from "@/lib/payroll-corporate-seal";
+
+/** 실물 법인인감 외경 기준 (mm) */
+const CORPORATE_SEAL_SIZE_MM = 20;
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 
 function periodLabel(yearMonth: string): string {
@@ -292,16 +295,16 @@ function buildPayslipHtml(
     }
     .stamp-area {
       display: inline-block;
-      width: 64px;
-      height: 64px;
+      width: ${CORPORATE_SEAL_SIZE_MM}mm;
+      height: ${CORPORATE_SEAL_SIZE_MM}mm;
       vertical-align: middle;
       flex-shrink: 0;
       background: transparent;
     }
     .corporate-seal {
       display: block;
-      width: 64px;
-      height: 64px;
+      width: ${CORPORATE_SEAL_SIZE_MM}mm;
+      height: ${CORPORATE_SEAL_SIZE_MM}mm;
       object-fit: contain;
       background: transparent;
     }
