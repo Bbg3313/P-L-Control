@@ -4,17 +4,12 @@ import {
   getPayrollCompanyLabel,
 } from "@/lib/payroll-ledger";
 import { formatNumber } from "@/lib/format";
+import { PAYROLL_CORPORATE_SEAL_DATA_URI } from "@/lib/payroll-corporate-seal";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 
 function periodLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
   return `${year}년 ${Number(month)}월`;
-}
-
-function payDateLabel(yearMonth: string): string {
-  const [year, month] = yearMonth.split("-");
-  const lastDay = new Date(Number(year), Number(month), 0).getDate();
-  return `${year}.${month.padStart(2, "0")}.${String(lastDay).padStart(2, "0")}`;
 }
 
 function escapeHtml(value: string): string {
@@ -289,13 +284,23 @@ function buildPayslipHtml(
       font-size: 11pt;
       font-weight: 600;
       color: #0f172a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .stamp-area {
       display: inline-block;
-      min-width: 64px;
-      margin-left: 8px;
-      color: #94a3b8;
-      font-weight: 500;
+      width: 64px;
+      height: 64px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .corporate-seal {
+      display: block;
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
     }
     @media print {
       body { background: #fff; padding: 0; }
@@ -311,7 +316,6 @@ function buildPayslipHtml(
         <h1 class="title">급여명세서</h1>
         <div class="period-row">
           <span>귀속 ${period}</span>
-          <span>지급일 ${payDateLabel(ledger.yearMonth)}</span>
           <span>단위: 원</span>
         </div>
       </header>
@@ -384,7 +388,13 @@ function buildPayslipHtml(
         <p>위 금액을 정히 지급하였음을 확인합니다.</p>
         <p class="company-sign">
           ${company}
-          <span class="stamp-area">(인)</span>
+          <span class="stamp-area">
+            <img
+              class="corporate-seal"
+              src="${PAYROLL_CORPORATE_SEAL_DATA_URI}"
+              alt="법인인감"
+            />
+          </span>
         </p>
       </footer>
     </div>
