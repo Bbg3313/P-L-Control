@@ -194,8 +194,7 @@ function PayrollTh({
       data-align={align}
       colSpan={colSpan}
       rowSpan={rowSpan}
-      className={cn("payroll-cell", className)}
-      style={{ textAlign: align }}
+      className={cn("payroll-cell payroll-header-cell", className)}
     >
       {children}
     </th>
@@ -226,34 +225,34 @@ function PayrollTd({
 }
 
 const PAYROLL_LEADING_COLUMNS = [
-  { key: "no", label: "구분번호", align: "center" as const, minWidth: "3.5rem" },
-  { key: "name", label: "성명", align: "center" as const, minWidth: "9rem" },
-  { key: "basic", label: "과세급여", align: "right" as const, minWidth: "5.5rem" },
-  { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5rem" },
-  { key: "gross", label: "총지급액", align: "right" as const, minWidth: "5.5rem" },
-  { key: "taxable", label: "과세표준", align: "right" as const, minWidth: "6rem" },
+  { key: "no", label: "구분번호", align: "center" as const, minWidth: "4rem" },
+  { key: "name", label: "성명", align: "center" as const, minWidth: "10.5rem" },
+  { key: "basic", label: "과세급여", align: "right" as const, minWidth: "6rem" },
+  { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5.5rem" },
+  { key: "gross", label: "총지급액", align: "right" as const, minWidth: "6rem" },
+  { key: "taxable", label: "과세표준", align: "right" as const, minWidth: "6.5rem" },
 ] as const;
 
 const PAYROLL_DEDUCTION_COLUMNS = [
-  { key: "pension", label: "국민", align: "right" as const, minWidth: "4rem" },
-  { key: "health", label: "건강", align: "right" as const, minWidth: "4rem" },
-  { key: "ltc", label: "장기", align: "right" as const, minWidth: "4rem" },
-  { key: "employment", label: "고용", align: "right" as const, minWidth: "4rem" },
+  { key: "pension", label: "국민", align: "right" as const, minWidth: "4.5rem" },
+  { key: "health", label: "건강", align: "right" as const, minWidth: "4.5rem" },
+  { key: "ltc", label: "장기", align: "right" as const, minWidth: "4.5rem" },
+  { key: "employment", label: "고용", align: "right" as const, minWidth: "4.5rem" },
 ] as const;
 
 const PAYROLL_TRAILING_COLUMNS = [
-  { key: "incomeTax", label: "소득세", align: "right" as const, minWidth: "5.5rem" },
-  { key: "localTax", label: "지방세", align: "right" as const, minWidth: "5rem" },
-  { key: "net", label: "실지급", align: "right" as const, minWidth: "5.5rem" },
+  { key: "incomeTax", label: "소득세", align: "right" as const, minWidth: "6rem" },
+  { key: "localTax", label: "지방세", align: "right" as const, minWidth: "5.5rem" },
+  { key: "net", label: "실지급", align: "right" as const, minWidth: "6rem" },
   {
     key: "erIns",
     label: "4대보험(회사)",
     align: "right" as const,
-    minWidth: "7rem",
+    minWidth: "8.5rem",
   },
-  { key: "totalCost", label: "총인건비", align: "right" as const, minWidth: "5.5rem" },
-  { key: "note", label: "비고", align: "center" as const, minWidth: "4.5rem" },
-  { key: "payslip", label: "명세서", align: "center" as const, minWidth: "4.75rem" },
+  { key: "totalCost", label: "총인건비", align: "right" as const, minWidth: "6rem" },
+  { key: "note", label: "비고", align: "center" as const, minWidth: "5rem" },
+  { key: "payslip", label: "명세서", align: "center" as const, minWidth: "5rem" },
 ] as const;
 
 const PAYROLL_TABLE_COLUMNS = [
@@ -313,8 +312,7 @@ function PayrollTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table className="payroll-ledger-table text-sm">
+    <Table className="payroll-ledger-table !w-max min-w-full text-sm">
         <colgroup>
           {PAYROLL_TABLE_COLUMNS.map((col) => (
             <col key={col.key} style={{ width: col.minWidth, minWidth: col.minWidth }} />
@@ -497,7 +495,6 @@ function PayrollTable({
         </TableRow>
       </TableFooter>
     </Table>
-    </div>
   );
 }
 

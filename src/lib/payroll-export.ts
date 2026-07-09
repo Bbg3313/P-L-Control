@@ -175,7 +175,7 @@ function bodyCellStyle(
   };
 }
 
-function headerCellStyle(_col: number): CellStyle {
+function headerCellStyle(): CellStyle {
   return {
     font: baseFont(10, true, COLORS.headerText),
     fill: { fgColor: { rgb: COLORS.headerBg } },
@@ -234,11 +234,11 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
   mergeRow(ws, KPI_ROW, 0, COL_COUNT - 1);
 
   LEADING_HEADERS.forEach((label, index) => {
-    setCell(ws, HEADER_ROW, index, label, headerCellStyle(index));
+    setCell(ws, HEADER_ROW, index, label, headerCellStyle());
     mergeCol(ws, index, HEADER_ROW, HEADER_ROW_2);
   });
 
-  setCell(ws, HEADER_ROW, LEADING_HEADERS.length, "공제내역", headerCellStyle(LEADING_HEADERS.length));
+  setCell(ws, HEADER_ROW, LEADING_HEADERS.length, "공제내역", headerCellStyle());
   mergeRow(
     ws,
     HEADER_ROW,
@@ -248,12 +248,12 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
 
   DEDUCTION_HEADERS.forEach((label, index) => {
     const col = LEADING_HEADERS.length + index;
-    setCell(ws, HEADER_ROW_2, col, label, headerCellStyle(col));
+    setCell(ws, HEADER_ROW_2, col, label, headerCellStyle());
   });
 
   TRAILING_HEADERS.forEach((label, index) => {
     const col = LEADING_HEADERS.length + DEDUCTION_HEADERS.length + index;
-    setCell(ws, HEADER_ROW, col, label, headerCellStyle(col));
+    setCell(ws, HEADER_ROW, col, label, headerCellStyle());
     mergeCol(ws, col, HEADER_ROW, HEADER_ROW_2);
   });
 

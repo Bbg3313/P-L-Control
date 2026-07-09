@@ -4,9 +4,9 @@
 
 @layer components {
   .payroll-ledger-table {
-    width: max-content;
+    width: max-content !important;
     min-width: 100%;
-    table-layout: fixed;
+    table-layout: auto;
     border-collapse: collapse;
   }
 
@@ -16,17 +16,25 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .payroll-ledger-table th.payroll-cell {
+  .payroll-ledger-table th.payroll-header-cell {
+    height: auto;
+    min-height: 2.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(71 85 105);
+    white-space: normal !important;
+    word-break: keep-all;
+    line-height: 1.35;
+    text-align: center !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+
+  .payroll-ledger-table th.payroll-cell:not(.payroll-header-cell) {
     height: auto;
     min-height: 2.5rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: rgb(71 85 105);
-    white-space: normal;
-    word-break: keep-all;
-    line-height: 1.35;
-    text-align: center !important;
-    padding: 0.5rem 0.625rem !important;
   }
 
   .payroll-ledger-table th.payroll-cell[data-align="center"],
@@ -35,10 +43,14 @@
     padding: 0.625rem 0.5rem !important;
   }
 
-  .payroll-ledger-table th.payroll-cell[data-align="right"],
   .payroll-ledger-table td.payroll-cell[data-align="right"] {
     text-align: right !important;
     padding: 0.625rem 0.75rem !important;
+    white-space: nowrap;
+  }
+
+  .payroll-ledger-table td.payroll-cell[data-align="center"] {
+    white-space: normal;
   }
 
   .payroll-ledger-table .payroll-taxable-wrap {
