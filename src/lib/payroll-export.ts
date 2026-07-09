@@ -13,12 +13,7 @@ const LEADING_HEADERS = [
   "과세표준",
 ] as const;
 
-const DEDUCTION_HEADERS = [
-  "국민 4.75",
-  "건강 3.595",
-  "장기 13.14",
-  "고용 0.9",
-] as const;
+const DEDUCTION_HEADERS = ["국민", "건강", "장기", "고용"] as const;
 
 const TRAILING_HEADERS = [
   "소득세",
@@ -180,15 +175,12 @@ function bodyCellStyle(
   };
 }
 
-function headerCellStyle(col: number): CellStyle {
-  const isMoney = MONEY_COL_INDEXES.includes(col);
-  const isCenter = col === 0 || col === 1 || col === COL_COUNT - 1;
-
+function headerCellStyle(_col: number): CellStyle {
   return {
     font: baseFont(10, true, COLORS.headerText),
     fill: { fgColor: { rgb: COLORS.headerBg } },
     alignment: {
-      horizontal: isCenter ? "center" : isMoney ? "right" : "center",
+      horizontal: "center",
       vertical: "center",
       wrapText: true,
     },

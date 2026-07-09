@@ -226,34 +226,34 @@ function PayrollTd({
 }
 
 const PAYROLL_LEADING_COLUMNS = [
-  { key: "no", label: "구분번호", align: "center" as const, width: "3.5%" },
-  { key: "name", label: "성명", align: "center" as const, width: "7%" },
-  { key: "basic", label: "과세급여", align: "right" as const, width: "7%" },
-  { key: "nontax", label: "비과세", align: "right" as const, width: "6%" },
-  { key: "gross", label: "총지급액", align: "right" as const, width: "7%" },
-  { key: "taxable", label: "과세표준", align: "right" as const, width: "9%" },
+  { key: "no", label: "구분번호", align: "center" as const, minWidth: "3.5rem" },
+  { key: "name", label: "성명", align: "center" as const, minWidth: "9rem" },
+  { key: "basic", label: "과세급여", align: "right" as const, minWidth: "5.5rem" },
+  { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5rem" },
+  { key: "gross", label: "총지급액", align: "right" as const, minWidth: "5.5rem" },
+  { key: "taxable", label: "과세표준", align: "right" as const, minWidth: "6rem" },
 ] as const;
 
 const PAYROLL_DEDUCTION_COLUMNS = [
-  { key: "pension", label: "국민", rate: "4.75", align: "right" as const, width: "4.5%" },
-  { key: "health", label: "건강", rate: "3.595", align: "right" as const, width: "4.5%" },
-  { key: "ltc", label: "장기", rate: "13.14", align: "right" as const, width: "4.5%" },
-  { key: "employment", label: "고용", rate: "0.9", align: "right" as const, width: "4.5%" },
+  { key: "pension", label: "국민", align: "right" as const, minWidth: "4rem" },
+  { key: "health", label: "건강", align: "right" as const, minWidth: "4rem" },
+  { key: "ltc", label: "장기", align: "right" as const, minWidth: "4rem" },
+  { key: "employment", label: "고용", align: "right" as const, minWidth: "4rem" },
 ] as const;
 
 const PAYROLL_TRAILING_COLUMNS = [
-  { key: "incomeTax", label: "소득세", align: "right" as const, width: "7%" },
-  { key: "localTax", label: "지방세", align: "right" as const, width: "6%" },
-  { key: "net", label: "실지급", align: "right" as const, width: "7%" },
+  { key: "incomeTax", label: "소득세", align: "right" as const, minWidth: "5.5rem" },
+  { key: "localTax", label: "지방세", align: "right" as const, minWidth: "5rem" },
+  { key: "net", label: "실지급", align: "right" as const, minWidth: "5.5rem" },
   {
     key: "erIns",
     label: "4대보험(회사)",
     align: "right" as const,
-    width: "7%",
+    minWidth: "7rem",
   },
-  { key: "totalCost", label: "총인건비", align: "right" as const, width: "7%" },
-  { key: "note", label: "비고", align: "center" as const, width: "6.5%" },
-  { key: "payslip", label: "명세서", align: "center" as const, width: "6%" },
+  { key: "totalCost", label: "총인건비", align: "right" as const, minWidth: "5.5rem" },
+  { key: "note", label: "비고", align: "center" as const, minWidth: "4.5rem" },
+  { key: "payslip", label: "명세서", align: "center" as const, minWidth: "4.75rem" },
 ] as const;
 
 const PAYROLL_TABLE_COLUMNS = [
@@ -313,39 +313,37 @@ function PayrollTable({
   }
 
   return (
-    <Table className="payroll-ledger-table text-sm">
-      <colgroup>
-        {PAYROLL_TABLE_COLUMNS.map((col) => (
-          <col key={col.key} style={{ width: col.width }} />
-        ))}
-      </colgroup>
-      <TableHeader>
-        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          {PAYROLL_LEADING_COLUMNS.map((col) => (
-            <PayrollTh key={col.key} align={col.align} rowSpan={2}>
-              {col.label}
-            </PayrollTh>
+    <div className="overflow-x-auto">
+      <Table className="payroll-ledger-table text-sm">
+        <colgroup>
+          {PAYROLL_TABLE_COLUMNS.map((col) => (
+            <col key={col.key} style={{ width: col.minWidth, minWidth: col.minWidth }} />
           ))}
-          <PayrollTh align="center" colSpan={PAYROLL_DEDUCTION_COLUMNS.length}>
-            공제내역
-          </PayrollTh>
-          {PAYROLL_TRAILING_COLUMNS.map((col) => (
-            <PayrollTh key={col.key} align={col.align} rowSpan={2}>
-              {col.label}
+        </colgroup>
+        <TableHeader>
+          <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+            {PAYROLL_LEADING_COLUMNS.map((col) => (
+              <PayrollTh key={col.key} align="center" rowSpan={2}>
+                {col.label}
+              </PayrollTh>
+            ))}
+            <PayrollTh align="center" colSpan={PAYROLL_DEDUCTION_COLUMNS.length}>
+              공제내역
             </PayrollTh>
-          ))}
-        </TableRow>
-        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          {PAYROLL_DEDUCTION_COLUMNS.map((col) => (
-            <PayrollTh key={col.key} align={col.align} className="text-xs">
-              <span className="block leading-tight">{col.label}</span>
-              <span className="block text-[11px] font-normal text-muted-foreground">
-                {col.rate}
-              </span>
-            </PayrollTh>
-          ))}
-        </TableRow>
-      </TableHeader>
+            {PAYROLL_TRAILING_COLUMNS.map((col) => (
+              <PayrollTh key={col.key} align="center" rowSpan={2}>
+                {col.label}
+              </PayrollTh>
+            ))}
+          </TableRow>
+          <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+            {PAYROLL_DEDUCTION_COLUMNS.map((col) => (
+              <PayrollTh key={col.key} align="center">
+                {col.label}
+              </PayrollTh>
+            ))}
+          </TableRow>
+        </TableHeader>
       <TableBody>
         {rows.map((row, index) => (
           <TableRow key={row.id}>
@@ -499,6 +497,7 @@ function PayrollTable({
         </TableRow>
       </TableFooter>
     </Table>
+    </div>
   );
 }
 

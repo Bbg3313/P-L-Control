@@ -4,8 +4,8 @@
 
 @layer components {
   .payroll-ledger-table {
-    width: 100%;
-    min-width: 72rem;
+    width: max-content;
+    min-width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
   }
@@ -17,11 +17,16 @@
   }
 
   .payroll-ledger-table th.payroll-cell {
-    height: 2.5rem;
+    height: auto;
+    min-height: 2.5rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: rgb(71 85 105);
-    white-space: nowrap;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.35;
+    text-align: center !important;
+    padding: 0.5rem 0.625rem !important;
   }
 
   .payroll-ledger-table th.payroll-cell[data-align="center"],
