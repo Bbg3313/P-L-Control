@@ -1,8 +1,8 @@
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
+import { formatNumber } from "@/lib/format";
 
-/** 급여대장 본문 컬럼 (A=구분, B=성명, C~ 차인지급액) */
 const HEADERS = [
   "구분",
   "성명",
@@ -21,9 +21,66 @@ const HEADERS = [
   "비고",
 ] as const;
 
+const COL_COUNT = HEADERS.length;
 const MONEY_FMT = "#,##0";
-/** 금액 컬럼 인덱스 (0-based): 기본급 ~ 차인지급액 */
 const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const NET_PAY_COL = 13;
+
+const COLORS = {
+  titleBg: "EEF2FF",
+  titleText: "1E293B",
+  subtitleText: "64748B",
+  headerBg: "334155",
+  headerText: "FFFFFF",
+  border: "CBD5E1",
+  borderLight: "E2E8F0",
+  rowAlt: "F8FAFC",
+  summaryBg: "F1F5F9",
+  netPayText: "1D4ED8",
+};
+
+type CellStyle = XLSX.CellStyle;
+
+const THIN_BORDER = {
+  top: { style: "thin" as const, color: { rgb: COLORS.border } },
+  bottom: { style: "thin" as const, color: { rgb: COLORS.border } },
+  left: { style: "thin" as const, color: { rgb: COLORS.border } },
+  right: { style: "thin" as const, color: { rgb: COLORS.border } },
+};
+
+function baseFont(size = 11, bold = false, color = COLORS.titleText): CellStyle["font"] {
+  return {
+    name: "맑은 고딕",
+    sz: size,
+    bold,
+    color: { rgb: color },
+  };
+}
+
+function setCell(
+  ws: XLSX.WorkSheet,
+  row: number,
+  col: number,
+  value: string | number,
+  style?: CellStyle
+): void {
+  const addr = XLSX.utils.encode_cell({ r: row, c: col });
+  const isNumber = typeof value === "number";
+  ws[addr] = {
+    v: value,
+    t: isNumber ? "n" : "s",
+    ...(isNumber ? { z: MONEY_FMT } : {}),
+    ...(style ? { s: style } : {}),
+  };
+}
+
+function mergeRow(ws: XLSX.WorkSheet, row: number, fromCol: number, toCol: number): void {
+  if (!ws["!merges"]) ws["!merges"] = [];
+  ws["!merges"].push({
+    s: { r: row, c: fromCol },
+    e: { r: row, c: toCol },
+  });
+}
 
 function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
   const note =
@@ -77,46 +134,132 @@ function summaryCells(ledger: PayrollLedgerResult): (string | number)[] {
   ];
 }
 
-function applyMoneyFormats(
-  ws: XLSX.WorkSheet,
-  startRow: number,
-  endRow: number
-): void {
-  for (let r = startRow; r <= endRow; r++) {
-    for (const c of MONEY_COL_INDEXES) {
-      const addr = XLSX.utils.encode_cell({ r, c });
-      const cell = ws[addr];
-      if (cell && cell.t === "n") {
-        cell.z = MONEY_FMT;
-      }
-    }
-  }
+function bodyCellStyle(
+  col: number,
+  options?: { alt?: boolean; summary?: boolean; netPay?: boolean }
+): CellStyle {
+  const isMoney = MONEY_COL_INDEXES.includes(col);
+  const isCenter = col === 0 || col === 1 || col === COL_COUNT - 1;
+
+  let bg = "FFFFFF";
+  if (options?.summary) bg = COLORS.summaryBg;
+  else if (options?.alt) bg = COLORS.rowAlt;
+
+  let color = COLORS.titleText;
+  if (options?.netPay) color = COLORS.netPayText;
+
+  return {
+    font: baseFont(11, options?.summary || options?.netPay, color),
+    fill: { fgColor: { rgb: bg } },
+    alignment: {
+      horizontal: isCenter ? "center" : isMoney ? "right" : "left",
+      vertical: "center",
+    },
+    border: THIN_BORDER,
+  };
 }
 
-export function downloadPayrollLedgerExcel(ledger: PayrollLedgerResult): void {
+function headerCellStyle(col: number): CellStyle {
+  const isMoney = MONEY_COL_INDEXES.includes(col);
+  const isCenter = col === 0 || col === 1 || col === COL_COUNT - 1;
+
+  return {
+    font: baseFont(10, true, COLORS.headerText),
+    fill: { fgColor: { rgb: COLORS.headerBg } },
+    alignment: {
+      horizontal: isCenter ? "center" : isMoney ? "right" : "center",
+      vertical: "center",
+      wrapText: true,
+    },
+    border: THIN_BORDER,
+  };
+}
+
+function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
   const [year, month] = ledger.yearMonth.split("-");
   const periodLabel = `${year}년 ${Number(month)}월`;
-  const headerRowIndex = 3;
-  const dataStartRow = headerRowIndex + 1;
-  const dataEndRow = dataStartRow + ledger.domestic.length;
+  const { summary } = ledger;
 
-  const sheetData: (string | number)[][] = [
-    [`${ledger.companyLabel}  ${periodLabel}  급여대장`],
-    [`${JUN_2026_INSURANCE_LABEL}  ·  단위: 원`],
-    [],
-    [...HEADERS],
-    ...ledger.domestic.map((row, i) => rowToCells(i + 1, row)),
-    summaryCells(ledger),
+  const TITLE_ROW = 0;
+  const SUBTITLE_ROW = 1;
+  const KPI_ROW = 2;
+  const HEADER_ROW = 4;
+  const DATA_START_ROW = HEADER_ROW + 1;
+  const dataRows = ledger.domestic.map((row, i) => rowToCells(i + 1, row));
+  const SUMMARY_ROW = DATA_START_ROW + dataRows.length;
+
+  const ws: XLSX.WorkSheet = {};
+  const range = {
+    s: { r: 0, c: 0 },
+    e: { r: SUMMARY_ROW, c: COL_COUNT - 1 },
+  };
+  ws["!ref"] = XLSX.utils.encode_range(range);
+
+  const title = `${ledger.companyLabel}  ${periodLabel}  급여대장`;
+  setCell(ws, TITLE_ROW, 0, title, {
+    font: baseFont(16, true, COLORS.titleText),
+    fill: { fgColor: { rgb: COLORS.titleBg } },
+    alignment: { horizontal: "center", vertical: "center" },
+  });
+  mergeRow(ws, TITLE_ROW, 0, COL_COUNT - 1);
+
+  const subtitle = `${JUN_2026_INSURANCE_LABEL}  ·  단위: 원  ·  ${ledger.domestic.length}명`;
+  setCell(ws, SUBTITLE_ROW, 0, subtitle, {
+    font: baseFont(10, false, COLORS.subtitleText),
+    fill: { fgColor: { rgb: COLORS.titleBg } },
+    alignment: { horizontal: "center", vertical: "center" },
+  });
+  mergeRow(ws, SUBTITLE_ROW, 0, COL_COUNT - 1);
+
+  const kpiText = `총지급액 ${formatNumber(summary.grossTotal)}원  |  실지급 ${formatNumber(summary.netPayTotal)}원  |  공제합계 ${formatNumber(summary.totalDeductions)}원  |  원천징수 ${formatNumber(summary.incomeTaxTotal + summary.localIncomeTaxTotal)}원`;
+  setCell(ws, KPI_ROW, 0, kpiText, {
+    font: baseFont(10, true, COLORS.titleText),
+    fill: { fgColor: { rgb: "FFFFFF" } },
+    alignment: { horizontal: "center", vertical: "center" },
+  });
+  mergeRow(ws, KPI_ROW, 0, COL_COUNT - 1);
+
+  HEADERS.forEach((label, col) => {
+    setCell(ws, HEADER_ROW, col, label, headerCellStyle(col));
+  });
+
+  dataRows.forEach((cells, rowIndex) => {
+    const r = DATA_START_ROW + rowIndex;
+    const alt = rowIndex % 2 === 1;
+    cells.forEach((value, col) => {
+      setCell(
+        ws,
+        r,
+        col,
+        value,
+        bodyCellStyle(col, {
+          alt,
+          netPay: col === NET_PAY_COL,
+        })
+      );
+    });
+  });
+
+  summaryCells(ledger).forEach((value, col) => {
+    setCell(
+      ws,
+      SUMMARY_ROW,
+      col,
+      value,
+      bodyCellStyle(col, {
+        summary: true,
+        netPay: col === NET_PAY_COL,
+      })
+    );
+  });
+
+  ws["!rows"] = [
+    { hpt: 34 },
+    { hpt: 22 },
+    { hpt: 24 },
+    { hpt: 8 },
+    { hpt: 28 },
   ];
-
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-  ws["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: HEADERS.length - 1 } },
-    { s: { r: 1, c: 0 }, e: { r: 1, c: HEADERS.length - 1 } },
-  ];
-
-  applyMoneyFormats(ws, dataStartRow, dataEndRow + 1);
 
   ws["!cols"] = [
     { wch: 5 },
@@ -139,13 +282,18 @@ export function downloadPayrollLedgerExcel(ledger: PayrollLedgerResult): void {
   ws["!views"] = [
     {
       state: "frozen",
-      xSplit: 0,
-      ySplit: headerRowIndex + 1,
-      topLeftCell: XLSX.utils.encode_cell({ r: dataStartRow, c: 0 }),
-      activeCell: XLSX.utils.encode_cell({ r: dataStartRow, c: 0 }),
+      xSplit: 2,
+      ySplit: DATA_START_ROW,
+      topLeftCell: XLSX.utils.encode_cell({ r: DATA_START_ROW, c: 2 }),
+      activeCell: XLSX.utils.encode_cell({ r: DATA_START_ROW, c: 2 }),
     },
   ];
 
+  return ws;
+}
+
+export function downloadPayrollLedgerExcel(ledger: PayrollLedgerResult): void {
+  const ws = buildStyledSheet(ledger);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "급여대장");
   XLSX.writeFile(

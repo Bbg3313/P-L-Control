@@ -1,4 +1,8 @@
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
+import {
+  getPayrollCompanyForPerson,
+  getPayrollCompanyLabel,
+} from "@/lib/payroll-ledger";
 import { formatNumber } from "@/lib/format";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 
@@ -56,7 +60,9 @@ function buildPayslipHtml(
   const period = periodLabel(ledger.yearMonth);
   const company = escapeHtml(ledger.companyLabel);
   const name = escapeHtml(row.name);
-  const department = escapeHtml(row.department || "—");
+  const affiliation = escapeHtml(
+    getPayrollCompanyLabel(getPayrollCompanyForPerson(row.name))
+  );
 
   const payLines: [string, number][] = [
     ["기본급", row.defaultTaxableBase],
@@ -320,7 +326,7 @@ function buildPayslipHtml(
           </tr>
           <tr>
             <th>소속</th>
-            <td>${department}</td>
+            <td>${affiliation}</td>
             <th>총지급액</th>
             <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;">
               ${formatNumber(row.monthlyGross)}

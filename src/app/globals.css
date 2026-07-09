@@ -5,25 +5,18 @@
 @layer components {
   .payroll-ledger-table {
     width: 100%;
+    min-width: 72rem;
     table-layout: fixed;
     border-collapse: collapse;
   }
 
-  .payroll-ledger-table th.payroll-col-center,
-  .payroll-ledger-table td.payroll-col-center {
-    text-align: center !important;
-    padding: 0.625rem 0.5rem !important;
+  .payroll-ledger-table .payroll-cell {
     vertical-align: middle;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
   }
 
-  .payroll-ledger-table th.payroll-col-right,
-  .payroll-ledger-table td.payroll-col-right {
-    text-align: right !important;
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-  }
-
-  .payroll-ledger-table thead th {
+  .payroll-ledger-table th.payroll-cell {
     height: 2.5rem;
     font-size: 0.75rem;
     font-weight: 600;
@@ -31,40 +24,36 @@
     white-space: nowrap;
   }
 
-  .payroll-ledger-table th.payroll-col-right,
-  .payroll-ledger-table td.payroll-col-right {
-    font-variant-numeric: tabular-nums;
+  .payroll-ledger-table th.payroll-cell[data-align="center"],
+  .payroll-ledger-table td.payroll-cell[data-align="center"] {
+    text-align: center !important;
+    padding: 0.625rem 0.5rem !important;
   }
 
-  .payroll-ledger-table .payroll-amount-slot {
-    display: flex;
-    min-height: 2.5rem;
+  .payroll-ledger-table th.payroll-cell[data-align="right"],
+  .payroll-ledger-table td.payroll-cell[data-align="right"] {
+    text-align: right !important;
+    padding: 0.625rem 0.75rem !important;
+  }
+
+  .payroll-ledger-table .payroll-taxable-row {
+    display: inline-flex;
+    width: 100%;
     align-items: center;
     justify-content: flex-end;
+    gap: 0.25rem;
   }
 
-  .payroll-ledger-table .payroll-taxable-slot {
-    display: grid;
-    grid-template-columns: 7.25rem 2rem;
-    column-gap: 0.25rem;
-    align-items: center;
-    justify-content: end;
-    margin-left: auto;
-    width: 9.75rem;
-    min-height: 2.5rem;
-  }
-
-  .payroll-ledger-table .payroll-taxable-value {
-    min-width: 0;
+  .payroll-ledger-table .payroll-taxable-field {
+    width: 7.25rem;
+    flex-shrink: 0;
     text-align: right;
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .payroll-ledger-table .payroll-taxable-action {
     display: flex;
     width: 2rem;
-    height: 2rem;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
   }
