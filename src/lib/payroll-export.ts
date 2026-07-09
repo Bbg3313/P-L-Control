@@ -2,6 +2,7 @@ import * as XLSX from "xlsx-js-style";
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatNumber } from "@/lib/format";
+import { formatPersonnelDisplayName } from "@/lib/personnel";
 
 const HEADERS = [
   "구분",
@@ -92,7 +93,7 @@ function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
 
   return [
     index,
-    row.name,
+    formatPersonnelDisplayName(row.name),
     row.defaultTaxableBase,
     row.nonTaxable,
     row.monthlyGross,

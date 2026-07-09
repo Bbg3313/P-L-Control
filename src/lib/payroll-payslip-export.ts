@@ -4,6 +4,7 @@ import {
   getPayrollCompanyLabel,
 } from "@/lib/payroll-ledger";
 import { formatNumber } from "@/lib/format";
+import { formatPersonnelDisplayName } from "@/lib/personnel";
 import { PAYROLL_CORPORATE_SEAL_DATA_URI } from "@/lib/payroll-corporate-seal";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 
@@ -54,7 +55,7 @@ function buildPayslipHtml(
 ): string {
   const period = periodLabel(ledger.yearMonth);
   const company = escapeHtml(ledger.companyLabel);
-  const name = escapeHtml(row.name);
+  const name = escapeHtml(formatPersonnelDisplayName(row.name));
   const affiliation = escapeHtml(
     getPayrollCompanyLabel(getPayrollCompanyForPerson(row.name))
   );

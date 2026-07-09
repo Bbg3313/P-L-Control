@@ -78,6 +78,22 @@ export function isEmploymentInsuranceExempt(name: string): boolean {
   return EMPLOYMENT_INSURANCE_EXEMPT_NAMES.has(name);
 }
 
+/** UI·명세서 표시용 로마자/영문 이름 */
+const PERSONNEL_ROMANIZED_NAMES: Record<string, string> = {
+  니키: "타오검파차라폰",
+  김소연: "트란띠킴",
+  아리: "NGUTEN THI LOI",
+};
+
+export function getPersonnelRomanizedName(name: string): string | undefined {
+  return PERSONNEL_ROMANIZED_NAMES[name];
+}
+
+export function formatPersonnelDisplayName(name: string): string {
+  const romanized = getPersonnelRomanizedName(name);
+  return romanized ? `${name} (${romanized})` : name;
+}
+
 /** 태국·베트남: 월급 / 국내 직원: 연봉 */
 export function getDefaultSalaryBasis(name: string): SalaryBasis {
   return isOverseasTeam(name) ? "monthly" : "annual";

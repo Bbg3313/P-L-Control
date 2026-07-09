@@ -39,6 +39,7 @@ import {
   type PayrollLedgerRow,
   type PayrollLedgerSummary,
 } from "@/lib/payroll-ledger";
+import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
   loadPayrollTaxableOverrides,
   savePayrollTaxableOverrides,
@@ -321,7 +322,7 @@ function PayrollTable({
               {index + 1}
             </PayrollTd>
             <PayrollTd align="center" className="font-medium text-slate-900">
-              <div>{row.name}</div>
+              <div>{formatPersonnelDisplayName(row.name)}</div>
               {row.department && (
                 <div className="text-xs font-normal text-muted-foreground">
                   {row.department}
