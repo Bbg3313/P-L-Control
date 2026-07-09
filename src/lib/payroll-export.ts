@@ -6,7 +6,7 @@ import { formatNumber } from "@/lib/format";
 const HEADERS = [
   "구분",
   "성명",
-  "기본급",
+  "과세급여",
   "비과세",
   "총지급액",
   "과세표준",

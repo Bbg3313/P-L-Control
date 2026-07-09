@@ -9,6 +9,7 @@ import {
   isOverseasTeam,
   type PersonnelEntry,
 } from "@/lib/personnel";
+import { applyPersonnelReferenceSalary } from "@/lib/personnel-reference-salaries";
 import {
   calcEmployerContributionsFromInsuranceBase,
   JUN_2026_INSURANCE_LABEL,
@@ -54,20 +55,6 @@ export function filterPersonnelByPayrollCompany(
   });
 }
 
-/** 비용 페이지 미입력 시 급여대장 기본 연봉·월급 */
-const PAYROLL_REFERENCE_SALARIES: Record<
-  string,
-  { mode: "salary" | "direct"; annual?: number; monthly?: number }
-> = {
-  성수린: { mode: "salary", annual: 57_000_000 },
-  박양근: { mode: "salary", annual: 51_600_000 },
-  안효재: { mode: "salary", annual: 34_000_000 },
-  니키: { mode: "salary", annual: 35_000_000 },
-  아리: { mode: "salary", annual: 30_000_000 },
-  김소연: { mode: "salary", annual: 40_000_000 },
-  정수민: { mode: "salary", annual: 27_000_000 },
-};
-
 export interface PayrollLedgerRow {
   id: string;
   name: string;
@@ -100,12 +87,12 @@ export interface PayrollLedgerRow {
   note: string;
 }
 
-/** 비과세 제외 기본급 (과세 급여) */
+/** 과세 급여 (비과세 제외) */
 export function getBasicPay(row: PayrollLedgerRow): number {
   return row.defaultTaxableBase;
 }
 
-/** 총지급액 (기본급 + 비과세) */
+/** 총지급액 (세전 월급) */
 export function getTotalGrossPay(row: PayrollLedgerRow): number {
   return row.monthlyGross;
 }
@@ -137,37 +124,7 @@ export interface PayrollLedgerResult {
 }
 
 export function resolvePersonnelForPayroll(entry: PersonnelEntry): PersonnelEntry {
-  if (
-    entry.salaryAmount > 0 ||
-    entry.directMonthlyAmount > 0 ||
-    isOverseasTeam(entry.name)
-  ) {
-    return entry;
-  }
-
-  const ref = PAYROLL_REFERENCE_SALARIES[entry.name];
-  if (!ref) return entry;
-
-  if (ref.mode === "direct" && ref.monthly) {
-    return {
-      ...entry,
-      inputMode: "direct",
-      directMonthlyAmount: ref.monthly,
-      salaryAmount: 0,
-      salaryBasis: "monthly",
-    };
-  }
-
-  if (ref.mode === "salary" && ref.annual) {
-    return {
-      ...entry,
-      inputMode: "salary",
-      salaryAmount: ref.annual,
-      salaryBasis: "annual",
-    };
-  }
-
-  return entry;
+  return applyPersonnelReferenceSalary(entry.name, entry);
 }
 
 function withoutEmployeeEmploymentInsurance(

@@ -1,5 +1,6 @@
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import { getOverseasMonthlyKrw } from "@/lib/overseas-fx";
+import { applyPersonnelReferenceSalary } from "@/lib/personnel-reference-salaries";
 
 export {
   calcOverseasMonthlyKrw,
@@ -87,23 +88,25 @@ function defaultExchangeRateDate(): string {
 }
 
 export function createDefaultPersonnel(): PersonnelEntry[] {
-  return FIXED_PERSONNEL_NAMES.map((name) => ({
-    id: name,
-    name,
-    inputMode: "salary" as const,
-    directMonthlyAmount: 0,
-    salaryAmount: 0,
-    salaryBasis: getDefaultSalaryBasis(name),
-    exchangeRateToKrw: 0,
-    exchangeRateDate: defaultExchangeRateDate(),
-  }));
+  return FIXED_PERSONNEL_NAMES.map((name) =>
+    applyPersonnelReferenceSalary(name, {
+      id: name,
+      name,
+      inputMode: "salary",
+      directMonthlyAmount: 0,
+      salaryAmount: 0,
+      salaryBasis: getDefaultSalaryBasis(name),
+      exchangeRateToKrw: 0,
+      exchangeRateDate: defaultExchangeRateDate(),
+    })
+  );
 }
 
 function normalizePersonnelEntry(
   name: string,
   existing?: Partial<PersonnelEntry>
 ): PersonnelEntry {
-  return {
+  const merged: PersonnelEntry = {
     id: existing?.id || name,
     name,
     inputMode: existing?.inputMode === "salary" ? "salary" : "direct",
@@ -113,6 +116,8 @@ function normalizePersonnelEntry(
     exchangeRateToKrw: Number(existing?.exchangeRateToKrw) || 0,
     exchangeRateDate: existing?.exchangeRateDate || defaultExchangeRateDate(),
   };
+
+  return applyPersonnelReferenceSalary(name, merged);
 }
 
 export function getPersonnelMonthlyCost(entry: PersonnelEntry): number {
