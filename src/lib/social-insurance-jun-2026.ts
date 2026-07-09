@@ -3,34 +3,72 @@
  *
  * 기준:
  * - 국민연금 상·하한: 2025.7.1~2026.6.30 (40만~637만)
+ * - 국민연금 기준소득월액: 보수월액 천원 미만 절사 후 상·하한 적용
  * - 국민연금 요율 9.5% (사업주 4.75%)
- * - 건강보험 7.19% (사업주 3.595%), 장기요양 건강보험료의 13.14%
+ * - 건강보험 7.19% (사업주 3.595%), 항목별 원 단위 절사
+ * - 장기요양: 건강보험료 합계 × 13.14% 후 원 단위 절사, 근로자·사업주 반분
  * - 고용보험 실업급여 0.9% + 고용안정·직능개발 0.25% (150인 미만)
  * - 산재보험: 업종 요율 + 출퇴근 0.6‰ + 임금채권 0.6‰ (천분율)
  */
 
 export const JUN_2026_INSURANCE_LABEL = "2026년 6월분 기준";
 
-const PENSION_EMPLOYER_RATE = 0.0475;
+export const PENSION_PARTY_RATE = 0.0475;
 const PENSION_FLOOR = 400_000;
 const PENSION_CEILING = 6_370_000;
 
-const HEALTH_TOTAL_RATE = 0.0719;
-const LONG_TERM_CARE_ON_HEALTH = 0.1314;
+export const HEALTH_TOTAL_RATE = 0.0719;
+export const LONG_TERM_CARE_ON_HEALTH = 0.1314;
 
-const EMPLOYMENT_UNEMPLOYMENT_EMPLOYER = 0.009;
+const EMPLOYMENT_UNEMPLOYMENT_RATE = 0.009;
 /** 150인 미만 사업장 */
 const EMPLOYMENT_STABILITY_EMPLOYER = 0.0025;
 
 /** 사무·서비스업 근사 업종 요율(‰) + 출퇴근 0.6 + 임금채권 0.6 */
 const INDUSTRIAL_ACCIDENT_TOTAL_PERMILLE = 2.0;
 
-function truncateWon(amount: number): number {
+/** 원 단위 미만 절사 */
+export function truncateWon(amount: number): number {
   return Math.floor(amount);
 }
 
-function clampPensionBase(monthlyGross: number): number {
-  return Math.min(Math.max(monthlyGross, PENSION_FLOOR), PENSION_CEILING);
+/** 국민연금 기준소득월액 — 보수월액 천원 미만 절사 후 상·하한 */
+export function getPensionIncomeBase(insuranceBase: number): number {
+  if (insuranceBase <= 0) return 0;
+  const truncatedThousands = truncateWon(insuranceBase / 1000) * 1000;
+  return Math.min(
+    Math.max(truncatedThousands, PENSION_FLOOR),
+    PENSION_CEILING
+  );
+}
+
+export function calcPensionPartyShare(pensionIncomeBase: number): number {
+  return truncateWon(pensionIncomeBase * PENSION_PARTY_RATE);
+}
+
+/** 건강·장기요양 보험료 (총액 산출 후 반분, 각 단계 원 단위 절사) */
+export function calcHealthAndLongTermCarePartyShares(insuranceBase: number): {
+  healthParty: number;
+  longTermCareParty: number;
+} {
+  if (insuranceBase <= 0) {
+    return { healthParty: 0, longTermCareParty: 0 };
+  }
+
+  const healthPremiumTotal = truncateWon(insuranceBase * HEALTH_TOTAL_RATE);
+  const longTermCarePremiumTotal = truncateWon(
+    healthPremiumTotal * LONG_TERM_CARE_ON_HEALTH
+  );
+
+  return {
+    healthParty: truncateWon(healthPremiumTotal / 2),
+    longTermCareParty: truncateWon(longTermCarePremiumTotal / 2),
+  };
+}
+
+export function calcEmploymentUnemploymentShare(insuranceBase: number): number {
+  if (insuranceBase <= 0) return 0;
+  return truncateWon(insuranceBase * EMPLOYMENT_UNEMPLOYMENT_RATE);
 }
 
 export interface EmployerInsuranceBreakdown {
@@ -88,20 +126,12 @@ export function calcEmployerContributionsFromInsuranceBase(insuranceBase: number
     };
   }
 
-  const pensionBase = clampPensionBase(insuranceBase);
-  const pensionEmployer = truncateWon(pensionBase * PENSION_EMPLOYER_RATE);
+  const pensionIncomeBase = getPensionIncomeBase(insuranceBase);
+  const pensionEmployer = calcPensionPartyShare(pensionIncomeBase);
+  const { healthParty, longTermCareParty } =
+    calcHealthAndLongTermCarePartyShares(insuranceBase);
 
-  const healthPremiumTotal = truncateWon(insuranceBase * HEALTH_TOTAL_RATE);
-  const healthEmployer = truncateWon(healthPremiumTotal / 2);
-
-  const longTermCareTotal = truncateWon(
-    healthPremiumTotal * LONG_TERM_CARE_ON_HEALTH
-  );
-  const longTermCareEmployer = truncateWon(longTermCareTotal / 2);
-
-  const employmentUnemployment = truncateWon(
-    insuranceBase * EMPLOYMENT_UNEMPLOYMENT_EMPLOYER
-  );
+  const employmentUnemployment = calcEmploymentUnemploymentShare(insuranceBase);
   const employmentStability = truncateWon(
     insuranceBase * EMPLOYMENT_STABILITY_EMPLOYER
   );
@@ -113,15 +143,15 @@ export function calcEmployerContributionsFromInsuranceBase(insuranceBase: number
 
   const totalEmployerContributions =
     pensionEmployer +
-    healthEmployer +
-    longTermCareEmployer +
+    healthParty +
+    longTermCareParty +
     employmentEmployer +
     industrialAccidentEmployer;
 
   return {
     pensionEmployer,
-    healthEmployer,
-    longTermCareEmployer,
+    healthEmployer: healthParty,
+    longTermCareEmployer: longTermCareParty,
     employmentUnemployment,
     employmentStability,
     employmentEmployer,

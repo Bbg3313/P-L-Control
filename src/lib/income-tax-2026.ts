@@ -5,19 +5,13 @@
  */
 
 import { lookupSimplifiedWithholdingTax } from "@/lib/simplified-tax-table-2026";
-import { monthlyGrossFromSalary } from "@/lib/social-insurance-jun-2026";
-
-const PENSION_EMPLOYEE_RATE = 0.0475;
-const PENSION_FLOOR = 400_000;
-const PENSION_CEILING = 6_370_000;
-
-function truncateWon(amount: number): number {
-  return Math.floor(amount);
-}
-
-function clampPensionBase(monthlyGross: number): number {
-  return Math.min(Math.max(monthlyGross, PENSION_FLOOR), PENSION_CEILING);
-}
+import {
+  calcEmploymentUnemploymentShare,
+  calcHealthAndLongTermCarePartyShares,
+  calcPensionPartyShare,
+  getPensionIncomeBase,
+  monthlyGrossFromSalary,
+} from "@/lib/social-insurance-jun-2026";
 
 /** 4대보험 근로자 부담분 (2026년 6월분 요율, 보수월액 기준) */
 export interface EmployeeInsuranceBreakdown {
@@ -35,20 +29,18 @@ export function calcEmployeeInsuranceBreakdown(
     return { pension: 0, health: 0, longTermCare: 0, employment: 0, total: 0 };
   }
 
-  const pensionBase = clampPensionBase(insuranceBase);
-  const pension = truncateWon(pensionBase * PENSION_EMPLOYEE_RATE);
-
-  const healthTotal = truncateWon(insuranceBase * 0.0719);
-  const health = truncateWon(healthTotal / 2);
-  const longTermCare = truncateWon((healthTotal * 0.1314) / 2);
-  const employment = truncateWon(insuranceBase * 0.009);
+  const pensionIncomeBase = getPensionIncomeBase(insuranceBase);
+  const pension = calcPensionPartyShare(pensionIncomeBase);
+  const { healthParty, longTermCareParty } =
+    calcHealthAndLongTermCarePartyShares(insuranceBase);
+  const employment = calcEmploymentUnemploymentShare(insuranceBase);
 
   return {
     pension,
-    health,
-    longTermCare,
+    health: healthParty,
+    longTermCare: longTermCareParty,
     employment,
-    total: pension + health + longTermCare + employment,
+    total: pension + healthParty + longTermCareParty + employment,
   };
 }
 
