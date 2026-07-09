@@ -255,16 +255,20 @@ function IncomeTaxCell({
   amount: number;
   relief?: number;
 }) {
+  const hasRelief = !!(relief && relief > 0);
+
   return (
-    <div className="inline-flex min-h-[2.5rem] flex-col items-end justify-center">
-      <MoneyCell value={amount} />
-      {relief && relief > 0 ? (
-        <p className="text-xs leading-4 text-emerald-600">
-          감면 −{formatNumber(relief)}
-        </p>
-      ) : (
-        <span className="h-4" aria-hidden />
-      )}
+    <div className="payroll-income-tax-cell">
+      <div className="payroll-income-tax-amount">
+        <MoneyCell value={amount} />
+      </div>
+      <div className="payroll-income-tax-sub">
+        {hasRelief ? (
+          <span className="payroll-income-tax-relief">
+            감면 −{formatNumber(relief)}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

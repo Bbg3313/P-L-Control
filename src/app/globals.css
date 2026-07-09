@@ -67,6 +67,36 @@
     transform: translateY(-50%);
   }
 
+  .payroll-ledger-table .payroll-income-tax-cell {
+    display: grid;
+    grid-template-rows: 1.25rem 1rem;
+    row-gap: 0.125rem;
+    align-content: center;
+    justify-items: end;
+    width: 100%;
+  }
+
+  .payroll-ledger-table .payroll-income-tax-amount {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    line-height: 1.25rem;
+  }
+
+  .payroll-ledger-table .payroll-income-tax-sub {
+    display: flex;
+    height: 1rem;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    white-space: nowrap;
+  }
+
+  .payroll-ledger-table .payroll-income-tax-relief {
+    color: rgb(5 150 105);
+  }
+
   .payroll-ledger-page {
     font-family: var(--font-pretendard), Pretendard, system-ui, sans-serif;
     font-size: 0.875rem;
