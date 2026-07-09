@@ -70,6 +70,13 @@ export function isOverseasTeam(name: string): boolean {
   return OVERSEAS_TEAM_NAMES.has(name);
 }
 
+/** D-10 등 고용보험 미가입 대상 */
+const EMPLOYMENT_INSURANCE_EXEMPT_NAMES = new Set<string>(["아리"]);
+
+export function isEmploymentInsuranceExempt(name: string): boolean {
+  return EMPLOYMENT_INSURANCE_EXEMPT_NAMES.has(name);
+}
+
 /** 태국·베트남: 월급 / 국내 직원: 연봉 */
 export function getDefaultSalaryBasis(name: string): SalaryBasis {
   return isOverseasTeam(name) ? "monthly" : "annual";
@@ -155,6 +162,15 @@ export function getPersonnelSalaryBreakdown(
     entry.salaryBasis,
     nonTaxable
   );
+
+  if (isEmploymentInsuranceExempt(entry.name)) {
+    const employerEmployment = employer.employmentEmployer;
+    employer.employmentUnemployment = 0;
+    employer.employmentStability = 0;
+    employer.employmentEmployer = 0;
+    employer.totalEmployerContributions -= employerEmployment;
+    employer.totalMonthlyEmployerCost -= employerEmployment;
+  }
 
   const youthTaxRelief = isYouthIncomeTaxReliefEligible(entry.name)
     ? calcYouthTaxReliefBreakdown(employer.monthlyGross, nonTaxable)

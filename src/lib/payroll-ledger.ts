@@ -1,9 +1,11 @@
 import {
   calcEmployeeInsuranceBreakdown,
   calcMonthlyWithholdingTaxFromInsuranceBase,
+  type EmployeeInsuranceBreakdown,
 } from "@/lib/income-tax-2026";
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import {
+  isEmploymentInsuranceExempt,
   isOverseasTeam,
   type PersonnelEntry,
 } from "@/lib/personnel";
@@ -168,15 +170,39 @@ export function resolvePersonnelForPayroll(entry: PersonnelEntry): PersonnelEntr
   return entry;
 }
 
+function withoutEmployeeEmploymentInsurance(
+  breakdown: EmployeeInsuranceBreakdown
+): EmployeeInsuranceBreakdown {
+  if (breakdown.employment === 0) return breakdown;
+  return {
+    ...breakdown,
+    employment: 0,
+    total: breakdown.total - breakdown.employment,
+  };
+}
+
+function withoutEmployerEmploymentInsurance(
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
+) {
+  if (employer.employmentEmployer === 0) return employer;
+  return {
+    ...employer,
+    employmentUnemployment: 0,
+    employmentStability: 0,
+    employmentEmployer: 0,
+    totalEmployerContributions:
+      employer.totalEmployerContributions - employer.employmentEmployer,
+  };
+}
+
 function calcYouthTaxFromInsuranceBase(
   monthlyGross: number,
   nonTaxableMonthly: number,
-  insuranceBase: number
+  insuranceBase: number,
+  employeeInsuranceTotal: number
 ): YouthTaxReliefBreakdown | null {
   if (monthlyGross <= 0) return null;
 
-  const employeeInsurance =
-    calcEmployeeInsuranceBreakdown(insuranceBase).total;
   const incomeTaxBeforeRelief =
     calcMonthlyWithholdingTaxFromInsuranceBase(insuranceBase);
   const localIncomeTaxBeforeRelief = Math.floor(incomeTaxBeforeRelief * 0.1);
@@ -195,7 +221,7 @@ function calcYouthTaxFromInsuranceBase(
 
   const estimatedNetPay =
     monthlyGross -
-    employeeInsurance -
+    employeeInsuranceTotal -
     incomeTaxAfterRelief -
     localIncomeTaxAfterRelief;
 
@@ -203,7 +229,7 @@ function calcYouthTaxFromInsuranceBase(
     monthlyGross,
     nonTaxableMonthly,
     insuranceBase,
-    employeeInsurance,
+    employeeInsurance: employeeInsuranceTotal,
     incomeTaxBeforeRelief,
     incomeTaxRelief,
     incomeTaxAfterRelief,
@@ -231,8 +257,13 @@ function buildDomesticRow(
     taxableOverride !== undefined ? taxableOverride : defaultTaxableBase;
   const taxableBaseOverridden = taxableOverride !== undefined;
 
-  const employee = calcEmployeeInsuranceBreakdown(taxableBase);
-  const employer = calcEmployerContributionsFromInsuranceBase(taxableBase);
+  const employmentExempt = isEmploymentInsuranceExempt(resolved.name);
+  let employee = calcEmployeeInsuranceBreakdown(taxableBase);
+  let employer = calcEmployerContributionsFromInsuranceBase(taxableBase);
+  if (employmentExempt) {
+    employee = withoutEmployeeEmploymentInsurance(employee);
+    employer = withoutEmployerEmploymentInsurance(employer);
+  }
   const youthEligible = isYouthIncomeTaxReliefEligible(resolved.name);
 
   let incomeTax = 0;
@@ -244,7 +275,8 @@ function buildDomesticRow(
     const youth = calcYouthTaxFromInsuranceBase(
       monthlyGross,
       nonTaxable,
-      taxableBase
+      taxableBase,
+      employee.total
     );
     if (youth) {
       incomeTax = youth.incomeTaxAfterRelief;
@@ -260,6 +292,7 @@ function buildDomesticRow(
 
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
+  if (employmentExempt) notes.push("고용보험 미가입");
   if (youthEligible) notes.push("청년소득세 90% 감면");
   if (taxableBaseOverridden) notes.push("과세표준 수동조정");
 
