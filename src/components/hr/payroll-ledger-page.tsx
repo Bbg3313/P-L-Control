@@ -68,23 +68,25 @@ function KpiCard({
   tone: string;
 }) {
   return (
-    <Card className="border-slate-200/90 shadow-sm">
-      <CardContent className="flex items-start gap-3 p-4">
+    <Card className="min-w-0 border-slate-200/90 shadow-sm">
+      <CardContent className="flex items-center gap-2 p-2.5 sm:p-3">
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
             tone
           )}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4" />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-0.5 truncate text-sm font-semibold tabular-nums text-slate-900">
             {value}
           </p>
           {sub && (
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {sub}
             </p>
           )}
@@ -150,13 +152,13 @@ function TaxableBaseInput({
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         className={cn(
-          "h-8 w-[7.25rem] shrink-0 text-right text-sm tabular-nums",
+          "payroll-taxable-input shrink-0",
           row.taxableBaseOverridden &&
             "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
         )}
         aria-label={`${row.name} 과세표준`}
       />
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+      <div className="payroll-taxable-action">
         {row.taxableBaseOverridden ? (
           <Button
             type="button"
@@ -170,6 +172,15 @@ function TaxableBaseInput({
           </Button>
         ) : null}
       </div>
+    </>
+  );
+}
+
+function TaxableValue({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="payroll-taxable-value">{children}</div>
+      <div className="payroll-taxable-action" aria-hidden />
     </>
   );
 }
@@ -259,7 +270,7 @@ function IncomeTaxCell({
     <div className="inline-flex min-h-[2.5rem] flex-col items-end justify-center">
       <MoneyCell value={amount} />
       {relief && relief > 0 ? (
-        <p className="text-[11px] leading-4 text-emerald-600">
+        <p className="text-xs leading-4 text-emerald-600">
           감면 −{formatNumber(relief)}
         </p>
       ) : (
@@ -303,11 +314,22 @@ function PayrollTable({
       </colgroup>
       <TableHeader>
         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-          {PAYROLL_TABLE_COLUMNS.map((col) => (
-            <PayrollHead key={col.key} align={col.align}>
-              {col.label}
-            </PayrollHead>
-          ))}
+          {PAYROLL_TABLE_COLUMNS.map((col) =>
+            col.key === "taxable" ? (
+              <PayrollHead key={col.key} align="right">
+                <div className="payroll-taxable-slot">
+                  <span className="payroll-taxable-value text-xs font-semibold text-slate-600">
+                    {col.label}
+                  </span>
+                  <span className="payroll-taxable-action" aria-hidden />
+                </div>
+              </PayrollHead>
+            ) : (
+              <PayrollHead key={col.key} align={col.align}>
+                {col.label}
+              </PayrollHead>
+            )
+          )}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -348,7 +370,9 @@ function PayrollTable({
                     onReset={() => onTaxableReset(row.id)}
                   />
                 ) : (
-                  <MoneyCell value={row.taxableBase} />
+                  <TaxableValue>
+                    <MoneyCell value={row.taxableBase} />
+                  </TaxableValue>
                 )}
               </div>
             </PayrollCell>
@@ -430,7 +454,9 @@ function PayrollTable({
           </PayrollCell>
           <PayrollCell align="right">
             <div className="payroll-taxable-slot">
-              <MoneyCell value={summary.taxableBaseTotal} />
+              <TaxableValue>
+                <MoneyCell value={summary.taxableBaseTotal} />
+              </TaxableValue>
             </div>
           </PayrollCell>
           <PayrollCell align="right">
@@ -582,26 +608,32 @@ export function PayrollLedgerPage() {
   const { summary } = ledger;
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
-      <header className="sticky top-0 z-30 w-full max-w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-6">
+    <div className="payroll-ledger-page flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
+      <header className="sticky top-0 z-30 w-full max-w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 px-4 pb-3 pt-4 shadow-sm backdrop-blur-sm md:px-6">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight">급여대장</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="text-base font-semibold tracking-tight text-slate-900">
+              급여대장
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
               비용 인건비 기준 · {JUN_2026_INSURANCE_LABEL} · 과세표준 셀 직접
               수정 가능
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <ReportingMonthNav className="w-full sm:w-auto" />
-            <Button type="button" onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" />
+            <Button
+              type="button"
+              onClick={handleDownload}
+              className="h-8 gap-1.5 px-3 text-sm"
+            >
+              <Download className="h-3.5 w-3.5" />
               엑셀 다운로드
             </Button>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 xl:grid-cols-4">
           <KpiCard
             label={`${formatPeriodLabel(reportingMonth)} 총 지급액`}
             value={formatCurrency(summary.grossTotal)}
@@ -645,7 +677,7 @@ export function PayrollLedgerPage() {
                 type="button"
                 variant={active ? "default" : "outline"}
                 className={cn(
-                  "h-10 px-4 font-semibold",
+                  "h-8 px-3 text-sm font-semibold",
                   active &&
                     (company.id === "goldfender"
                       ? "bg-amber-600 hover:bg-amber-700"
@@ -663,7 +695,7 @@ export function PayrollLedgerPage() {
           <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-white py-4">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-indigo-600" />
-              <CardTitle className="text-base font-semibold">
+              <CardTitle className="text-sm font-semibold">
                 {activeCompany.label} 급여 명세 ({ledger.domestic.length}명)
               </CardTitle>
             </div>
