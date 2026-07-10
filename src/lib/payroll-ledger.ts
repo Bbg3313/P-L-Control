@@ -34,6 +34,22 @@ export const PAYROLL_COMPANY_OPTIONS: {
 
 const GOLDFENDER_PERSONNEL = new Set<string>(["박양근"]);
 
+/** 성과급 변동 — 보험 산정과 원천징수 과세를 분리 */
+export const VARIABLE_PAY_PERSONNEL_NAMES = ["성수린"] as const;
+
+/** 4대보험 보수월액 고정 (원천징수 과세와 별도) */
+export const FIXED_INSURANCE_REMUNERATION_BY_NAME: Record<string, number> = {
+  성수린: 4_750_000,
+};
+
+export function isVariablePayPersonnel(name: string): boolean {
+  return (VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name);
+}
+
+export function getFixedInsuranceRemuneration(name: string): number | undefined {
+  return FIXED_INSURANCE_REMUNERATION_BY_NAME[name];
+}
+
 export function getPayrollCompanyForPerson(name: string): PayrollCompanyId {
   return GOLDFENDER_PERSONNEL.has(name) ? "goldfender" : "bluebridge";
 }
@@ -61,11 +77,18 @@ export interface PayrollLedgerRow {
   department: string;
   position: string;
   isOverseas: boolean;
+  /** 고정 기본급(성과급 제외) */
+  baseMonthlyGross: number;
+  /** 당월 성과급 */
+  performancePay: number;
   monthlyGross: number;
   nonTaxable: number;
   defaultTaxableBase: number;
   taxableBase: number;
   taxableBaseOverridden: boolean;
+  /** 4대보험 산정 보수월액 */
+  insuranceRemunerationBase: number;
+  usesSplitPayrollCalc: boolean;
   employeePension: number;
   employeeHealth: number;
   employeeLongTermCare: number;
@@ -87,8 +110,11 @@ export interface PayrollLedgerRow {
   note: string;
 }
 
-/** 과세 급여 (비과세 제외) */
+/** 과세 급여 (기본급 기준, 성과급 제외) */
 export function getBasicPay(row: PayrollLedgerRow): number {
+  if (row.usesSplitPayrollCalc) {
+    return Math.max(0, row.baseMonthlyGross - row.nonTaxable);
+  }
   return row.defaultTaxableBase;
 }
 
@@ -101,6 +127,7 @@ export interface PayrollLedgerSummary {
   domesticCount: number;
   overseasCount: number;
   basicPayTotal: number;
+  performancePayTotal: number;
   grossTotal: number;
   nonTaxableTotal: number;
   taxableBaseTotal: number;
@@ -200,23 +227,41 @@ function calcYouthTaxFromInsuranceBase(
 function buildDomesticRow(
   entry: PersonnelEntry,
   hrMeta: { department: string; position: string },
-  taxableOverride?: number
+  taxableOverride?: number,
+  performancePayOverride = 0
 ): PayrollLedgerRow {
   const resolved = resolvePersonnelForPayroll(entry);
   const nonTaxable = getMonthlyNonTaxableAllowance(resolved.name);
-  const monthlyGross =
+  const baseMonthlyGross =
     resolved.inputMode === "salary" && resolved.salaryAmount > 0
       ? monthlyGrossFromSalary(resolved.salaryAmount, resolved.salaryBasis)
       : resolved.directMonthlyAmount;
 
+  const usesSplitPayrollCalc = isVariablePayPersonnel(resolved.name);
+  const performancePay = usesSplitPayrollCalc
+    ? Math.max(0, Math.floor(performancePayOverride))
+    : 0;
+  const monthlyGross = usesSplitPayrollCalc
+    ? baseMonthlyGross + performancePay
+    : baseMonthlyGross;
+
   const defaultTaxableBase = Math.max(0, monthlyGross - nonTaxable);
   const taxableBase =
-    taxableOverride !== undefined ? taxableOverride : defaultTaxableBase;
-  const taxableBaseOverridden = taxableOverride !== undefined;
+    !usesSplitPayrollCalc && taxableOverride !== undefined
+      ? taxableOverride
+      : defaultTaxableBase;
+  const taxableBaseOverridden =
+    !usesSplitPayrollCalc && taxableOverride !== undefined;
+
+  const insuranceRemunerationBase = usesSplitPayrollCalc
+    ? (getFixedInsuranceRemuneration(resolved.name) ?? baseMonthlyGross)
+    : taxableBase;
 
   const employmentExempt = isEmploymentInsuranceExempt(resolved.name);
-  let employee = calcEmployeeInsuranceBreakdown(taxableBase);
-  let employer = calcEmployerContributionsFromInsuranceBase(taxableBase);
+  let employee = calcEmployeeInsuranceBreakdown(insuranceRemunerationBase);
+  let employer = calcEmployerContributionsFromInsuranceBase(
+    insuranceRemunerationBase
+  );
   if (employmentExempt) {
     employee = withoutEmployeeEmploymentInsurance(employee);
     employer = withoutEmployerEmploymentInsurance(employer);
@@ -249,6 +294,10 @@ function buildDomesticRow(
 
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
+  if (usesSplitPayrollCalc) {
+    notes.push("보험 475만 고정");
+    if (performancePay > 0) notes.push("성과급 반영 원천징수");
+  }
   if (employmentExempt) notes.push("고용보험 미가입");
   if (youthEligible) notes.push("청년소득세 90% 감면");
   if (taxableBaseOverridden) notes.push("과세표준 수동조정");
@@ -259,11 +308,15 @@ function buildDomesticRow(
     department: hrMeta.department,
     position: hrMeta.position,
     isOverseas: false,
+    baseMonthlyGross,
+    performancePay,
     monthlyGross,
     nonTaxable,
     defaultTaxableBase,
     taxableBase,
     taxableBaseOverridden,
+    insuranceRemunerationBase,
+    usesSplitPayrollCalc,
     employeePension: employee.pension,
     employeeHealth: employee.health,
     employeeLongTermCare: employee.longTermCare,
@@ -292,7 +345,8 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
       domesticCount: acc.domesticCount + (row.isOverseas ? 0 : 1),
       overseasCount: acc.overseasCount + (row.isOverseas ? 1 : 0),
       grossTotal: acc.grossTotal + row.monthlyGross,
-      basicPayTotal: acc.basicPayTotal + row.defaultTaxableBase,
+      performancePayTotal: acc.performancePayTotal + row.performancePay,
+      basicPayTotal: acc.basicPayTotal + getBasicPay(row),
       nonTaxableTotal: acc.nonTaxableTotal + row.nonTaxable,
       taxableBaseTotal: acc.taxableBaseTotal + row.taxableBase,
       employeeInsuranceTotal:
@@ -311,6 +365,7 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
       overseasCount: 0,
       basicPayTotal: 0,
       grossTotal: 0,
+      performancePayTotal: 0,
       nonTaxableTotal: 0,
       taxableBaseTotal: 0,
       employeeInsuranceTotal: 0,
@@ -330,7 +385,8 @@ export function buildPayrollLedger(
   personnel: PersonnelEntry[],
   taxableOverrides: Record<string, number> = {},
   hrByName: Record<string, { department: string; position: string }> = {},
-  companyId: PayrollCompanyId = "bluebridge"
+  companyId: PayrollCompanyId = "bluebridge",
+  performancePayOverrides: Record<string, number> = {}
 ): PayrollLedgerResult {
   const domestic: PayrollLedgerRow[] = [];
   const filtered = filterPersonnelByPayrollCompany(personnel, companyId);
@@ -338,7 +394,12 @@ export function buildPayrollLedger(
   for (const entry of filtered) {
     const hrMeta = hrByName[entry.name] ?? { department: "", position: "" };
     domestic.push(
-      buildDomesticRow(entry, hrMeta, taxableOverrides[entry.id])
+      buildDomesticRow(
+        entry,
+        hrMeta,
+        taxableOverrides[entry.id],
+        performancePayOverrides[entry.id] ?? 0
+      )
     );
   }
 

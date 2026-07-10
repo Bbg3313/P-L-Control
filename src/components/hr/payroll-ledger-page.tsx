@@ -41,9 +41,13 @@ import {
 } from "@/lib/payroll-ledger";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
+  loadPayrollPerformancePayOverrides,
   loadPayrollTaxableOverrides,
+  savePayrollPerformancePayOverrides,
   savePayrollTaxableOverrides,
+  setPerformancePayOverride,
   setTaxableOverride,
+  type PayrollPerformancePayOverrides,
   type PayrollTaxableOverrides,
 } from "@/lib/payroll-ledger-store";
 import { cn } from "@/lib/utils";
@@ -112,6 +116,65 @@ function MoneyCell({
     >
       {formatNumber(value)}
     </span>
+  );
+}
+
+function PerformancePayInput({
+  row,
+  onChange,
+  onReset,
+}: {
+  row: PayrollLedgerRow;
+  onChange: (value: number) => void;
+  onReset: () => void;
+}) {
+  const [draft, setDraft] = useState(formatAmountInputValue(row.performancePay));
+
+  useEffect(() => {
+    setDraft(formatAmountInputValue(row.performancePay));
+  }, [row.performancePay]);
+
+  return (
+    <div
+      className={cn(
+        "payroll-taxable-wrap",
+        row.performancePay > 0 && "payroll-taxable-wrap--with-reset"
+      )}
+    >
+      <Input
+        value={draft}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          setDraft(digits ? formatNumber(Number(digits)) : "");
+        }}
+        onBlur={() => {
+          const next = parseAmount(draft);
+          onChange(next);
+          setDraft(formatAmountInputValue(next));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        className={cn(
+          "payroll-taxable-input shadow-none",
+          row.performancePay > 0 &&
+            "border-indigo-400 bg-indigo-50 ring-1 ring-indigo-200"
+        )}
+        aria-label={`${row.name} 성과급`}
+      />
+      {row.performancePay > 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="payroll-taxable-reset h-7 w-7 text-muted-foreground"
+          onClick={onReset}
+          title="성과급 초기화"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -228,6 +291,7 @@ const PAYROLL_LEADING_COLUMNS = [
   { key: "no", label: "구분번호", align: "center" as const, minWidth: "4rem" },
   { key: "name", label: "성명", align: "center" as const, minWidth: "10.5rem" },
   { key: "basic", label: "과세급여", align: "right" as const, minWidth: "6rem" },
+  { key: "performance", label: "성과급", align: "right" as const, minWidth: "6.5rem" },
   { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5.5rem" },
   { key: "gross", label: "총지급액", align: "right" as const, minWidth: "6rem" },
   { key: "taxable", label: "과세표준", align: "right" as const, minWidth: "6.5rem" },
@@ -294,6 +358,8 @@ function PayrollTable({
   showTaxableInput,
   onTaxableChange,
   onTaxableReset,
+  onPerformancePayChange,
+  onPerformancePayReset,
 }: {
   rows: PayrollLedgerRow[];
   ledger: PayrollLedgerResult;
@@ -302,6 +368,8 @@ function PayrollTable({
   showTaxableInput: boolean;
   onTaxableChange: (id: string, value: number) => void;
   onTaxableReset: (id: string) => void;
+  onPerformancePayChange: (id: string, value: number) => void;
+  onPerformancePayReset: (id: string) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -360,13 +428,24 @@ function PayrollTable({
               <MoneyCell value={getBasicPay(row)} />
             </PayrollTd>
             <PayrollTd align="right">
+              {row.usesSplitPayrollCalc ? (
+                <PerformancePayInput
+                  row={row}
+                  onChange={(value) => onPerformancePayChange(row.id, value)}
+                  onReset={() => onPerformancePayReset(row.id)}
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">—</span>
+              )}
+            </PayrollTd>
+            <PayrollTd align="right">
               <MoneyCell value={row.nonTaxable} />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell value={getTotalGrossPay(row)} />
             </PayrollTd>
             <PayrollTd align="right">
-              {showTaxableInput ? (
+              {showTaxableInput && !row.usesSplitPayrollCalc ? (
                 <TaxableBaseInput
                   row={row}
                   onChange={(value) => onTaxableChange(row.id, value)}
@@ -439,6 +518,9 @@ function PayrollTable({
             <MoneyCell value={summary.basicPayTotal} />
           </PayrollTd>
           <PayrollTd align="right">
+            <MoneyCell value={summary.performancePayTotal} />
+          </PayrollTd>
+          <PayrollTd align="right">
             <MoneyCell value={summary.nonTaxableTotal} />
           </PayrollTd>
           <PayrollTd align="right">
@@ -502,11 +584,14 @@ export function PayrollLedgerPage() {
   const { personnel, reportingMonth, hydrated } = useFinancial();
   const [companyId, setCompanyId] = useState<PayrollCompanyId>("bluebridge");
   const [overrides, setOverrides] = useState<PayrollTaxableOverrides>({});
+  const [performancePayOverrides, setPerformancePayOverrides] =
+    useState<PayrollPerformancePayOverrides>({});
   const [overridesReady, setOverridesReady] = useState(false);
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
 
   useEffect(() => {
     setOverrides(loadPayrollTaxableOverrides());
+    setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
     setOverridesReady(true);
   }, []);
 
@@ -544,6 +629,11 @@ export function PayrollLedgerPage() {
     [overrides, reportingMonth]
   );
 
+  const monthPerformancePayOverrides = useMemo(
+    () => performancePayOverrides[reportingMonth] ?? {},
+    [performancePayOverrides, reportingMonth]
+  );
+
   const ledger = useMemo(
     () =>
       buildPayrollLedger(
@@ -551,9 +641,17 @@ export function PayrollLedgerPage() {
         personnel,
         monthOverrides,
         hrByName,
-        companyId
+        companyId,
+        monthPerformancePayOverrides
       ),
-    [reportingMonth, personnel, monthOverrides, hrByName, companyId]
+    [
+      reportingMonth,
+      personnel,
+      monthOverrides,
+      monthPerformancePayOverrides,
+      hrByName,
+      companyId,
+    ]
   );
 
   const activeCompany =
@@ -564,6 +662,40 @@ export function PayrollLedgerPage() {
     setOverrides(next);
     savePayrollTaxableOverrides(next);
   }, []);
+
+  const persistPerformancePayOverrides = useCallback(
+    (next: PayrollPerformancePayOverrides) => {
+      setPerformancePayOverrides(next);
+      savePayrollPerformancePayOverrides(next);
+    },
+    []
+  );
+
+  const handlePerformancePayChange = useCallback(
+    (personId: string, value: number) => {
+      const next = setPerformancePayOverride(
+        performancePayOverrides,
+        reportingMonth,
+        personId,
+        value > 0 ? value : null
+      );
+      persistPerformancePayOverrides(next);
+    },
+    [performancePayOverrides, reportingMonth, persistPerformancePayOverrides]
+  );
+
+  const handlePerformancePayReset = useCallback(
+    (personId: string) => {
+      const next = setPerformancePayOverride(
+        performancePayOverrides,
+        reportingMonth,
+        personId,
+        null
+      );
+      persistPerformancePayOverrides(next);
+    },
+    [performancePayOverrides, reportingMonth, persistPerformancePayOverrides]
+  );
 
   const handleTaxableChange = useCallback(
     (personId: string, value: number) => {
@@ -614,8 +746,8 @@ export function PayrollLedgerPage() {
               급여대장
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              고정 연봉 기준 · {JUN_2026_INSURANCE_LABEL} · 과세표준 셀 직접
-              수정 가능
+              고정 연봉 기준 · {JUN_2026_INSURANCE_LABEL} · 성수린 성과급 입력 ·
+              과세표준 셀 직접 수정 가능
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -707,6 +839,8 @@ export function PayrollLedgerPage() {
               showTaxableInput
               onTaxableChange={handleTaxableChange}
               onTaxableReset={handleTaxableReset}
+              onPerformancePayChange={handlePerformancePayChange}
+              onPerformancePayReset={handlePerformancePayReset}
             />
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
+import { getBasicPay } from "@/lib/payroll-ledger";
 import {
   getPayrollCompanyForPerson,
   getPayrollCompanyLabel,
@@ -64,7 +65,8 @@ function buildPayslipHtml(
   );
 
   const payLines: [string, number][] = [
-    ["과세급여", row.defaultTaxableBase],
+    ["과세급여", getBasicPay(row)],
+    ...(row.performancePay > 0 ? ([["성과급", row.performancePay]] as [string, number][]) : []),
     ["비과세 수당", row.nonTaxable],
     ["총지급액", row.monthlyGross],
     ["과세표준", row.taxableBase],

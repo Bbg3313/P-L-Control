@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx-js-style";
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
+import { getBasicPay } from "@/lib/payroll-ledger";
 import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatNumber } from "@/lib/format";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
@@ -8,6 +9,7 @@ const LEADING_HEADERS = [
   "구분",
   "성명",
   "과세급여",
+  "성과급",
   "비과세",
   "총지급액",
   "과세표준",
@@ -31,8 +33,8 @@ const HEADERS = [
 
 const COL_COUNT = HEADERS.length;
 const MONEY_FMT = "#,##0";
-const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-const NET_PAY_COL = 13;
+const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+const NET_PAY_COL = 14;
 
 const COLORS = {
   titleBg: "EEF2FF",
@@ -109,7 +111,8 @@ function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
   return [
     index,
     formatPersonnelDisplayName(row.name),
-    row.defaultTaxableBase,
+    getBasicPay(row),
+    row.performancePay,
     row.nonTaxable,
     row.monthlyGross,
     row.taxableBase,
@@ -135,6 +138,7 @@ function summaryCells(ledger: PayrollLedgerResult): (string | number)[] {
     "",
     "합계",
     s.basicPayTotal,
+    s.performancePayTotal,
     s.nonTaxableTotal,
     s.grossTotal,
     s.taxableBaseTotal,
@@ -300,6 +304,7 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
     { wch: 5 },
     { wch: 10 },
     { wch: 12 },
+    { wch: 10 },
     { wch: 10 },
     { wch: 12 },
     { wch: 12 },
