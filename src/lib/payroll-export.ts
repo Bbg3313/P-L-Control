@@ -101,13 +101,6 @@ function mergeCol(ws: XLSX.WorkSheet, col: number, fromRow: number, toRow: numbe
 }
 
 function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
-  const note =
-    row.youthReliefEligible && row.incomeTaxRelief > 0
-      ? "청년소득세감면"
-      : row.taxableBaseOverridden
-        ? "과세표준조정"
-        : "";
-
   return [
     index,
     formatPersonnelDisplayName(row.name),
@@ -124,7 +117,7 @@ function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
     row.localIncomeTax,
     row.totalDeductions,
     row.netPay,
-    note,
+    row.note,
   ];
 }
 

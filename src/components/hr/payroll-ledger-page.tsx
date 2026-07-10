@@ -41,15 +41,20 @@ import {
 } from "@/lib/payroll-ledger";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
+  loadPayrollNoteOverrides,
   loadPayrollPerformancePayOverrides,
   loadPayrollTaxableOverrides,
+  savePayrollNoteOverrides,
   savePayrollPerformancePayOverrides,
   savePayrollTaxableOverrides,
+  setNoteOverride,
   setPerformancePayOverride,
   setTaxableOverride,
+  type PayrollNoteOverrides,
   type PayrollPerformancePayOverrides,
   type PayrollTaxableOverrides,
 } from "@/lib/payroll-ledger-store";
+import { getDefaultPayrollMemo } from "@/lib/payroll-personnel-notes";
 import { cn } from "@/lib/utils";
 
 function parseAmount(value: string): number {
@@ -116,6 +121,57 @@ function MoneyCell({
     >
       {formatNumber(value)}
     </span>
+  );
+}
+
+function NoteInput({
+  row,
+  onChange,
+  onReset,
+}: {
+  row: PayrollLedgerRow;
+  onChange: (value: string) => void;
+  onReset: () => void;
+}) {
+  const [draft, setDraft] = useState(row.note);
+
+  useEffect(() => {
+    setDraft(row.note);
+  }, [row.note]);
+
+  return (
+    <div
+      className={cn(
+        "payroll-note-wrap",
+        row.noteOverridden && "payroll-note-wrap--with-reset"
+      )}
+    >
+      <textarea
+        value={draft}
+        rows={2}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => onChange(draft.trim())}
+        className={cn(
+          "payroll-note-input shadow-none",
+          row.noteOverridden &&
+            "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
+        )}
+        aria-label={`${row.name} 비고`}
+        placeholder={getDefaultPayrollMemo(row.name) || "비고 입력"}
+      />
+      {row.noteOverridden ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="payroll-note-reset h-7 w-7 shrink-0 text-muted-foreground"
+          onClick={onReset}
+          title="기본 비고 복원"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -315,7 +371,7 @@ const PAYROLL_TRAILING_COLUMNS = [
     minWidth: "8.5rem",
   },
   { key: "totalCost", label: "총인건비", align: "right" as const, minWidth: "6rem" },
-  { key: "note", label: "비고", align: "center" as const, minWidth: "5rem" },
+  { key: "note", label: "비고", align: "center" as const, minWidth: "11rem" },
   { key: "payslip", label: "명세서", align: "center" as const, minWidth: "5rem" },
 ] as const;
 
@@ -360,6 +416,8 @@ function PayrollTable({
   onTaxableReset,
   onPerformancePayChange,
   onPerformancePayReset,
+  onNoteChange,
+  onNoteReset,
 }: {
   rows: PayrollLedgerRow[];
   ledger: PayrollLedgerResult;
@@ -370,6 +428,8 @@ function PayrollTable({
   onTaxableReset: (id: string) => void;
   onPerformancePayChange: (id: string, value: number) => void;
   onPerformancePayReset: (id: string) => void;
+  onNoteChange: (id: string, value: string) => void;
+  onNoteReset: (id: string) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -485,8 +545,12 @@ function PayrollTable({
             <PayrollTd align="right">
               <MoneyCell value={row.totalEmployerCost} emphasis="rose" />
             </PayrollTd>
-            <PayrollTd align="center" className="text-xs text-muted-foreground">
-              {row.note || "—"}
+            <PayrollTd align="center" className="text-xs">
+              <NoteInput
+                row={row}
+                onChange={(value) => onNoteChange(row.id, value)}
+                onReset={() => onNoteReset(row.id)}
+              />
             </PayrollTd>
             <PayrollTd align="center">
               <Button
@@ -586,12 +650,14 @@ export function PayrollLedgerPage() {
   const [overrides, setOverrides] = useState<PayrollTaxableOverrides>({});
   const [performancePayOverrides, setPerformancePayOverrides] =
     useState<PayrollPerformancePayOverrides>({});
+  const [noteOverrides, setNoteOverrides] = useState<PayrollNoteOverrides>({});
   const [overridesReady, setOverridesReady] = useState(false);
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
 
   useEffect(() => {
     setOverrides(loadPayrollTaxableOverrides());
     setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
+    setNoteOverrides(loadPayrollNoteOverrides());
     setOverridesReady(true);
   }, []);
 
@@ -634,6 +700,11 @@ export function PayrollLedgerPage() {
     [performancePayOverrides, reportingMonth]
   );
 
+  const monthNoteOverrides = useMemo(
+    () => noteOverrides[reportingMonth] ?? {},
+    [noteOverrides, reportingMonth]
+  );
+
   const ledger = useMemo(
     () =>
       buildPayrollLedger(
@@ -642,13 +713,15 @@ export function PayrollLedgerPage() {
         monthOverrides,
         hrByName,
         companyId,
-        monthPerformancePayOverrides
+        monthPerformancePayOverrides,
+        monthNoteOverrides
       ),
     [
       reportingMonth,
       personnel,
       monthOverrides,
       monthPerformancePayOverrides,
+      monthNoteOverrides,
       hrByName,
       companyId,
     ]
@@ -669,6 +742,37 @@ export function PayrollLedgerPage() {
       savePayrollPerformancePayOverrides(next);
     },
     []
+  );
+
+  const persistNoteOverrides = useCallback((next: PayrollNoteOverrides) => {
+    setNoteOverrides(next);
+    savePayrollNoteOverrides(next);
+  }, []);
+
+  const handleNoteChange = useCallback(
+    (personId: string, value: string) => {
+      const next = setNoteOverride(
+        noteOverrides,
+        reportingMonth,
+        personId,
+        value || null
+      );
+      persistNoteOverrides(next);
+    },
+    [noteOverrides, reportingMonth, persistNoteOverrides]
+  );
+
+  const handleNoteReset = useCallback(
+    (personId: string) => {
+      const next = setNoteOverride(
+        noteOverrides,
+        reportingMonth,
+        personId,
+        null
+      );
+      persistNoteOverrides(next);
+    },
+    [noteOverrides, reportingMonth, persistNoteOverrides]
   );
 
   const handlePerformancePayChange = useCallback(
@@ -747,7 +851,7 @@ export function PayrollLedgerPage() {
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
               고정 연봉 기준 · {JUN_2026_INSURANCE_LABEL} · 성수린 성과급 입력 ·
-              과세표준 셀 직접 수정 가능
+              비고 셀 직접 수정 가능
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -841,6 +945,8 @@ export function PayrollLedgerPage() {
               onTaxableReset={handleTaxableReset}
               onPerformancePayChange={handlePerformancePayChange}
               onPerformancePayReset={handlePerformancePayReset}
+              onNoteChange={handleNoteChange}
+              onNoteReset={handleNoteReset}
             />
           </CardContent>
         </Card>

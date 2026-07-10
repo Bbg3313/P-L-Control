@@ -84,6 +84,42 @@
     transform: translateY(-50%);
   }
 
+  .payroll-ledger-table .payroll-note-wrap {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    width: 100%;
+    min-width: 9.5rem;
+  }
+
+  .payroll-ledger-table .payroll-note-wrap--with-reset .payroll-note-input {
+    padding-right: 1.75rem !important;
+  }
+
+  .payroll-ledger-table .payroll-note-input {
+    display: block;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 2.75rem;
+    resize: vertical;
+    border-radius: 0.375rem;
+    border: 1px solid hsl(var(--input));
+    background: transparent;
+    padding: 0.35rem 0.5rem !important;
+    font-family: inherit;
+    font-size: 0.75rem !important;
+    line-height: 1.35;
+    color: hsl(var(--foreground));
+    text-align: left !important;
+  }
+
+  .payroll-ledger-table .payroll-note-reset {
+    position: absolute;
+    top: 0.1rem;
+    right: 0;
+  }
+
   .payroll-ledger-table .payroll-income-tax-cell {
     display: grid;
     grid-template-rows: 1.25rem 1rem;

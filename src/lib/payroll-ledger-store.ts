@@ -4,6 +4,8 @@ export const PAYROLL_OVERRIDES_STORAGE_KEY =
 export const PAYROLL_PERFORMANCE_PAY_STORAGE_KEY =
   "pl-control-payroll-performance-pay-v1";
 
+export const PAYROLL_NOTE_STORAGE_KEY = "pl-control-payroll-notes-v1";
+
 /** YYYY-MM → personId → 과세표준(보수월액) */
 export type PayrollTaxableOverrides = Record<string, Record<string, number>>;
 
@@ -12,6 +14,9 @@ export type PayrollPerformancePayOverrides = Record<
   string,
   Record<string, number>
 >;
+
+/** YYYY-MM → personId → 비고 */
+export type PayrollNoteOverrides = Record<string, Record<string, string>>;
 
 function readJsonRecord<T extends Record<string, unknown>>(
   key: string
@@ -49,6 +54,60 @@ export function savePayrollPerformancePayOverrides(
 ): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(PAYROLL_PERFORMANCE_PAY_STORAGE_KEY, JSON.stringify(data));
+}
+
+export function loadPayrollNoteOverrides(): PayrollNoteOverrides {
+  return readJsonRecord<PayrollNoteOverrides>(PAYROLL_NOTE_STORAGE_KEY) ?? {};
+}
+
+export function savePayrollNoteOverrides(data: PayrollNoteOverrides): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PAYROLL_NOTE_STORAGE_KEY, JSON.stringify(data));
+}
+
+export function getNoteOverride(
+  overrides: PayrollNoteOverrides,
+  yearMonth: string,
+  personId: string
+): string | undefined {
+  const month = overrides[yearMonth];
+  if (!month) return undefined;
+  const value = month[personId];
+  return typeof value === "string" ? value : undefined;
+}
+
+function setMonthPersonStringOverride(
+  overrides: Record<string, Record<string, string>>,
+  yearMonth: string,
+  personId: string,
+  value: string | null
+): Record<string, Record<string, string>> {
+  const next = { ...overrides };
+  const month = { ...(next[yearMonth] ?? {}) };
+
+  if (value === null || value.trim() === "") {
+    delete month[personId];
+  } else {
+    month[personId] = value.trim();
+  }
+
+  if (Object.keys(month).length === 0) {
+    const nextMonth = { ...next };
+    delete nextMonth[yearMonth];
+    return nextMonth;
+  }
+
+  next[yearMonth] = month;
+  return next;
+}
+
+export function setNoteOverride(
+  overrides: PayrollNoteOverrides,
+  yearMonth: string,
+  personId: string,
+  value: string | null
+): PayrollNoteOverrides {
+  return setMonthPersonStringOverride(overrides, yearMonth, personId, value);
 }
 
 export function getTaxableOverride(

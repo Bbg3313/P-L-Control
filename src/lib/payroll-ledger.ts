@@ -9,6 +9,7 @@ import {
   isOverseasTeam,
   type PersonnelEntry,
 } from "@/lib/personnel";
+import { buildPayrollRowNote } from "@/lib/payroll-personnel-notes";
 import { applyPersonnelReferenceSalary } from "@/lib/personnel-reference-salaries";
 import {
   calcEmployerContributionsFromInsuranceBase,
@@ -108,6 +109,8 @@ export interface PayrollLedgerRow {
   employerInsuranceTotal: number;
   totalEmployerCost: number;
   note: string;
+  /** 사용자가 비고를 직접 수정했는지 */
+  noteOverridden: boolean;
 }
 
 /** 과세 급여 (기본급 기준, 성과급 제외) */
@@ -228,7 +231,8 @@ function buildDomesticRow(
   entry: PersonnelEntry,
   hrMeta: { department: string; position: string },
   taxableOverride?: number,
-  performancePayOverride = 0
+  performancePayOverride = 0,
+  noteOverride?: string
 ): PayrollLedgerRow {
   const resolved = resolvePersonnelForPayroll(entry);
   const nonTaxable = getMonthlyNonTaxableAllowance(resolved.name);
@@ -302,6 +306,11 @@ function buildDomesticRow(
   if (youthEligible) notes.push("청년소득세 90% 감면");
   if (taxableBaseOverridden) notes.push("과세표준 수동조정");
 
+  const noteOverridden = noteOverride !== undefined;
+  const note = noteOverridden
+    ? noteOverride.trim()
+    : buildPayrollRowNote(notes, resolved.name);
+
   return {
     id: resolved.id,
     name: resolved.name,
@@ -335,7 +344,8 @@ function buildDomesticRow(
     employerIndustrial: employer.industrialAccidentEmployer,
     employerInsuranceTotal: employer.totalEmployerContributions,
     totalEmployerCost: monthlyGross + employer.totalEmployerContributions,
-    note: notes.join(" · "),
+    note,
+    noteOverridden,
   };
 }
 
@@ -386,7 +396,8 @@ export function buildPayrollLedger(
   taxableOverrides: Record<string, number> = {},
   hrByName: Record<string, { department: string; position: string }> = {},
   companyId: PayrollCompanyId = "bluebridge",
-  performancePayOverrides: Record<string, number> = {}
+  performancePayOverrides: Record<string, number> = {},
+  noteOverrides: Record<string, string> = {}
 ): PayrollLedgerResult {
   const domestic: PayrollLedgerRow[] = [];
   const filtered = filterPersonnelByPayrollCompany(personnel, companyId);
@@ -398,7 +409,8 @@ export function buildPayrollLedger(
         entry,
         hrMeta,
         taxableOverrides[entry.id],
-        performancePayOverrides[entry.id] ?? 0
+        performancePayOverrides[entry.id] ?? 0,
+        noteOverrides[entry.id]
       )
     );
   }
