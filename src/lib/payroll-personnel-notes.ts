@@ -2,7 +2,6 @@
 export const PAYROLL_DEFAULT_MEMO_BY_NAME: Record<string, string> = {
   성수린:
     "기본 475만+성과급별도·세금은 총지급 기준·보험은 과세급여 기준·연말 보수총액 정산",
-  아리: "외국인·고용보험 미가입",
 };
 
 export function getDefaultPayrollMemo(name: string): string {
