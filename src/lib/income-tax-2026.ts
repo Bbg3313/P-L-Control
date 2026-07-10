@@ -58,6 +58,16 @@ export function calcMonthlyWithholdingTaxFromInsuranceBase(
   return lookupSimplifiedWithholdingTax(insuranceBase, familyCount);
 }
 
+/**
+ * 개인지방소득세 특별징수
+ * - 지방세법: 원천징수 소득세의 100분의 10
+ * - 국고금관리법·지방회계법: 10원 미만 절사
+ */
+export function calcLocalIncomeTaxFromIncomeTax(incomeTax: number): number {
+  if (incomeTax <= 0) return 0;
+  return Math.floor((incomeTax * 0.1) / 10) * 10;
+}
+
 /** 월 근로소득 원천징수 소득세 (비과세 식대 등 차감 후) */
 export function calcMonthlyWithholdingTax(
   monthlyGross: number,

@@ -1,5 +1,6 @@
 import {
   calcEmployeeInsuranceBreakdown,
+  calcLocalIncomeTaxFromIncomeTax,
   calcMonthlyWithholdingTaxFromInsuranceBase,
   type EmployeeInsuranceBreakdown,
 } from "@/lib/income-tax-2026";
@@ -191,7 +192,9 @@ function calcYouthTaxFromInsuranceBase(
 
   const incomeTaxBeforeRelief =
     calcMonthlyWithholdingTaxFromInsuranceBase(insuranceBase);
-  const localIncomeTaxBeforeRelief = Math.floor(incomeTaxBeforeRelief * 0.1);
+  const localIncomeTaxBeforeRelief = calcLocalIncomeTaxFromIncomeTax(
+    incomeTaxBeforeRelief
+  );
 
   const incomeTaxRelief = Math.min(
     Math.floor(incomeTaxBeforeRelief * 0.9),
@@ -201,7 +204,8 @@ function calcYouthTaxFromInsuranceBase(
     0,
     incomeTaxBeforeRelief - incomeTaxRelief
   );
-  const localIncomeTaxAfterRelief = Math.floor(incomeTaxAfterRelief * 0.1);
+  const localIncomeTaxAfterRelief =
+    calcLocalIncomeTaxFromIncomeTax(incomeTaxAfterRelief);
   const localIncomeTaxRelief =
     localIncomeTaxBeforeRelief - localIncomeTaxAfterRelief;
 
@@ -286,7 +290,7 @@ function buildDomesticRow(
     }
   } else {
     incomeTax = calcMonthlyWithholdingTaxFromInsuranceBase(taxableBase);
-    localIncomeTax = Math.floor(incomeTax * 0.1);
+    localIncomeTax = calcLocalIncomeTaxFromIncomeTax(incomeTax);
     netPay = monthlyGross - employee.total - incomeTax - localIncomeTax;
   }
 

@@ -7,6 +7,7 @@
 
 import {
   calcEmployeeInsuranceFromInsuranceBase,
+  calcLocalIncomeTaxFromIncomeTax,
   calcMonthlyWithholdingTax,
 } from "@/lib/income-tax-2026";
 
@@ -50,7 +51,9 @@ export function calcYouthTaxReliefBreakdown(
     monthlyGross,
     nonTaxableMonthly
   );
-  const localIncomeTaxBeforeRelief = Math.floor(incomeTaxBeforeRelief * 0.1);
+  const localIncomeTaxBeforeRelief = calcLocalIncomeTaxFromIncomeTax(
+    incomeTaxBeforeRelief
+  );
 
   const incomeTaxRelief = Math.min(
     Math.floor(incomeTaxBeforeRelief * YOUTH_RELIEF_RATE),
@@ -61,7 +64,8 @@ export function calcYouthTaxReliefBreakdown(
     incomeTaxBeforeRelief - incomeTaxRelief
   );
 
-  const localIncomeTaxAfterRelief = Math.floor(incomeTaxAfterRelief * 0.1);
+  const localIncomeTaxAfterRelief =
+    calcLocalIncomeTaxFromIncomeTax(incomeTaxAfterRelief);
   const localIncomeTaxRelief =
     localIncomeTaxBeforeRelief - localIncomeTaxAfterRelief;
 
