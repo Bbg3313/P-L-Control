@@ -35,20 +35,19 @@ export const PAYROLL_COMPANY_OPTIONS: {
 
 const GOLDFENDER_PERSONNEL = new Set<string>(["박양근"]);
 
-/** 성과급 변동 — 보험 산정과 원천징수 과세를 분리 */
+/** 성과급 변동 — 보험은 과세급여, 세금은 총지급(과세표준) */
 export const VARIABLE_PAY_PERSONNEL_NAMES = ["성수린"] as const;
-
-/** 4대보험 보수월액 고정 (원천징수 과세와 별도) */
-export const FIXED_INSURANCE_REMUNERATION_BY_NAME: Record<string, number> = {
-  성수린: 4_750_000,
-};
 
 export function isVariablePayPersonnel(name: string): boolean {
   return (VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name);
 }
 
-export function getFixedInsuranceRemuneration(name: string): number | undefined {
-  return FIXED_INSURANCE_REMUNERATION_BY_NAME[name];
+/** 4대보험 보수월액 = 과세급여(기본급−비과세, 성과급·수동조정 미반영) */
+function getInsuranceRemunerationBase(
+  baseMonthlyGross: number,
+  nonTaxable: number
+): number {
+  return Math.max(0, baseMonthlyGross - nonTaxable);
 }
 
 export function getPayrollCompanyForPerson(name: string): PayrollCompanyId {
@@ -230,7 +229,6 @@ function calcYouthTaxFromInsuranceBase(
 function buildDomesticRow(
   entry: PersonnelEntry,
   hrMeta: { department: string; position: string },
-  taxableOverride?: number,
   performancePayOverride = 0,
   noteOverride?: string
 ): PayrollLedgerRow {
@@ -250,16 +248,12 @@ function buildDomesticRow(
     : baseMonthlyGross;
 
   const defaultTaxableBase = Math.max(0, monthlyGross - nonTaxable);
-  const taxableBase =
-    !usesSplitPayrollCalc && taxableOverride !== undefined
-      ? taxableOverride
-      : defaultTaxableBase;
-  const taxableBaseOverridden =
-    !usesSplitPayrollCalc && taxableOverride !== undefined;
+  const taxableBase = defaultTaxableBase;
 
-  const insuranceRemunerationBase = usesSplitPayrollCalc
-    ? (getFixedInsuranceRemuneration(resolved.name) ?? baseMonthlyGross)
-    : taxableBase;
+  const insuranceRemunerationBase = getInsuranceRemunerationBase(
+    baseMonthlyGross,
+    nonTaxable
+  );
 
   const employmentExempt = isEmploymentInsuranceExempt(resolved.name);
   let employee = calcEmployeeInsuranceBreakdown(insuranceRemunerationBase);
@@ -299,12 +293,11 @@ function buildDomesticRow(
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
   if (usesSplitPayrollCalc) {
-    notes.push("보험 475만 고정");
+    notes.push("보험 과세급여 기준");
     if (performancePay > 0) notes.push("성과급 반영 원천징수");
   }
   if (employmentExempt) notes.push("고용보험 미가입");
   if (youthEligible) notes.push("청년소득세 90% 감면");
-  if (taxableBaseOverridden) notes.push("과세표준 수동조정");
 
   const noteOverridden = noteOverride !== undefined;
   const note = noteOverridden
@@ -323,7 +316,7 @@ function buildDomesticRow(
     nonTaxable,
     defaultTaxableBase,
     taxableBase,
-    taxableBaseOverridden,
+    taxableBaseOverridden: false,
     insuranceRemunerationBase,
     usesSplitPayrollCalc,
     employeePension: employee.pension,
@@ -393,7 +386,6 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
 export function buildPayrollLedger(
   yearMonth: string,
   personnel: PersonnelEntry[],
-  taxableOverrides: Record<string, number> = {},
   hrByName: Record<string, { department: string; position: string }> = {},
   companyId: PayrollCompanyId = "bluebridge",
   performancePayOverrides: Record<string, number> = {},
@@ -408,7 +400,6 @@ export function buildPayrollLedger(
       buildDomesticRow(
         entry,
         hrMeta,
-        taxableOverrides[entry.id],
         performancePayOverrides[entry.id] ?? 0,
         noteOverrides[entry.id]
       )

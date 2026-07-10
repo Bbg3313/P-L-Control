@@ -43,16 +43,12 @@ import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
   loadPayrollNoteOverrides,
   loadPayrollPerformancePayOverrides,
-  loadPayrollTaxableOverrides,
   savePayrollNoteOverrides,
   savePayrollPerformancePayOverrides,
-  savePayrollTaxableOverrides,
   setNoteOverride,
   setPerformancePayOverride,
-  setTaxableOverride,
   type PayrollNoteOverrides,
   type PayrollPerformancePayOverrides,
-  type PayrollTaxableOverrides,
 } from "@/lib/payroll-ledger-store";
 import { getDefaultPayrollMemo } from "@/lib/payroll-personnel-notes";
 import { cn } from "@/lib/utils";
@@ -234,65 +230,6 @@ function PerformancePayInput({
   );
 }
 
-function TaxableBaseInput({
-  row,
-  onChange,
-  onReset,
-}: {
-  row: PayrollLedgerRow;
-  onChange: (value: number) => void;
-  onReset: () => void;
-}) {
-  const [draft, setDraft] = useState(formatAmountInputValue(row.taxableBase));
-
-  useEffect(() => {
-    setDraft(formatAmountInputValue(row.taxableBase));
-  }, [row.taxableBase]);
-
-  return (
-    <div
-      className={cn(
-        "payroll-taxable-wrap",
-        row.taxableBaseOverridden && "payroll-taxable-wrap--with-reset"
-      )}
-    >
-      <Input
-        value={draft}
-        onChange={(e) => {
-          const digits = e.target.value.replace(/[^\d]/g, "");
-          setDraft(digits ? formatNumber(Number(digits)) : "");
-        }}
-        onBlur={() => {
-          const next = parseAmount(draft);
-          onChange(next);
-          setDraft(formatAmountInputValue(next));
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-        }}
-        className={cn(
-          "payroll-taxable-input shadow-none",
-          row.taxableBaseOverridden &&
-            "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
-        )}
-        aria-label={`${row.name} 과세표준`}
-      />
-      {row.taxableBaseOverridden ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="payroll-taxable-reset h-7 w-7 text-muted-foreground"
-          onClick={onReset}
-          title="기본값 복원"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
-      ) : null}
-    </div>
-  );
-}
-
 type CellAlign = "center" | "right";
 
 function PayrollTh({
@@ -411,9 +348,6 @@ function PayrollTable({
   ledger,
   summary,
   reportingMonth,
-  showTaxableInput,
-  onTaxableChange,
-  onTaxableReset,
   onPerformancePayChange,
   onPerformancePayReset,
   onNoteChange,
@@ -423,9 +357,6 @@ function PayrollTable({
   ledger: PayrollLedgerResult;
   summary: PayrollLedgerSummary;
   reportingMonth: string;
-  showTaxableInput: boolean;
-  onTaxableChange: (id: string, value: number) => void;
-  onTaxableReset: (id: string) => void;
   onPerformancePayChange: (id: string, value: number) => void;
   onPerformancePayReset: (id: string) => void;
   onNoteChange: (id: string, value: string) => void;
@@ -505,15 +436,7 @@ function PayrollTable({
               <MoneyCell value={getTotalGrossPay(row)} />
             </PayrollTd>
             <PayrollTd align="right">
-              {showTaxableInput && !row.usesSplitPayrollCalc ? (
-                <TaxableBaseInput
-                  row={row}
-                  onChange={(value) => onTaxableChange(row.id, value)}
-                  onReset={() => onTaxableReset(row.id)}
-                />
-              ) : (
-                <MoneyCell value={row.taxableBase} />
-              )}
+              <MoneyCell value={row.taxableBase} />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell value={row.employeePension} />
@@ -647,7 +570,6 @@ function PayrollTable({
 export function PayrollLedgerPage() {
   const { personnel, reportingMonth, hydrated } = useFinancial();
   const [companyId, setCompanyId] = useState<PayrollCompanyId>("bluebridge");
-  const [overrides, setOverrides] = useState<PayrollTaxableOverrides>({});
   const [performancePayOverrides, setPerformancePayOverrides] =
     useState<PayrollPerformancePayOverrides>({});
   const [noteOverrides, setNoteOverrides] = useState<PayrollNoteOverrides>({});
@@ -655,7 +577,6 @@ export function PayrollLedgerPage() {
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
 
   useEffect(() => {
-    setOverrides(loadPayrollTaxableOverrides());
     setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
     setNoteOverrides(loadPayrollNoteOverrides());
     setOverridesReady(true);
@@ -690,11 +611,6 @@ export function PayrollLedgerPage() {
     return map;
   }, [hrRecords]);
 
-  const monthOverrides = useMemo(
-    () => overrides[reportingMonth] ?? {},
-    [overrides, reportingMonth]
-  );
-
   const monthPerformancePayOverrides = useMemo(
     () => performancePayOverrides[reportingMonth] ?? {},
     [performancePayOverrides, reportingMonth]
@@ -710,7 +626,6 @@ export function PayrollLedgerPage() {
       buildPayrollLedger(
         reportingMonth,
         personnel,
-        monthOverrides,
         hrByName,
         companyId,
         monthPerformancePayOverrides,
@@ -719,7 +634,6 @@ export function PayrollLedgerPage() {
     [
       reportingMonth,
       personnel,
-      monthOverrides,
       monthPerformancePayOverrides,
       monthNoteOverrides,
       hrByName,
@@ -730,11 +644,6 @@ export function PayrollLedgerPage() {
   const activeCompany =
     PAYROLL_COMPANY_OPTIONS.find((c) => c.id === companyId) ??
     PAYROLL_COMPANY_OPTIONS[0];
-
-  const persistOverrides = useCallback((next: PayrollTaxableOverrides) => {
-    setOverrides(next);
-    savePayrollTaxableOverrides(next);
-  }, []);
 
   const persistPerformancePayOverrides = useCallback(
     (next: PayrollPerformancePayOverrides) => {
@@ -799,32 +708,6 @@ export function PayrollLedgerPage() {
       persistPerformancePayOverrides(next);
     },
     [performancePayOverrides, reportingMonth, persistPerformancePayOverrides]
-  );
-
-  const handleTaxableChange = useCallback(
-    (personId: string, value: number) => {
-      const next = setTaxableOverride(
-        overrides,
-        reportingMonth,
-        personId,
-        value
-      );
-      persistOverrides(next);
-    },
-    [overrides, reportingMonth, persistOverrides]
-  );
-
-  const handleTaxableReset = useCallback(
-    (personId: string) => {
-      const next = setTaxableOverride(
-        overrides,
-        reportingMonth,
-        personId,
-        null
-      );
-      persistOverrides(next);
-    },
-    [overrides, reportingMonth, persistOverrides]
   );
 
   const handleDownload = useCallback(() => {
@@ -940,9 +823,6 @@ export function PayrollLedgerPage() {
               ledger={ledger}
               summary={summary}
               reportingMonth={reportingMonth}
-              showTaxableInput
-              onTaxableChange={handleTaxableChange}
-              onTaxableReset={handleTaxableReset}
               onPerformancePayChange={handlePerformancePayChange}
               onPerformancePayReset={handlePerformancePayReset}
               onNoteChange={handleNoteChange}
