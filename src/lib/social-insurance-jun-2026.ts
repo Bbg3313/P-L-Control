@@ -24,6 +24,14 @@ const EMPLOYMENT_UNEMPLOYMENT_RATE = 0.009;
 /** 150인 미만 사업장 */
 const EMPLOYMENT_STABILITY_EMPLOYER = 0.0025;
 
+/** 급여대장 공제내역 — 근로자 부담 요율 (호버 안내) */
+export const EMPLOYEE_DEDUCTION_RATE_TOOLTIPS = {
+  pension: `국민연금 ${(PENSION_PARTY_RATE * 100).toFixed(2)}% (기준소득월액·천원절사)`,
+  health: `건강보험 ${((HEALTH_TOTAL_RATE / 2) * 100).toFixed(3)}%`,
+  longTermCare: `장기요양 건강보험료×${(LONG_TERM_CARE_ON_HEALTH * 100).toFixed(2)}%÷2`,
+  employment: `고용보험 실업급여 ${(EMPLOYMENT_UNEMPLOYMENT_RATE * 100).toFixed(1)}%`,
+} as const;
+
 /** 사무·서비스업 근사 업종 요율(‰) + 출퇴근 0.6 + 임금채권 0.6 */
 const INDUSTRIAL_ACCIDENT_TOTAL_PERMILLE = 2.0;
 

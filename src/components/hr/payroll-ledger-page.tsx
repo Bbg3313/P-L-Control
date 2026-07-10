@@ -39,6 +39,7 @@ import {
   type PayrollLedgerRow,
   type PayrollLedgerSummary,
 } from "@/lib/payroll-ledger";
+import { EMPLOYEE_DEDUCTION_RATE_TOOLTIPS } from "@/lib/social-insurance-jun-2026";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
   loadPayrollNoteOverrides,
@@ -103,14 +104,18 @@ function KpiCard({
 function MoneyCell({
   value,
   emphasis,
+  title,
 }: {
   value: number;
   emphasis?: "indigo" | "rose";
+  title?: string;
 }) {
   return (
     <span
+      title={title}
       className={cn(
         "tabular-nums text-sm text-slate-800",
+        title && "cursor-help",
         emphasis === "indigo" && "font-semibold text-indigo-700",
         emphasis === "rose" && "font-semibold text-rose-700"
       )}
@@ -238,19 +243,26 @@ function PayrollTh({
   className,
   colSpan,
   rowSpan,
+  title,
 }: {
   align: CellAlign;
   children: React.ReactNode;
   className?: string;
   colSpan?: number;
   rowSpan?: number;
+  title?: string;
 }) {
   return (
     <th
       data-align={align}
       colSpan={colSpan}
       rowSpan={rowSpan}
-      className={cn("payroll-cell payroll-header-cell", className)}
+      title={title}
+      className={cn(
+        "payroll-cell payroll-header-cell",
+        title && "cursor-help",
+        className
+      )}
     >
       {children}
     </th>
@@ -291,10 +303,34 @@ const PAYROLL_LEADING_COLUMNS = [
 ] as const;
 
 const PAYROLL_DEDUCTION_COLUMNS = [
-  { key: "pension", label: "국민", align: "right" as const, minWidth: "4.5rem" },
-  { key: "health", label: "건강", align: "right" as const, minWidth: "4.5rem" },
-  { key: "ltc", label: "장기", align: "right" as const, minWidth: "4.5rem" },
-  { key: "employment", label: "고용", align: "right" as const, minWidth: "4.5rem" },
+  {
+    key: "pension",
+    label: "국민",
+    align: "right" as const,
+    minWidth: "4.5rem",
+    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.pension,
+  },
+  {
+    key: "health",
+    label: "건강",
+    align: "right" as const,
+    minWidth: "4.5rem",
+    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.health,
+  },
+  {
+    key: "ltc",
+    label: "장기",
+    align: "right" as const,
+    minWidth: "4.5rem",
+    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.longTermCare,
+  },
+  {
+    key: "employment",
+    label: "고용",
+    align: "right" as const,
+    minWidth: "4.5rem",
+    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.employment,
+  },
 ] as const;
 
 const PAYROLL_TRAILING_COLUMNS = [
@@ -395,8 +431,10 @@ function PayrollTable({
           </TableRow>
           <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
             {PAYROLL_DEDUCTION_COLUMNS.map((col) => (
-              <PayrollTh key={col.key} align="center">
-                {col.label}
+              <PayrollTh key={col.key} align="center" title={col.rateTooltip}>
+                <span className="border-b border-dotted border-slate-400/80">
+                  {col.label}
+                </span>
               </PayrollTh>
             ))}
           </TableRow>
@@ -439,16 +477,28 @@ function PayrollTable({
               <MoneyCell value={row.taxableBase} />
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.employeePension} />
+              <MoneyCell
+                value={row.employeePension}
+                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.pension}
+              />
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.employeeHealth} />
+              <MoneyCell
+                value={row.employeeHealth}
+                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.health}
+              />
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.employeeLongTermCare} />
+              <MoneyCell
+                value={row.employeeLongTermCare}
+                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.longTermCare}
+              />
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.employeeEmployment} />
+              <MoneyCell
+                value={row.employeeEmployment}
+                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.employment}
+              />
             </PayrollTd>
             <PayrollTd align="right">
               <IncomeTaxCell
