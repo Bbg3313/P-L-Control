@@ -292,10 +292,6 @@ function buildDomesticRow(
 
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
-  if (usesSplitPayrollCalc) {
-    notes.push("보험 과세급여 기준");
-    if (performancePay > 0) notes.push("성과급 반영 원천징수");
-  }
   if (employmentExempt) notes.push("고용보험 미가입");
   if (youthEligible) notes.push("청년소득세 90% 감면");
 

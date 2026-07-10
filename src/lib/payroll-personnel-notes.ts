@@ -1,7 +1,6 @@
 /** 급여대장 비고 — 인원별 기본 안내 (편집 전 표시) */
 export const PAYROLL_DEFAULT_MEMO_BY_NAME: Record<string, string> = {
-  성수린:
-    "기본 475만+성과급별도·세금은 총지급 기준·보험은 과세급여 기준·연말 보수총액 정산",
+  성수린: "4대보험 과세표준/원천세 총지급액",
 };
 
 export function getDefaultPayrollMemo(name: string): string {
