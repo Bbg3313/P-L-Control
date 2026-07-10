@@ -295,7 +295,7 @@ function PayrollTd({
 const PAYROLL_LEADING_COLUMNS = [
   { key: "no", label: "구분번호", align: "center" as const, minWidth: "4rem" },
   { key: "name", label: "성명", align: "center" as const, minWidth: "10.5rem" },
-  { key: "basic", label: "과세급여", align: "right" as const, minWidth: "6rem" },
+  { key: "basic", label: "기본급여", align: "right" as const, minWidth: "6rem" },
   { key: "performance", label: "성과급", align: "right" as const, minWidth: "6.5rem" },
   { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5.5rem" },
   { key: "gross", label: "총지급액", align: "right" as const, minWidth: "6rem" },

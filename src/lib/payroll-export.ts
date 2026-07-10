@@ -8,7 +8,7 @@ import { formatPersonnelDisplayName } from "@/lib/personnel";
 const LEADING_HEADERS = [
   "구분",
   "성명",
-  "과세급여",
+  "기본급여",
   "성과급",
   "비과세",
   "총지급액",

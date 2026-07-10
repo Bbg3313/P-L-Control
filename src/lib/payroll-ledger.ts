@@ -36,14 +36,14 @@ export const PAYROLL_COMPANY_OPTIONS: {
 
 const GOLDFENDER_PERSONNEL = new Set<string>(["박양근"]);
 
-/** 성과급 변동 — 보험은 과세급여, 세금은 총지급(과세표준) */
+/** 성과급 변동 — 보험은 기본급여(성과급 제외), 세금은 과세표준 */
 export const VARIABLE_PAY_PERSONNEL_NAMES = ["성수린"] as const;
 
 export function isVariablePayPersonnel(name: string): boolean {
   return (VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name);
 }
 
-/** 4대보험 보수월액 = 과세급여(기본급−비과세, 성과급·수동조정 미반영) */
+/** 4대보험 보수월액 = 기본급여 − 비과세 (성과급 미반영) */
 function getInsuranceRemunerationBase(
   baseMonthlyGross: number,
   nonTaxable: number
@@ -113,12 +113,9 @@ export interface PayrollLedgerRow {
   noteOverridden: boolean;
 }
 
-/** 과세 급여 (기본급 기준, 성과급 제외) */
+/** 기본급여 (성과급 제외 고정 월급) */
 export function getBasicPay(row: PayrollLedgerRow): number {
-  if (row.usesSplitPayrollCalc) {
-    return Math.max(0, row.baseMonthlyGross - row.nonTaxable);
-  }
-  return row.defaultTaxableBase;
+  return row.baseMonthlyGross;
 }
 
 /** 총지급액 (세전 월급) */
