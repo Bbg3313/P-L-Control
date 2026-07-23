@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Loader2, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Download, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { downloadHrLeaveExcel } from "@/lib/hr-leave-export";
 import {
   type HrLeaveEntry,
   type LeaveEntryType,
@@ -525,15 +526,30 @@ export function HrLeavePage() {
     }
   }
 
+  const handleDownload = useCallback(() => {
+    downloadHrLeaveExcel(teamEmployees);
+  }, [teamEmployees]);
+
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
       <header className="sticky top-0 z-30 w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 pb-4 shadow-sm backdrop-blur-sm">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">연차현황</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            팀별 발생·사용을 일수 칸으로 확인하고, 날짜·연차/반차 단위로 사용
-            내역을 등록합니다.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight">연차현황</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              팀별 발생·사용을 일수 칸으로 확인하고, 날짜·연차/반차 단위로 사용
+              내역을 등록합니다.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={handleDownload}
+            disabled={loading || employees.length === 0}
+            className="h-8 gap-1.5 px-3 text-sm"
+          >
+            <Download className="h-3.5 w-3.5" />
+            엑셀 다운로드
+          </Button>
         </div>
       </header>
 
