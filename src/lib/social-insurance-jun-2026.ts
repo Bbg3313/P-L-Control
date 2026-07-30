@@ -32,6 +32,12 @@ export const EMPLOYEE_DEDUCTION_RATE_TOOLTIPS = {
   employment: `고용보험 실업급여 ${(EMPLOYMENT_UNEMPLOYMENT_RATE * 100).toFixed(1)}%`,
 } as const;
 
+export const GOLDFENDER_DEDUCTION_RATE_TOOLTIPS = {
+  ...EMPLOYEE_DEDUCTION_RATE_TOOLTIPS,
+  health: `${EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.health} · 십원 미만 절사`,
+  longTermCare: `${EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.longTermCare} · 십원 미만 절사`,
+} as const;
+
 /** 사무·서비스업 근사 업종 요율(‰) + 출퇴근 0.6 + 임금채권 0.6 */
 const INDUSTRIAL_ACCIDENT_TOTAL_PERMILLE = 2.0;
 
@@ -77,6 +83,15 @@ export function calcHealthAndLongTermCarePartyShares(insuranceBase: number): {
 export function calcEmploymentUnemploymentShare(insuranceBase: number): number {
   if (insuranceBase <= 0) return 0;
   return truncateWon(insuranceBase * EMPLOYMENT_UNEMPLOYMENT_RATE);
+}
+
+/**
+ * 골드펜더 건강·장기요양 — 십원 미만 절사
+ * (1원 자리까지 버리고 10원 단위로 맞춤)
+ */
+export function truncateGoldfenderHealthLtc(amount: number): number {
+  if (amount <= 0) return 0;
+  return Math.floor(Math.floor(amount) / 10) * 10;
 }
 
 export interface EmployerInsuranceBreakdown {

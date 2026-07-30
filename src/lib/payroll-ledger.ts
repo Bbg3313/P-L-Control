@@ -16,6 +16,7 @@ import {
   calcEmployerContributionsFromInsuranceBase,
   JUN_2026_INSURANCE_LABEL,
   monthlyGrossFromSalary,
+  truncateGoldfenderHealthLtc,
 } from "@/lib/social-insurance-jun-2026";
 import {
   isYouthIncomeTaxReliefEligible,
@@ -179,6 +180,43 @@ function withoutEmployerEmploymentInsurance(
   };
 }
 
+/** 골드펜더: 건강·장기요양만 십원 미만 절사 */
+function applyGoldfenderHealthLtcTruncate(
+  employee: EmployeeInsuranceBreakdown,
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
+): {
+  employee: EmployeeInsuranceBreakdown;
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>;
+} {
+  const health = truncateGoldfenderHealthLtc(employee.health);
+  const longTermCare = truncateGoldfenderHealthLtc(employee.longTermCare);
+  const healthEmployer = truncateGoldfenderHealthLtc(employer.healthEmployer);
+  const longTermCareEmployer = truncateGoldfenderHealthLtc(
+    employer.longTermCareEmployer
+  );
+
+  return {
+    employee: {
+      ...employee,
+      health,
+      longTermCare,
+      total:
+        employee.pension + health + longTermCare + employee.employment,
+    },
+    employer: {
+      ...employer,
+      healthEmployer,
+      longTermCareEmployer,
+      totalEmployerContributions:
+        employer.pensionEmployer +
+        healthEmployer +
+        longTermCareEmployer +
+        employer.employmentEmployer +
+        employer.industrialAccidentEmployer,
+    },
+  };
+}
+
 function calcYouthTaxFromInsuranceBase(
   monthlyGross: number,
   nonTaxableMonthly: number,
@@ -231,7 +269,8 @@ function buildDomesticRow(
   entry: PersonnelEntry,
   hrMeta: { department: string; position: string },
   performancePayOverride = 0,
-  noteOverride?: string
+  noteOverride?: string,
+  companyId: PayrollCompanyId = "bluebridge"
 ): PayrollLedgerRow {
   const resolved = resolvePersonnelForPayroll(entry);
   const nonTaxable = getMonthlyNonTaxableAllowance(resolved.name);
@@ -261,6 +300,12 @@ function buildDomesticRow(
   let employer = calcEmployerContributionsFromInsuranceBase(
     insuranceRemunerationBase
   );
+  if (companyId === "goldfender") {
+    ({ employee, employer } = applyGoldfenderHealthLtcTruncate(
+      employee,
+      employer
+    ));
+  }
   if (employmentExempt) {
     employee = withoutEmployeeEmploymentInsurance(employee);
     employer = withoutEmployerEmploymentInsurance(employer);
@@ -398,7 +443,8 @@ export function buildPayrollLedger(
         entry,
         hrMeta,
         performancePayOverrides[entry.id] ?? 0,
-        noteOverrides[entry.id]
+        noteOverrides[entry.id],
+        companyId
       )
     );
   }

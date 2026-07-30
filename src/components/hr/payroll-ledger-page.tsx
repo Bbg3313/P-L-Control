@@ -39,7 +39,10 @@ import {
   type PayrollLedgerRow,
   type PayrollLedgerSummary,
 } from "@/lib/payroll-ledger";
-import { EMPLOYEE_DEDUCTION_RATE_TOOLTIPS } from "@/lib/social-insurance-jun-2026";
+import {
+  EMPLOYEE_DEDUCTION_RATE_TOOLTIPS,
+  GOLDFENDER_DEDUCTION_RATE_TOOLTIPS,
+} from "@/lib/social-insurance-jun-2026";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 import {
   loadPayrollNoteOverrides,
@@ -304,34 +307,44 @@ const PAYROLL_LEADING_COLUMNS = [
 
 const PAYROLL_DEDUCTION_COLUMNS = [
   {
-    key: "pension",
+    key: "pension" as const,
     label: "국민",
     align: "right" as const,
     minWidth: "4.5rem",
-    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.pension,
   },
   {
-    key: "health",
+    key: "health" as const,
     label: "건강",
     align: "right" as const,
     minWidth: "4.5rem",
-    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.health,
   },
   {
-    key: "ltc",
+    key: "ltc" as const,
     label: "장기",
     align: "right" as const,
     minWidth: "4.5rem",
-    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.longTermCare,
   },
   {
-    key: "employment",
+    key: "employment" as const,
     label: "고용",
     align: "right" as const,
     minWidth: "4.5rem",
-    rateTooltip: EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.employment,
   },
 ] as const;
+
+function deductionRateTooltip(
+  key: (typeof PAYROLL_DEDUCTION_COLUMNS)[number]["key"],
+  companyId: PayrollCompanyId
+): string {
+  const tips =
+    companyId === "goldfender"
+      ? GOLDFENDER_DEDUCTION_RATE_TOOLTIPS
+      : EMPLOYEE_DEDUCTION_RATE_TOOLTIPS;
+  if (key === "pension") return tips.pension;
+  if (key === "health") return tips.health;
+  if (key === "ltc") return tips.longTermCare;
+  return tips.employment;
+}
 
 const PAYROLL_TRAILING_COLUMNS = [
   { key: "incomeTax", label: "소득세", align: "right" as const, minWidth: "6rem" },
@@ -384,6 +397,7 @@ function PayrollTable({
   ledger,
   summary,
   reportingMonth,
+  companyId,
   onPerformancePayChange,
   onPerformancePayReset,
   onNoteChange,
@@ -393,6 +407,7 @@ function PayrollTable({
   ledger: PayrollLedgerResult;
   summary: PayrollLedgerSummary;
   reportingMonth: string;
+  companyId: PayrollCompanyId;
   onPerformancePayChange: (id: string, value: number) => void;
   onPerformancePayReset: (id: string) => void;
   onNoteChange: (id: string, value: string) => void;
@@ -431,7 +446,11 @@ function PayrollTable({
           </TableRow>
           <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
             {PAYROLL_DEDUCTION_COLUMNS.map((col) => (
-              <PayrollTh key={col.key} align="center" title={col.rateTooltip}>
+              <PayrollTh
+                key={col.key}
+                align="center"
+                title={deductionRateTooltip(col.key, companyId)}
+              >
                 <span className="border-b border-dotted border-slate-400/80">
                   {col.label}
                 </span>
@@ -479,25 +498,25 @@ function PayrollTable({
             <PayrollTd align="right">
               <MoneyCell
                 value={row.employeePension}
-                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.pension}
+                title={deductionRateTooltip("pension", companyId)}
               />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell
                 value={row.employeeHealth}
-                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.health}
+                title={deductionRateTooltip("health", companyId)}
               />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell
                 value={row.employeeLongTermCare}
-                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.longTermCare}
+                title={deductionRateTooltip("ltc", companyId)}
               />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell
                 value={row.employeeEmployment}
-                title={EMPLOYEE_DEDUCTION_RATE_TOOLTIPS.employment}
+                title={deductionRateTooltip("employment", companyId)}
               />
             </PayrollTd>
             <PayrollTd align="right">
@@ -873,6 +892,7 @@ export function PayrollLedgerPage() {
               ledger={ledger}
               summary={summary}
               reportingMonth={reportingMonth}
+              companyId={companyId}
               onPerformancePayChange={handlePerformancePayChange}
               onPerformancePayReset={handlePerformancePayReset}
               onNoteChange={handleNoteChange}
