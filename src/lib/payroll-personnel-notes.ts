@@ -1,6 +1,7 @@
 /** 급여대장 비고 — 인원별 기본 안내 (편집 전 표시) */
 export const PAYROLL_DEFAULT_MEMO_BY_NAME: Record<string, string> = {
   성수린: "4대보험 기본급여/원천세 과세표준",
+  김소연: "4대보험 기본급여/원천세 과세표준",
 };
 
 export function getDefaultPayrollMemo(name: string): string {
