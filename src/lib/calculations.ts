@@ -65,23 +65,21 @@ export function getYearMonthsFromRecords(records: FinancialRecord[]): string[] {
 }
 
 /**
- * 대시보드 기본 보고 월.
- * 이번 달에 매출·비용 기록이 없으면 가장 최근 데이터가 있는 달을 씁니다.
+ * 대시보드·급여대장 기본 보고 월 = 이번 달(달력).
+ * 매출·비용 유무와 무관 — 과거 달은 월 네비로 이동.
  */
 export function getSuggestedReportingMonth(
-  records: FinancialRecord[],
+  _records: FinancialRecord[],
   current = getCurrentYearMonth()
 ): string {
-  const hasCurrentMonthData = records.some(
-    (r) => r.date.slice(0, 7) === current
-  );
-  if (hasCurrentMonthData) return current;
-
-  const fromRecords = getYearMonthsFromRecords(records);
-  return fromRecords[0] ?? current;
+  return current;
 }
 
-/** 저장된 보고 월이 비어 있으면 데이터가 있는 달로 맞춤 */
+/**
+ * 저장된 보고 월 복원.
+ * - 저장값이 이번 달 이상이면 그대로 사용
+ * - 과거 달·없음·데이터 없는 달로 끌어내리기 → 이번 달
+ */
 export function resolveReportingMonth(
   records: FinancialRecord[],
   saved: string | null,
@@ -89,16 +87,8 @@ export function resolveReportingMonth(
 ): string {
   const savedValid =
     saved && /^\d{4}-\d{2}$/.test(saved) ? saved : null;
-  const monthsWithRecords = getYearMonthsFromRecords(records);
 
-  if (monthsWithRecords.length === 0) {
-    return savedValid ?? current;
-  }
-
-  if (
-    savedValid &&
-    records.some((r) => r.date.slice(0, 7) === savedValid)
-  ) {
+  if (savedValid && savedValid >= current) {
     return savedValid;
   }
 

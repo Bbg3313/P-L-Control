@@ -161,15 +161,14 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
 
         setRecords(cloudRecords);
         setPersonnel(cloudPersonnel);
-        setReportingMonthState(
-          resolveReportingMonth(cloudRecords, cloudReporting)
-        );
+        const resolved = resolveReportingMonth(cloudRecords, cloudReporting);
+        setReportingMonth(resolved);
         cloudEnabled.current = true;
         setSyncStatus("cloud");
       } else {
         setRecords(localRecords);
         setPersonnel(localPersonnel);
-        setReportingMonthState(localReporting);
+        setReportingMonth(localReporting);
         cloudEnabled.current = false;
         setSyncStatus(api ? "local-only" : "local-only");
       }
