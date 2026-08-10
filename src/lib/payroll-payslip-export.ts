@@ -52,7 +52,7 @@ function buildLineRows(
   return html;
 }
 
-function buildPayslipHtml(
+export function buildPayslipHtml(
   ledger: PayrollLedgerResult,
   row: PayrollLedgerRow,
   sequenceNo: number

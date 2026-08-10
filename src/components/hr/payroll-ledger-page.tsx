@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Download,
   FileDown,
   Landmark,
+  Mail,
   PiggyBank,
   RotateCcw,
   Shield,
@@ -14,6 +16,14 @@ import {
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -44,6 +54,10 @@ import {
   GOLDFENDER_DEDUCTION_RATE_TOOLTIPS,
 } from "@/lib/social-insurance-jun-2026";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
+import {
+  loadPersonnelEmails,
+  type PersonnelEmails,
+} from "@/lib/personnel-emails-store";
 import {
   loadPayrollNoteOverrides,
   loadPayrollPerformancePayOverrides,
@@ -644,10 +658,30 @@ export function PayrollLedgerPage() {
   const [noteOverrides, setNoteOverrides] = useState<PayrollNoteOverrides>({});
   const [overridesReady, setOverridesReady] = useState(false);
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
+  const [personnelEmails, setPersonnelEmails] = useState<PersonnelEmails>({});
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendResults, setSendResults] = useState<
+    | {
+        sentCount: number;
+        failCount: number;
+        skipCount: number;
+        results: {
+          name: string;
+          email: string | null;
+          ok: boolean;
+          skipped?: boolean;
+          error?: string;
+        }[];
+      }
+    | null
+  >(null);
 
   useEffect(() => {
     setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
     setNoteOverrides(loadPayrollNoteOverrides());
+    setPersonnelEmails(loadPersonnelEmails());
     setOverridesReady(true);
   }, []);
 
@@ -783,6 +817,88 @@ export function PayrollLedgerPage() {
     downloadPayrollLedgerExcel(ledger);
   }, [ledger]);
 
+  const sendPreview = useMemo(() => {
+    return ledger.domestic.map((row) => ({
+      name: row.name,
+      email: personnelEmails[row.name]?.trim() || null,
+    }));
+  }, [ledger.domestic, personnelEmails]);
+
+  const sendableCount = sendPreview.filter((p) => p.email).length;
+
+  const openSendDialog = useCallback(() => {
+    setPersonnelEmails(loadPersonnelEmails());
+    setSendError(null);
+    setSendResults(null);
+    setSendDialogOpen(true);
+  }, []);
+
+  const handleSendPayslips = useCallback(async () => {
+    setSending(true);
+    setSendError(null);
+    setSendResults(null);
+    try {
+      const emailsForMonth: Record<string, string> = {};
+      for (const row of ledger.domestic) {
+        const email = personnelEmails[row.name]?.trim();
+        if (email) emailsForMonth[row.name] = email;
+      }
+
+      const res = await fetch("/api/payroll/send-payslips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          yearMonth: reportingMonth,
+          companyId,
+          emails: emailsForMonth,
+          performancePayOverrides: monthPerformancePayOverrides,
+          noteOverrides: monthNoteOverrides,
+          personnel,
+          hrByName,
+        }),
+      });
+
+      const data = (await res.json()) as {
+        error?: string;
+        sentCount?: number;
+        failCount?: number;
+        skipCount?: number;
+        results?: {
+          name: string;
+          email: string | null;
+          ok: boolean;
+          skipped?: boolean;
+          error?: string;
+        }[];
+      };
+
+      if (!res.ok) {
+        setSendError(data.error ?? "발송에 실패했습니다.");
+        return;
+      }
+
+      setSendResults({
+        sentCount: data.sentCount ?? 0,
+        failCount: data.failCount ?? 0,
+        skipCount: data.skipCount ?? 0,
+        results: data.results ?? [],
+      });
+    } catch {
+      setSendError("발송 요청에 실패했습니다. 네트워크를 확인해 주세요.");
+    } finally {
+      setSending(false);
+    }
+  }, [
+    ledger.domestic,
+    personnelEmails,
+    reportingMonth,
+    companyId,
+    monthPerformancePayOverrides,
+    monthNoteOverrides,
+    personnel,
+    hrByName,
+  ]);
+
   if (!hydrated || !overridesReady) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
@@ -808,6 +924,15 @@ export function PayrollLedgerPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <ReportingMonthNav className="w-full sm:w-auto" />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openSendDialog}
+              className="h-8 gap-1.5 px-3 text-sm"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              명세서 일괄 발송
+            </Button>
             <Button
               type="button"
               onClick={handleDownload}
@@ -901,6 +1026,100 @@ export function PayrollLedgerPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>급여명세서 일괄 발송</DialogTitle>
+            <DialogDescription>
+              {formatPeriodLabel(reportingMonth)} · {activeCompany.label} ·
+              이메일 등록된 {sendableCount}명 / 전체 {sendPreview.length}명
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-md border border-border/80 p-3 text-sm">
+            {sendPreview.map((item) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between gap-2"
+              >
+                <span className="font-medium">
+                  {formatPersonnelDisplayName(item.name)}
+                </span>
+                <span
+                  className={
+                    item.email
+                      ? "truncate text-muted-foreground"
+                      : "text-amber-700"
+                  }
+                >
+                  {item.email ?? "이메일 없음 (스킵)"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {sendableCount === 0 ? (
+            <p className="text-sm text-amber-800">
+              발송할 이메일이 없습니다.{" "}
+              <Link
+                href="/settings"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                설정
+              </Link>
+              에서 직원 이메일을 등록하세요.
+            </p>
+          ) : null}
+
+          {sendError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {sendError}
+            </p>
+          ) : null}
+
+          {sendResults ? (
+            <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
+              <p>
+                성공 {sendResults.sentCount} · 실패 {sendResults.failCount} ·
+                스킵 {sendResults.skipCount}
+              </p>
+              <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-muted-foreground">
+                {sendResults.results.map((r) => (
+                  <li key={r.name}>
+                    {r.name}:{" "}
+                    {r.ok
+                      ? "발송 완료"
+                      : r.skipped
+                        ? "스킵"
+                        : r.error ?? "실패"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSendDialogOpen(false)}
+              disabled={sending}
+            >
+              닫기
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSendPayslips}
+              disabled={sending || sendableCount === 0}
+              className="gap-1.5"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              {sending ? "발송 중…" : "발송"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
