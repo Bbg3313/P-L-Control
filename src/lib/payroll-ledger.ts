@@ -7,6 +7,7 @@ import {
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import {
   isEmploymentInsuranceExempt,
+  isOnPayrollForMonth,
   isOverseasTeam,
   type PersonnelEntry,
 } from "@/lib/personnel";
@@ -38,7 +39,12 @@ export const PAYROLL_COMPANY_OPTIONS: {
 const GOLDFENDER_PERSONNEL = new Set<string>(["박양근"]);
 
 /** 성과급·인센티브 변동 — 보험은 기본급여(변동급 제외), 세금은 과세표준 */
-export const VARIABLE_PAY_PERSONNEL_NAMES = ["성수린", "김소연"] as const;
+export const VARIABLE_PAY_PERSONNEL_NAMES = [
+  "성수린",
+  "김소연",
+  "니키",
+  "정수민",
+] as const;
 
 export function isVariablePayPersonnel(name: string): boolean {
   return (VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name);
@@ -65,10 +71,12 @@ export function getPayrollCompanyLabel(companyId: PayrollCompanyId): string {
 
 export function filterPersonnelByPayrollCompany(
   personnel: PersonnelEntry[],
-  companyId: PayrollCompanyId
+  companyId: PayrollCompanyId,
+  yearMonth?: string
 ): PersonnelEntry[] {
   return personnel.filter((entry) => {
     if (isOverseasTeam(entry.name)) return false;
+    if (yearMonth && !isOnPayrollForMonth(entry.name, yearMonth)) return false;
     return getPayrollCompanyForPerson(entry.name) === companyId;
   });
 }
@@ -434,7 +442,11 @@ export function buildPayrollLedger(
   noteOverrides: Record<string, string> = {}
 ): PayrollLedgerResult {
   const domestic: PayrollLedgerRow[] = [];
-  const filtered = filterPersonnelByPayrollCompany(personnel, companyId);
+  const filtered = filterPersonnelByPayrollCompany(
+    personnel,
+    companyId,
+    yearMonth
+  );
 
   for (const entry of filtered) {
     const hrMeta = hrByName[entry.name] ?? { department: "", position: "" };

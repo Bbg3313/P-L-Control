@@ -78,6 +78,20 @@ export function isEmploymentInsuranceExempt(name: string): boolean {
   return EMPLOYMENT_INSURANCE_EXEMPT_NAMES.has(name);
 }
 
+/**
+ * 마지막 급여 반영 월 (해당 월 포함).
+ * 예: 아리 2026-07 → 7월까지 급여대장 표시, 8월부터 제외
+ */
+export const PERSONNEL_LAST_PAYROLL_MONTH: Record<string, string> = {
+  아리: "2026-07",
+};
+
+export function isOnPayrollForMonth(name: string, yearMonth: string): boolean {
+  const last = PERSONNEL_LAST_PAYROLL_MONTH[name];
+  if (!last) return true;
+  return yearMonth <= last;
+}
+
 /** UI·명세서 표시용 로마자/영문 이름 */
 const PERSONNEL_ROMANIZED_NAMES: Record<string, string> = {
   니키: "타오검파차라폰",

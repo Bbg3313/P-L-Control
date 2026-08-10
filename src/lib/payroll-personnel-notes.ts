@@ -2,6 +2,9 @@
 export const PAYROLL_DEFAULT_MEMO_BY_NAME: Record<string, string> = {
   성수린: "4대보험 기본급여/원천세 과세표준",
   김소연: "4대보험 기본급여/원천세 과세표준",
+  니키: "4대보험 기본급여/원천세 과세표준",
+  정수민: "4대보험 기본급여/원천세 과세표준",
+  아리: "2026-07 퇴사",
 };
 
 export function getDefaultPayrollMemo(name: string): string {
