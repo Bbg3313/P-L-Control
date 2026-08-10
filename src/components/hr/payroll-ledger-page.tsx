@@ -142,6 +142,24 @@ function MoneyCell({
   );
 }
 
+/** 원천세·4대보험 산정 기준을 괄호로 구분 표시 */
+function RemunerationBaseCell({
+  taxBase,
+  insuranceBase,
+}: {
+  taxBase: number;
+  insuranceBase: number;
+}) {
+  return (
+    <div className="text-right text-[11px] leading-snug text-slate-700">
+      <div className="tabular-nums">(원천세 {formatNumber(taxBase)})</div>
+      <div className="tabular-nums">
+        (4대보험 {formatNumber(insuranceBase)})
+      </div>
+    </div>
+  );
+}
+
 function NoteInput({
   row,
   onChange,
@@ -316,7 +334,7 @@ const PAYROLL_LEADING_COLUMNS = [
   { key: "performance", label: "성과급", align: "right" as const, minWidth: "6.5rem" },
   { key: "nontax", label: "비과세", align: "right" as const, minWidth: "5.5rem" },
   { key: "gross", label: "총지급액", align: "right" as const, minWidth: "6rem" },
-  { key: "taxable", label: "과세표준", align: "right" as const, minWidth: "6.5rem" },
+  { key: "remuneration", label: "보수월액", align: "right" as const, minWidth: "8.5rem" },
 ] as const;
 
 const PAYROLL_DEDUCTION_COLUMNS = [
@@ -507,7 +525,10 @@ function PayrollTable({
               <MoneyCell value={getTotalGrossPay(row)} />
             </PayrollTd>
             <PayrollTd align="right">
-              <MoneyCell value={row.taxableBase} />
+              <RemunerationBaseCell
+                taxBase={row.taxableBase}
+                insuranceBase={row.insuranceRemunerationBase}
+              />
             </PayrollTd>
             <PayrollTd align="right">
               <MoneyCell
@@ -596,9 +617,12 @@ function PayrollTable({
           <PayrollTd align="right">
             <MoneyCell value={summary.grossTotal} />
           </PayrollTd>
-          <PayrollTd align="right">
-            <MoneyCell value={summary.taxableBaseTotal} />
-          </PayrollTd>
+            <PayrollTd align="right">
+              <RemunerationBaseCell
+                taxBase={summary.taxableBaseTotal}
+                insuranceBase={summary.insuranceRemunerationBaseTotal}
+              />
+            </PayrollTd>
           <PayrollTd align="right">
             <MoneyCell
               value={rows.reduce((sum, row) => sum + row.employeePension, 0)}

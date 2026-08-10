@@ -12,7 +12,8 @@ const LEADING_HEADERS = [
   "성과급",
   "비과세",
   "총지급액",
-  "과세표준",
+  "원천세(과세표준)",
+  "4대보험(보수월액)",
 ] as const;
 
 const DEDUCTION_HEADERS = ["국민", "건강", "장기", "고용"] as const;
@@ -33,8 +34,8 @@ const HEADERS = [
 
 const COL_COUNT = HEADERS.length;
 const MONEY_FMT = "#,##0";
-const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-const NET_PAY_COL = 14;
+const MONEY_COL_INDEXES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const NET_PAY_COL = 15;
 
 const COLORS = {
   titleBg: "EEF2FF",
@@ -109,6 +110,7 @@ function rowToCells(index: number, row: PayrollLedgerRow): (string | number)[] {
     row.nonTaxable,
     row.monthlyGross,
     row.taxableBase,
+    row.insuranceRemunerationBase,
     row.employeePension,
     row.employeeHealth,
     row.employeeLongTermCare,
@@ -135,6 +137,7 @@ function summaryCells(ledger: PayrollLedgerResult): (string | number)[] {
     s.nonTaxableTotal,
     s.grossTotal,
     s.taxableBaseTotal,
+    s.insuranceRemunerationBaseTotal,
     sum((r) => r.employeePension),
     sum((r) => r.employeeHealth),
     sum((r) => r.employeeLongTermCare),

@@ -140,6 +140,7 @@ export interface PayrollLedgerSummary {
   grossTotal: number;
   nonTaxableTotal: number;
   taxableBaseTotal: number;
+  insuranceRemunerationBaseTotal: number;
   employeeInsuranceTotal: number;
   incomeTaxTotal: number;
   localIncomeTaxTotal: number;
@@ -402,6 +403,8 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
       basicPayTotal: acc.basicPayTotal + getBasicPay(row),
       nonTaxableTotal: acc.nonTaxableTotal + row.nonTaxable,
       taxableBaseTotal: acc.taxableBaseTotal + row.taxableBase,
+      insuranceRemunerationBaseTotal:
+        acc.insuranceRemunerationBaseTotal + row.insuranceRemunerationBase,
       employeeInsuranceTotal:
         acc.employeeInsuranceTotal + row.employeeInsuranceTotal,
       incomeTaxTotal: acc.incomeTaxTotal + row.incomeTax,
@@ -421,6 +424,7 @@ function sumRows(rows: PayrollLedgerRow[]): PayrollLedgerSummary {
       performancePayTotal: 0,
       nonTaxableTotal: 0,
       taxableBaseTotal: 0,
+      insuranceRemunerationBaseTotal: 0,
       employeeInsuranceTotal: 0,
       incomeTaxTotal: 0,
       localIncomeTaxTotal: 0,

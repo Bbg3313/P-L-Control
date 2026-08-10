@@ -69,7 +69,8 @@ export function buildPayslipHtml(
     ...(row.performancePay > 0 ? ([["성과급", row.performancePay]] as [string, number][]) : []),
     ["비과세 수당", row.nonTaxable],
     ["총지급액", row.monthlyGross],
-    ["과세표준", row.taxableBase],
+    ["원천세 산정(과세표준)", row.taxableBase],
+    ["4대보험 산정(보수월액)", row.insuranceRemunerationBase],
   ];
 
   const deductLines: [string, number][] = [
