@@ -65,34 +65,40 @@ export function getYearMonthsFromRecords(records: FinancialRecord[]): string[] {
 }
 
 /**
- * 대시보드·급여대장 기본 보고 월 = 이번 달(달력).
- * 매출·비용 유무와 무관 — 과거 달은 월 네비로 이동.
+ * 대시보드·급여대장 기본 보고 월 = 전월.
+ * (예: 8월 → 7월분, 9/1~ → 8월분 — 급여·집계 마감 주기)
  */
 export function getSuggestedReportingMonth(
   _records: FinancialRecord[],
   current = getCurrentYearMonth()
 ): string {
-  return current;
+  return shiftYearMonth(current, -1);
 }
 
 /**
  * 저장된 보고 월 복원.
- * - 저장값이 이번 달 이상이면 그대로 사용
- * - 과거 달·없음·데이터 없는 달로 끌어내리기 → 이번 달
+ * - 기본은 전월 (8월→7월, 9월→8월)
+ * - 달력 이번 달만 저장된 값은 전월 주기로 보고 전월로 맞춤
+ * - 전월보다 앞선 달(수동 이동)은 유지
  */
 export function resolveReportingMonth(
   records: FinancialRecord[],
   saved: string | null,
   current = getCurrentYearMonth()
 ): string {
+  const defaultMonth = getSuggestedReportingMonth(records, current);
   const savedValid =
     saved && /^\d{4}-\d{2}$/.test(saved) ? saved : null;
 
-  if (savedValid && savedValid >= current) {
+  if (
+    savedValid &&
+    savedValid >= defaultMonth &&
+    savedValid !== current
+  ) {
     return savedValid;
   }
 
-  return getSuggestedReportingMonth(records, current);
+  return defaultMonth;
 }
 
 export function shiftYearMonth(yearMonth: string, delta: number): string {
