@@ -3,6 +3,7 @@ import { getBasicPay } from "@/lib/payroll-ledger";
 import {
   getPayrollCompanyForPerson,
   getPayrollCompanyLabel,
+  type PayrollCompanyId,
 } from "@/lib/payroll-ledger";
 import { formatNumber } from "@/lib/format";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
@@ -10,6 +11,12 @@ import { PAYROLL_CORPORATE_SEAL_DATA_URI } from "@/lib/payroll-corporate-seal";
 
 /** 실물 법인인감 외경 기준 (mm) */
 const CORPORATE_SEAL_SIZE_MM = 20;
+
+/** 명세서 상·하단 법인명 */
+function getPayslipCompanyLegalName(companyId: PayrollCompanyId): string {
+  if (companyId === "goldfender") return "(주)골드펜더";
+  return "(주)블루브릿지글로벌";
+}
 
 function periodLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
@@ -57,7 +64,7 @@ export function buildPayslipHtml(
   sequenceNo: number
 ): string {
   const period = periodLabel(ledger.yearMonth);
-  const company = escapeHtml(ledger.companyLabel);
+  const company = escapeHtml(getPayslipCompanyLegalName(ledger.companyId));
   const name = escapeHtml(formatPersonnelDisplayName(row.name));
   const affiliation = escapeHtml(
     getPayrollCompanyLabel(getPayrollCompanyForPerson(row.name))
