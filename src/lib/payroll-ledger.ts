@@ -11,7 +11,7 @@ import {
   isOverseasTeam,
   type PersonnelEntry,
 } from "@/lib/personnel";
-import { buildPayrollRowNote } from "@/lib/payroll-personnel-notes";
+import { buildPayrollRowNote, normalizePayrollNoteOverride } from "@/lib/payroll-personnel-notes";
 import { applyPersonnelReferenceSalary } from "@/lib/personnel-reference-salaries";
 import {
   calcEmployerContributionsFromInsuranceBase,
@@ -350,9 +350,13 @@ function buildDomesticRow(
   if (employmentExempt) notes.push("고용보험 미가입");
   if (youthEligible) notes.push("청년소득세 90% 감면");
 
-  const noteOverridden = noteOverride !== undefined;
+  const normalizedOverride = normalizePayrollNoteOverride(
+    resolved.name,
+    noteOverride
+  );
+  const noteOverridden = normalizedOverride !== undefined;
   const note = noteOverridden
-    ? noteOverride.trim()
+    ? normalizedOverride
     : buildPayrollRowNote(notes, resolved.name);
 
   return {

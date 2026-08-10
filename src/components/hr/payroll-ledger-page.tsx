@@ -67,8 +67,33 @@ import {
   type PayrollNoteOverrides,
   type PayrollPerformancePayOverrides,
 } from "@/lib/payroll-ledger-store";
-import { getDefaultPayrollMemo } from "@/lib/payroll-personnel-notes";
+import {
+  getDefaultPayrollMemo,
+  normalizePayrollNoteOverride,
+} from "@/lib/payroll-personnel-notes";
 import { cn } from "@/lib/utils";
+
+function migrateNoteOverrides(
+  overrides: PayrollNoteOverrides
+): PayrollNoteOverrides {
+  let changed = false;
+  const next: PayrollNoteOverrides = {};
+  for (const [yearMonth, byPerson] of Object.entries(overrides)) {
+    const month: Record<string, string> = {};
+    for (const [personId, value] of Object.entries(byPerson)) {
+      const normalized = normalizePayrollNoteOverride(personId, value);
+      if (normalized === undefined) {
+        changed = true;
+        continue;
+      }
+      if (normalized !== value) changed = true;
+      month[personId] = normalized;
+    }
+    if (Object.keys(month).length > 0) next[yearMonth] = month;
+    else if (Object.keys(byPerson).length > 0) changed = true;
+  }
+  return changed ? next : overrides;
+}
 
 function parseAmount(value: string): number {
   const digits = value.replace(/[^\d]/g, "");
@@ -679,7 +704,10 @@ export function PayrollLedgerPage() {
 
   useEffect(() => {
     setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
-    setNoteOverrides(loadPayrollNoteOverrides());
+    const loadedNotes = loadPayrollNoteOverrides();
+    const migrated = migrateNoteOverrides(loadedNotes);
+    setNoteOverrides(migrated);
+    if (migrated !== loadedNotes) savePayrollNoteOverrides(migrated);
     setPersonnelEmails(loadPersonnelEmails());
     setOverridesReady(true);
   }, []);
