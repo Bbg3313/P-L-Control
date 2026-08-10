@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx-js-style";
 import type { PayrollLedgerResult, PayrollLedgerRow } from "@/lib/payroll-ledger";
 import { getBasicPay } from "@/lib/payroll-ledger";
-import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 import { formatNumber } from "@/lib/format";
 import { formatPersonnelDisplayName } from "@/lib/personnel";
 
@@ -214,7 +213,7 @@ function buildStyledSheet(ledger: PayrollLedgerResult): XLSX.WorkSheet {
   });
   mergeRow(ws, TITLE_ROW, 0, COL_COUNT - 1);
 
-  const subtitle = `${JUN_2026_INSURANCE_LABEL}  ·  단위: 원  ·  ${ledger.domestic.length}명`;
+  const subtitle = `단위: 원  ·  ${ledger.domestic.length}명`;
   setCell(ws, SUBTITLE_ROW, 0, subtitle, {
     font: baseFont(10, false, COLORS.subtitleText),
     fill: { fgColor: { rgb: COLORS.titleBg } },

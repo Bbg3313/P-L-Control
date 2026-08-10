@@ -42,7 +42,6 @@ import {
   buildPayrollLedger,
   getBasicPay,
   getTotalGrossPay,
-  JUN_2026_INSURANCE_LABEL,
   PAYROLL_COMPANY_OPTIONS,
   type PayrollCompanyId,
   type PayrollLedgerResult,
@@ -918,7 +917,7 @@ export function PayrollLedgerPage() {
               급여대장
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              고정 연봉 기준 · {JUN_2026_INSURANCE_LABEL} · 성수린·김소연·니키·정수민
+              고정 연봉 기준 · 성수린·김소연·니키·정수민
               성과급 입력 · 비고 셀 직접 수정 가능
             </p>
           </div>

@@ -10,7 +10,6 @@ import { PAYROLL_CORPORATE_SEAL_DATA_URI } from "@/lib/payroll-corporate-seal";
 
 /** 실물 법인인감 외경 기준 (mm) */
 const CORPORATE_SEAL_SIZE_MM = 20;
-import { JUN_2026_INSURANCE_LABEL } from "@/lib/social-insurance-jun-2026";
 
 function periodLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
@@ -391,7 +390,6 @@ export function buildPayslipHtml(
       <div class="notes">
         ${noteHtml}
         ${reliefHtml}
-        <p class="note">※ ${escapeHtml(JUN_2026_INSURANCE_LABEL)} 기준 산출</p>
       </div>
 
       <footer class="footer">
