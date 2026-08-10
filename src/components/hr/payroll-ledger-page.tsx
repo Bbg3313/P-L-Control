@@ -142,7 +142,7 @@ function MoneyCell({
   );
 }
 
-/** 원천세·4대보험 산정 기준을 괄호로 구분 표시 */
+/** 과세표준·보수월액 표시, 괄호에 용도(원천세·4대보험) */
 function RemunerationBaseCell({
   taxBase,
   insuranceBase,
@@ -152,9 +152,13 @@ function RemunerationBaseCell({
 }) {
   return (
     <div className="text-right text-[11px] leading-snug text-slate-700">
-      <div className="tabular-nums">(원천세 {formatNumber(taxBase)})</div>
       <div className="tabular-nums">
-        (4대보험 {formatNumber(insuranceBase)})
+        과세표준 {formatNumber(taxBase)}{" "}
+        <span className="text-muted-foreground">(원천세)</span>
+      </div>
+      <div className="tabular-nums">
+        보수월액 {formatNumber(insuranceBase)}{" "}
+        <span className="text-muted-foreground">(4대보험)</span>
       </div>
     </div>
   );

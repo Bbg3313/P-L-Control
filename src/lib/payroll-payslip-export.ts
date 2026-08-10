@@ -66,11 +66,9 @@ export function buildPayslipHtml(
 
   const payLines: [string, number][] = [
     ["기본급여", getBasicPay(row)],
-    ...(row.performancePay > 0 ? ([["성과급", row.performancePay]] as [string, number][]) : []),
-    ["비과세 수당", row.nonTaxable],
-    ["총지급액", row.monthlyGross],
-    ["원천세 산정(과세표준)", row.taxableBase],
-    ["4대보험 산정(보수월액)", row.insuranceRemunerationBase],
+    ...(row.performancePay > 0
+      ? ([["성과급", row.performancePay]] as [string, number][])
+      : []),
   ];
 
   const deductLines: [string, number][] = [
@@ -81,6 +79,25 @@ export function buildPayslipHtml(
     ["소득세", row.incomeTax],
     ["지방소득세", row.localIncomeTax],
   ];
+
+  const nonTaxNote =
+    row.nonTaxable > 0
+      ? `<p class="note">※ 비과세 수당 ${formatNumber(row.nonTaxable)}원은 지급액에 포함되며, 원천세·4대보험 산정 시 제외합니다.</p>`
+      : "";
+
+  const basisHtml = `<div class="basis-box">
+        <div class="basis-title">산정 참고 (지급액 아님)</div>
+        <div class="basis-grid">
+          <div>
+            <span class="basis-label">과세표준 <span class="basis-use">(원천세)</span></span>
+            <span class="basis-value">${formatNumber(row.taxableBase)}</span>
+          </div>
+          <div>
+            <span class="basis-label">보수월액 <span class="basis-use">(4대보험)</span></span>
+            <span class="basis-value">${formatNumber(row.insuranceRemunerationBase)}</span>
+          </div>
+        </div>
+      </div>`;
 
   const noteHtml = row.note
     ? `<p class="note">※ ${escapeHtml(row.note)}</p>`
@@ -277,6 +294,38 @@ export function buildPayslipHtml(
       line-height: 1.6;
     }
     .note { margin: 4px 0 0; }
+    .basis-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .basis-title {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .basis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      font-size: 10pt;
+    }
+    .basis-grid > div {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .basis-label { color: #475569; }
+    .basis-use { color: #94a3b8; font-weight: 500; }
+    .basis-value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #334155;
+    }
     .footer {
       margin-top: 28px;
       padding-top: 20px;
@@ -387,7 +436,10 @@ export function buildPayslipHtml(
         </span>
       </div>
 
+      ${basisHtml}
+
       <div class="notes">
+        ${nonTaxNote}
         ${noteHtml}
         ${reliefHtml}
         <p class="note">※ ${escapeHtml(JUN_2026_INSURANCE_LABEL)} 기준 산출</p>

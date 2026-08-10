@@ -12,8 +12,8 @@ const LEADING_HEADERS = [
   "성과급",
   "비과세",
   "총지급액",
-  "원천세(과세표준)",
-  "4대보험(보수월액)",
+  "과세표준(원천세)",
+  "보수월액(4대보험)",
 ] as const;
 
 const DEDUCTION_HEADERS = ["국민", "건강", "장기", "고용"] as const;
