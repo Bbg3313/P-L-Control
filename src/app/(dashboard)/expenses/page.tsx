@@ -1,5 +1,5 @@
-import { ExpensesPage } from "@/components/expenses/expenses-page";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <ExpensesPage />;
+export default function ExpensesPage() {
+  redirect("/hr/payroll");
 }

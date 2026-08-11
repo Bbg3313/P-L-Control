@@ -12,7 +12,7 @@ const pretendard = localFont({
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "블루브릿지글로벌 매출·비용·경영관리 대시보드",
+  description: "블루브릿지글로벌 인사관리",
 };
 
 export default function RootLayout({

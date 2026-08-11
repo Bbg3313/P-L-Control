@@ -1,5 +1,5 @@
-import { RevenuePage } from "@/components/revenue/revenue-page";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <RevenuePage />;
+export default function RevenuePage() {
+  redirect("/hr/payroll");
 }

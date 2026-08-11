@@ -1,7 +1,7 @@
 import brandLogoImage from "../../public/bluebridge-global-logo.png";
 
 export const APP_COMPANY_NAME = "블루브릿지글로벌";
-export const APP_SUBTITLE = "경영관리";
+export const APP_SUBTITLE = "인사관리";
 /** 브라우저 탭·메타데이터용 */
 export const APP_NAME = `${APP_COMPANY_NAME} ${APP_SUBTITLE}`;
 /** 로그인 등 미인증 화면에서도 로드되도록 정적 import */

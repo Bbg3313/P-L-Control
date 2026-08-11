@@ -6,9 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
-  LayoutDashboard,
-  TrendingUp,
-  TrendingDown,
   Users,
   Settings,
   Wallet,
@@ -26,26 +23,9 @@ type NavItem = {
   exact?: boolean;
 };
 
+const HOME_HREF = "/hr/payroll";
+
 const navItems: NavItem[] = [
-  {
-    href: "/",
-    label: "대시보드",
-    icon: LayoutDashboard,
-    iconTone: "bg-indigo-100 text-indigo-600",
-    exact: true,
-  },
-  {
-    href: "/revenue",
-    label: "매출",
-    icon: TrendingUp,
-    iconTone: "bg-emerald-100 text-emerald-600",
-  },
-  {
-    href: "/expenses",
-    label: "비용",
-    icon: TrendingDown,
-    iconTone: "bg-rose-100 text-rose-600",
-  },
   {
     href: "/hr",
     label: "근로계약",
@@ -90,7 +70,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
       <Link
-        href="/"
+        href={HOME_HREF}
         className="flex items-center gap-3 border-b border-sidebar-border px-4 py-5 transition-colors hover:bg-sidebar-accent/40"
       >
         <Image
