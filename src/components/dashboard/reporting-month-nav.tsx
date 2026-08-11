@@ -7,6 +7,7 @@ import { useFinancial } from "@/contexts/financial-context";
 import {
   formatPeriodLabel,
   getReportingMonthOptions,
+  REPORTING_MONTH_MIN,
   shiftYearMonth,
 } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,8 @@ export function ReportingMonthNav({
     [records, reportingMonth]
   );
 
+  const canGoPrev = reportingMonth > REPORTING_MONTH_MIN;
+
   if (!hydrated) return null;
 
   return (
@@ -49,6 +52,7 @@ export function ReportingMonthNav({
           size="icon-sm"
           className={cn("shrink-0", compact && "h-8 w-8")}
           aria-label="이전 달"
+          disabled={!canGoPrev}
           onClick={() =>
             setReportingMonth(shiftYearMonth(reportingMonth, -1))
           }

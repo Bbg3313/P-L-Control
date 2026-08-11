@@ -13,6 +13,7 @@ import {
   DASHBOARD_CHART_START_MONTH,
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
+  REPORTING_MONTH_MIN,
 } from "./constants";
 import { getExpenseDisplayCategory } from "./expense-category-groups";
 import { getRevenueDetailCategoryLabel } from "./revenue-detail-categories";
@@ -28,10 +29,16 @@ import {
 export {
   OPERATING_RESERVE_LOOKBACK_MONTHS,
   OPERATING_RESERVE_MONTHS,
+  REPORTING_MONTH_MIN,
 };
 
 function parseYearMonth(date: string): string {
   return date.slice(0, 7);
+}
+
+export function clampReportingMonth(yearMonth: string): string {
+  if (!/^\d{4}-\d{2}$/.test(yearMonth)) return REPORTING_MONTH_MIN;
+  return yearMonth < REPORTING_MONTH_MIN ? REPORTING_MONTH_MIN : yearMonth;
 }
 
 function sumByMonth(
@@ -67,12 +74,13 @@ export function getYearMonthsFromRecords(records: FinancialRecord[]): string[] {
 /**
  * 대시보드·급여대장 기본 보고 월 = 전월.
  * (예: 8월 → 7월분, 9/1~ → 8월분 — 급여·집계 마감 주기)
+ * 최소 월(2026-06) 미만으로는 내려가지 않음.
  */
 export function getSuggestedReportingMonth(
   _records: FinancialRecord[],
   current = getCurrentYearMonth()
 ): string {
-  return shiftYearMonth(current, -1);
+  return clampReportingMonth(shiftYearMonth(current, -1));
 }
 
 /**
@@ -80,6 +88,7 @@ export function getSuggestedReportingMonth(
  * - 기본은 전월 (8월→7월, 9월→8월)
  * - 달력 이번 달만 저장된 값은 전월 주기로 보고 전월로 맞춤
  * - 전월보다 앞선 달(수동 이동)은 유지
+ * - 2026-06 미만은 2026-06으로 맞춤
  */
 export function resolveReportingMonth(
   records: FinancialRecord[],
@@ -95,7 +104,7 @@ export function resolveReportingMonth(
     savedValid >= defaultMonth &&
     savedValid !== current
   ) {
-    return savedValid;
+    return clampReportingMonth(savedValid);
   }
 
   return defaultMonth;
@@ -107,14 +116,17 @@ export function shiftYearMonth(yearMonth: string, delta: number): string {
   return getCurrentYearMonth(d);
 }
 
-/** 집계 월 빠른 선택 목록 (선택 월 + 데이터 있는 달) */
+/** 집계 월 빠른 선택 목록 (선택 월 + 데이터 있는 달, 최소 월 이상만) */
 export function getReportingMonthOptions(
   records: FinancialRecord[],
   reportingMonth: string
 ): string[] {
-  const months = getYearMonthsFromRecords(records);
-  if (!months.includes(reportingMonth)) {
-    months.push(reportingMonth);
+  const months = getYearMonthsFromRecords(records).filter(
+    (ym) => ym >= REPORTING_MONTH_MIN
+  );
+  const clamped = clampReportingMonth(reportingMonth);
+  if (!months.includes(clamped)) {
+    months.push(clamped);
   }
   return months.sort((a, b) => b.localeCompare(a));
 }

@@ -10,6 +10,9 @@ export const OPERATING_RESERVE_LOOKBACK_MONTHS = 3;
 /** 대시보드 차트·누적 집계 시작 월 */
 export const DASHBOARD_CHART_START_MONTH = "2026-05";
 
+/** 집계·급여대장 선택 가능 최소 월 (이 이전은 미사용) */
+export const REPORTING_MONTH_MIN = "2026-06";
+
 export const STORAGE_KEY = "pl-control-records-v2";
 
 export const REPORTING_MONTH_STORAGE_KEY = "pl-control-reporting-month";

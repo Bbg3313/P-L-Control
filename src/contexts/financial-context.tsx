@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import {
+  clampReportingMonth,
   getCurrentYearMonth,
   getOperatingReserve,
   resolveReportingMonth,
@@ -111,9 +112,10 @@ export function FinancialProvider({ children }: { children: React.ReactNode }) {
 
   const setReportingMonth = useCallback((yearMonth: string) => {
     if (!/^\d{4}-\d{2}$/.test(yearMonth)) return;
-    setReportingMonthState(yearMonth);
+    const next = clampReportingMonth(yearMonth);
+    setReportingMonthState(next);
     if (typeof window !== "undefined") {
-      localStorage.setItem(REPORTING_MONTH_STORAGE_KEY, yearMonth);
+      localStorage.setItem(REPORTING_MONTH_STORAGE_KEY, next);
     }
   }, []);
 
