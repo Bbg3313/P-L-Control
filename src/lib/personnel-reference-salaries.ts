@@ -16,6 +16,10 @@ export const PERSONNEL_REFERENCE_SALARIES: Record<
   아리: { mode: "salary", annual: 30_000_000 },
   김소연: { mode: "salary", annual: 40_000_000 },
   정수민: { mode: "salary", annual: 27_000_000 },
+  /** 보수월액 + 비과세 20만 = 월 총지급 */
+  김영창: { mode: "direct", monthly: 1_983_900 },
+  서미희: { mode: "direct", monthly: 1_983_900 },
+  이정석: { mode: "direct", monthly: 3_165_250 },
   태국현지팀: { mode: "direct", monthly: 4_000_000 },
   베트남현지팀: { mode: "direct", monthly: 1_000_000 },
 };

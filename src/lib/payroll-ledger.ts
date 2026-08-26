@@ -7,6 +7,7 @@ import {
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import {
   isEmploymentInsuranceExempt,
+  isIndustrialAccidentExempt,
   isOnPayrollForMonth,
   isOverseasTeam,
   type PersonnelEntry,
@@ -189,6 +190,19 @@ function withoutEmployerEmploymentInsurance(
   };
 }
 
+function withoutEmployerIndustrialAccident(
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
+) {
+  if (employer.industrialAccidentEmployer === 0) return employer;
+  return {
+    ...employer,
+    industrialAccidentEmployer: 0,
+    totalEmployerContributions:
+      employer.totalEmployerContributions -
+      employer.industrialAccidentEmployer,
+  };
+}
+
 /** 골드펜더: 건강·장기요양만 십원 미만 절사 */
 function applyGoldfenderHealthLtcTruncate(
   employee: EmployeeInsuranceBreakdown,
@@ -319,6 +333,10 @@ function buildDomesticRow(
     employee = withoutEmployeeEmploymentInsurance(employee);
     employer = withoutEmployerEmploymentInsurance(employer);
   }
+  const industrialExempt = isIndustrialAccidentExempt(resolved.name);
+  if (industrialExempt) {
+    employer = withoutEmployerIndustrialAccident(employer);
+  }
   const youthEligible = isYouthIncomeTaxReliefEligible(resolved.name);
 
   let incomeTax = 0;
@@ -348,6 +366,7 @@ function buildDomesticRow(
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
   if (employmentExempt) notes.push("고용보험 미가입");
+  if (industrialExempt) notes.push("산재보험 제외");
   if (youthEligible) notes.push("청년소득세 90% 감면");
 
   const normalizedOverride = normalizePayrollNoteOverride(

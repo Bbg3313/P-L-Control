@@ -42,6 +42,9 @@ export const FIXED_PERSONNEL_NAMES = [
   "아리",
   "김소연",
   "정수민",
+  "김영창",
+  "서미희",
+  "이정석",
   "태국현지팀",
   "베트남현지팀",
 ] as const;
@@ -71,12 +74,48 @@ export function isOverseasTeam(name: string): boolean {
   return OVERSEAS_TEAM_NAMES.has(name);
 }
 
-/** D-10 등 고용보험 미가입 대상 */
+/** 법인 대표이사 — 고용·산재 제외, 국민연금·건강·장기요양·원천세는 적용 */
+const REPRESENTATIVE_DIRECTOR_NAMES = new Set<string>(["이정석"]);
+
+export function isRepresentativeDirector(name: string): boolean {
+  return REPRESENTATIVE_DIRECTOR_NAMES.has(name);
+}
+
+/** D-10·대표이사 등 고용보험 미가입 대상 */
 const EMPLOYMENT_INSURANCE_EXEMPT_NAMES = new Set<string>(["아리"]);
 
 export function isEmploymentInsuranceExempt(name: string): boolean {
-  return EMPLOYMENT_INSURANCE_EXEMPT_NAMES.has(name);
+  return (
+    EMPLOYMENT_INSURANCE_EXEMPT_NAMES.has(name) ||
+    isRepresentativeDirector(name)
+  );
 }
+
+/** 대표이사 — 산재보험 당연가입 대상 아님(특례가입 별도) */
+export function isIndustrialAccidentExempt(name: string): boolean {
+  return isRepresentativeDirector(name);
+}
+
+/** 급여 미지급 명단 — 급여대장에는 표시, 인건비(비용) 합계에는 미포함 */
+const UNPAID_PAYROLL_PERSONNEL_NAMES = new Set<string>([
+  "김영창",
+  "서미희",
+  "이정석",
+]);
+
+export function isUnpaidPayrollPersonnel(name: string): boolean {
+  return UNPAID_PAYROLL_PERSONNEL_NAMES.has(name);
+}
+
+/**
+ * 첫 급여 반영 월 (해당 월 포함).
+ * 예: 김영창 2026-08 → 8월부터 급여대장 표시
+ */
+export const PERSONNEL_FIRST_PAYROLL_MONTH: Record<string, string> = {
+  김영창: "2026-08",
+  서미희: "2026-08",
+  이정석: "2026-08",
+};
 
 /**
  * 마지막 급여 반영 월 (해당 월 포함).
@@ -87,9 +126,11 @@ export const PERSONNEL_LAST_PAYROLL_MONTH: Record<string, string> = {
 };
 
 export function isOnPayrollForMonth(name: string, yearMonth: string): boolean {
+  const first = PERSONNEL_FIRST_PAYROLL_MONTH[name];
+  if (first && yearMonth < first) return false;
   const last = PERSONNEL_LAST_PAYROLL_MONTH[name];
-  if (!last) return true;
-  return yearMonth <= last;
+  if (last && yearMonth > last) return false;
+  return true;
 }
 
 /** UI·명세서 표시용 로마자/영문 이름 */
@@ -151,6 +192,8 @@ function normalizePersonnelEntry(
 }
 
 export function getPersonnelMonthlyCost(entry: PersonnelEntry): number {
+  if (isUnpaidPayrollPersonnel(entry.name)) return 0;
+
   if (isOverseasTeam(entry.name)) {
     return getOverseasMonthlyKrw(entry);
   }
@@ -205,6 +248,13 @@ export function getPersonnelSalaryBreakdown(
     employer.employmentEmployer = 0;
     employer.totalEmployerContributions -= employerEmployment;
     employer.totalMonthlyEmployerCost -= employerEmployment;
+  }
+
+  if (isIndustrialAccidentExempt(entry.name)) {
+    const industrial = employer.industrialAccidentEmployer;
+    employer.industrialAccidentEmployer = 0;
+    employer.totalEmployerContributions -= industrial;
+    employer.totalMonthlyEmployerCost -= industrial;
   }
 
   const youthTaxRelief = isYouthIncomeTaxReliefEligible(entry.name)
