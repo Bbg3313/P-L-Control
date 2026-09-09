@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancial } from "@/contexts/financial-context";
-import { formatPeriodLabel } from "@/lib/calculations";
 import {
   DEFAULT_PAYROLL_FROM_EMAIL,
   DEFAULT_PAYROLL_FROM_NAME,
@@ -36,7 +35,7 @@ const selectClassName =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function PayslipMailManagePage() {
-  const { personnel, reportingMonth, hydrated } = useFinancial();
+  const { personnel, hydrated } = useFinancial();
   const [entries, setEntries] = useState<PersonnelEmailEntry[]>([]);
   const [ready, setReady] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -54,14 +53,13 @@ export function PayslipMailManagePage() {
     [entries]
   );
 
-  /** 현재 집계 월 기준 급여대장(블루브릿지·골드펜더) 명단 중 미등록분 */
+  /** 급여대장 등록 인원(블루브릿지·골드펜더, 월 무관) 중 미등록분 */
   const availableNames = useMemo(() => {
     const onLedger = new Set<string>();
     for (const company of PAYROLL_COMPANY_OPTIONS) {
       for (const entry of filterPersonnelByPayrollCompany(
         personnel,
-        company.id,
-        reportingMonth
+        company.id
       )) {
         onLedger.add(entry.name);
       }
@@ -70,7 +68,7 @@ export function PayslipMailManagePage() {
     return Array.from(onLedger)
       .filter((name) => !registered.has(name))
       .sort((a, b) => a.localeCompare(b, "ko"));
-  }, [personnel, reportingMonth, entries]);
+  }, [personnel, entries]);
 
   useEffect(() => {
     if (newName && !availableNames.includes(newName)) {
@@ -150,7 +148,7 @@ export function PayslipMailManagePage() {
           <h2 className="text-sm font-semibold text-slate-900">인원 추가</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {hydrated
-              ? `${formatPeriodLabel(reportingMonth)} 급여대장 명단에서 선택합니다.`
+              ? "급여대장에 등록된 인원 전체에서 선택합니다. (9월 신규 등 포함)"
               : "급여대장 명단을 불러오는 중…"}
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
