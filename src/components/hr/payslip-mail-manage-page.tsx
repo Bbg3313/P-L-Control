@@ -5,10 +5,16 @@ import { Loader2, Mail, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFinancial } from "@/contexts/financial-context";
+import { formatPeriodLabel } from "@/lib/calculations";
 import {
   DEFAULT_PAYROLL_FROM_EMAIL,
   DEFAULT_PAYROLL_FROM_NAME,
 } from "@/lib/payroll-email-constants";
+import {
+  filterPersonnelByPayrollCompany,
+  PAYROLL_COMPANY_OPTIONS,
+} from "@/lib/payroll-ledger";
 import {
   loadPersonnelEmailEntries,
   removePersonnelEmailEntry,
@@ -26,7 +32,11 @@ function isLikelyEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+const selectClassName =
+  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50";
+
 export function PayslipMailManagePage() {
+  const { personnel, reportingMonth, hydrated } = useFinancial();
   const [entries, setEntries] = useState<PersonnelEmailEntry[]>([]);
   const [ready, setReady] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -40,10 +50,33 @@ export function PayslipMailManagePage() {
   }, []);
 
   const sortedEntries = useMemo(
-    () =>
-      [...entries].sort((a, b) => a.name.localeCompare(b.name, "ko")),
+    () => [...entries].sort((a, b) => a.name.localeCompare(b.name, "ko")),
     [entries]
   );
+
+  /** 현재 집계 월 기준 급여대장(블루브릿지·골드펜더) 명단 중 미등록분 */
+  const availableNames = useMemo(() => {
+    const onLedger = new Set<string>();
+    for (const company of PAYROLL_COMPANY_OPTIONS) {
+      for (const entry of filterPersonnelByPayrollCompany(
+        personnel,
+        company.id,
+        reportingMonth
+      )) {
+        onLedger.add(entry.name);
+      }
+    }
+    const registered = new Set(entries.map((e) => e.name));
+    return Array.from(onLedger)
+      .filter((name) => !registered.has(name))
+      .sort((a, b) => a.localeCompare(b, "ko"));
+  }, [personnel, reportingMonth, entries]);
+
+  useEffect(() => {
+    if (newName && !availableNames.includes(newName)) {
+      setNewName("");
+    }
+  }, [availableNames, newName]);
 
   function persist(next: PersonnelEmailEntry[]) {
     setEntries(next);
@@ -57,7 +90,13 @@ export function PayslipMailManagePage() {
     const name = newName.trim();
     const email = newEmail.trim();
     if (!name) {
-      setError("이름을 입력해 주세요.");
+      setError("급여대장 명단에서 이름을 선택해 주세요.");
+      return;
+    }
+    if (!availableNames.includes(name)) {
+      setError(
+        "선택한 인원은 현재 급여대장 명단에 없거나 이미 등록되어 있습니다."
+      );
       return;
     }
     if (!email) {
@@ -66,10 +105,6 @@ export function PayslipMailManagePage() {
     }
     if (!isLikelyEmail(email)) {
       setError("이메일 형식을 확인해 주세요.");
-      return;
-    }
-    if (entries.some((e) => e.name === name)) {
-      setError(`「${name}」은(는) 이미 목록에 있습니다. 이메일을 수정하세요.`);
       return;
     }
     persist(upsertPersonnelEmailEntry(entries, name, email));
@@ -114,23 +149,34 @@ export function PayslipMailManagePage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">인원 추가</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            급여대장에 있는 이름과 같아야 해당 월 명세서가 발송됩니다.
+            {hydrated
+              ? `${formatPeriodLabel(reportingMonth)} 급여대장 명단에서 선택합니다.`
+              : "급여대장 명단을 불러오는 중…"}
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
             <div className="space-y-1.5">
               <Label htmlFor="payslip-new-name">이름</Label>
-              <Input
+              <select
                 id="payslip-new-name"
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="김하은"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAdd();
-                  }
+                disabled={!hydrated || availableNames.length === 0}
+                onChange={(e) => {
+                  setError(null);
+                  setNewName(e.target.value);
                 }}
-              />
+                className={selectClassName}
+              >
+                <option value="">
+                  {availableNames.length === 0
+                    ? "추가할 인원이 없습니다"
+                    : "급여대장에서 선택"}
+                </option>
+                {availableNames.map((name) => (
+                  <option key={name} value={name}>
+                    {formatPersonnelDisplayName(name)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="payslip-new-email">이메일</Label>
@@ -140,6 +186,7 @@ export function PayslipMailManagePage() {
                 inputMode="email"
                 autoComplete="email"
                 value={newEmail}
+                disabled={availableNames.length === 0}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="name@example.com"
                 onKeyDown={(e) => {
@@ -151,7 +198,12 @@ export function PayslipMailManagePage() {
               />
             </div>
             <div className="flex items-end">
-              <Button type="button" className="w-full sm:w-auto" onClick={handleAdd}>
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                disabled={availableNames.length === 0}
+                onClick={handleAdd}
+              >
                 <Plus data-icon="inline-start" />
                 추가
               </Button>
