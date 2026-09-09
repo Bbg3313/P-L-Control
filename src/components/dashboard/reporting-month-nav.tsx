@@ -37,13 +37,13 @@ export function ReportingMonthNav({
   if (!hydrated) return null;
 
   return (
-    <div className={cn("w-full min-w-0 space-y-3", className)}>
+    <div className={cn("min-w-0", className)}>
       <div
         className={cn(
-          "w-full items-center gap-1",
+          "items-center gap-1",
           compact
-            ? "grid grid-cols-[2rem_minmax(0,1fr)_2rem]"
-            : "flex"
+            ? "grid w-full grid-cols-[2rem_minmax(0,1fr)_2rem]"
+            : "flex w-auto"
         )}
       >
         <Button
@@ -92,7 +92,7 @@ export function ReportingMonthNav({
       </div>
 
       {showQuickMonths && monthOptions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {monthOptions.map((ym) => {
             const active = ym === reportingMonth;
             return (

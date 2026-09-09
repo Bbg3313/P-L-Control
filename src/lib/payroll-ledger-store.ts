@@ -174,3 +174,48 @@ export function setPerformancePayOverride(
 ): PayrollPerformancePayOverrides {
   return setMonthPersonOverride(overrides, yearMonth, personId, value);
 }
+
+export interface PayrollOverridesSnapshot {
+  performancePay: PayrollPerformancePayOverrides;
+  notes: PayrollNoteOverrides;
+  updatedAt: string;
+}
+
+/** local을 채우고 cloud가 같은 키면 cloud 우선 */
+export function mergePayrollOverrides(
+  cloud: PayrollOverridesSnapshot,
+  local: PayrollOverridesSnapshot
+): PayrollOverridesSnapshot {
+  const monthsPay = Array.from(
+    new Set([
+      ...Object.keys(local.performancePay),
+      ...Object.keys(cloud.performancePay),
+    ])
+  );
+  const performancePay: PayrollPerformancePayOverrides = {};
+  for (const m of monthsPay) {
+    const merged = {
+      ...(local.performancePay[m] ?? {}),
+      ...(cloud.performancePay[m] ?? {}),
+    };
+    if (Object.keys(merged).length > 0) performancePay[m] = merged;
+  }
+
+  const monthsNotes = Array.from(
+    new Set([...Object.keys(local.notes), ...Object.keys(cloud.notes)])
+  );
+  const notes: PayrollNoteOverrides = {};
+  for (const m of monthsNotes) {
+    const merged = {
+      ...(local.notes[m] ?? {}),
+      ...(cloud.notes[m] ?? {}),
+    };
+    if (Object.keys(merged).length > 0) notes[m] = merged;
+  }
+
+  return {
+    performancePay,
+    notes,
+    updatedAt: new Date().toISOString(),
+  };
+}

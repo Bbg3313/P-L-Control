@@ -92,26 +92,24 @@ function EmployeeCard({
   return (
     <article className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
-                <UserRound className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="truncate text-lg font-semibold text-slate-900">
-                  {record.name}
-                </h2>
-                <p className="truncate text-sm text-slate-600">
-                  {[record.position, record.department].filter(Boolean).join(" · ") ||
-                    "직위·소속 미입력"}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+              <UserRound className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="break-words text-lg font-semibold leading-snug text-slate-900">
+                {record.name}
+              </h2>
+              <p className="mt-0.5 break-words text-sm text-slate-600">
+                {[record.position, record.department].filter(Boolean).join(" · ") ||
+                  "직위·소속 미입력"}
+              </p>
+              {tenure && (
+                <p className="mt-1 text-sm font-medium text-violet-700">
+                  {tenure}
                 </p>
-                {tenure && (
-                  <p className="mt-1 text-sm font-medium text-violet-700">
-                    {tenure}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
           <span

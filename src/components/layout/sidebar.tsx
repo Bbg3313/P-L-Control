@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
+  Mail,
   Users,
   Settings,
   Wallet,
@@ -50,6 +51,12 @@ const navItems: NavItem[] = [
     label: "급여대장",
     icon: Wallet,
     iconTone: "bg-amber-100 text-amber-600",
+  },
+  {
+    href: "/hr/payslip-mail",
+    label: "명세서 발송",
+    icon: Mail,
+    iconTone: "bg-rose-100 text-rose-600",
   },
   {
     href: "/settings",

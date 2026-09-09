@@ -42,6 +42,7 @@ export const FIXED_PERSONNEL_NAMES = [
   "아리",
   "김소연",
   "정수민",
+  "김하은",
   "김영창",
   "서미희",
   "이정석",
@@ -112,6 +113,7 @@ export function isUnpaidPayrollPersonnel(name: string): boolean {
  * 예: 김영창 2026-08 → 8월부터 급여대장 표시
  */
 export const PERSONNEL_FIRST_PAYROLL_MONTH: Record<string, string> = {
+  김하은: "2026-09",
   김영창: "2026-08",
   서미희: "2026-08",
   이정석: "2026-08",
@@ -138,6 +140,7 @@ const PERSONNEL_ROMANIZED_NAMES: Record<string, string> = {
   니키: "타오검파차라폰",
   김소연: "트란띠킴",
   아리: "NGUTEN THI LOI",
+  김하은: "DUONG THI THU TRANG",
 };
 
 export function getPersonnelRomanizedName(name: string): string | undefined {

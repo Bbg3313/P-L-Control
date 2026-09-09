@@ -60,11 +60,13 @@ import {
 import {
   loadPayrollNoteOverrides,
   loadPayrollPerformancePayOverrides,
+  mergePayrollOverrides,
   savePayrollNoteOverrides,
   savePayrollPerformancePayOverrides,
   setNoteOverride,
   setPerformancePayOverride,
   type PayrollNoteOverrides,
+  type PayrollOverridesSnapshot,
   type PayrollPerformancePayOverrides,
 } from "@/lib/payroll-ledger-store";
 import {
@@ -72,6 +74,49 @@ import {
   normalizePayrollNoteOverride,
 } from "@/lib/payroll-personnel-notes";
 import { cn } from "@/lib/utils";
+
+async function fetchPayrollOverridesFromApi(): Promise<{
+  snapshot: PayrollOverridesSnapshot;
+  storageConfigured: boolean;
+  hasData: boolean;
+} | null> {
+  try {
+    const res = await fetch("/api/payroll/overrides", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as PayrollOverridesSnapshot & {
+      _meta?: { storageConfigured?: boolean; hasData?: boolean };
+    };
+    return {
+      snapshot: {
+        performancePay: data.performancePay ?? {},
+        notes: data.notes ?? {},
+        updatedAt: data.updatedAt ?? new Date().toISOString(),
+      },
+      storageConfigured: data._meta?.storageConfigured ?? false,
+      hasData: Boolean(data._meta?.hasData),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function savePayrollOverridesToApi(
+  snapshot: Pick<PayrollOverridesSnapshot, "performancePay" | "notes">
+): Promise<boolean> {
+  try {
+    const res = await fetch("/api/payroll/overrides", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        performancePay: snapshot.performancePay,
+        notes: snapshot.notes,
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 function migrateNoteOverrides(
   overrides: PayrollNoteOverrides
@@ -681,6 +726,7 @@ export function PayrollLedgerPage() {
     useState<PayrollPerformancePayOverrides>({});
   const [noteOverrides, setNoteOverrides] = useState<PayrollNoteOverrides>({});
   const [overridesReady, setOverridesReady] = useState(false);
+  const [cloudOverridesEnabled, setCloudOverridesEnabled] = useState(false);
   const [hrRecords, setHrRecords] = useState<HrEmployeeRecord[]>([]);
   const [personnelEmails, setPersonnelEmails] = useState<PersonnelEmails>({});
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -703,14 +749,85 @@ export function PayrollLedgerPage() {
   >(null);
 
   useEffect(() => {
-    setPerformancePayOverrides(loadPayrollPerformancePayOverrides());
-    const loadedNotes = loadPayrollNoteOverrides();
-    const migrated = migrateNoteOverrides(loadedNotes);
-    setNoteOverrides(migrated);
-    if (migrated !== loadedNotes) savePayrollNoteOverrides(migrated);
-    setPersonnelEmails(loadPersonnelEmails());
-    setOverridesReady(true);
+    let cancelled = false;
+
+    async function initOverrides() {
+      const localPerformance = loadPayrollPerformancePayOverrides();
+      const localNotesRaw = loadPayrollNoteOverrides();
+      const localNotes = migrateNoteOverrides(localNotesRaw);
+      if (localNotes !== localNotesRaw) {
+        savePayrollNoteOverrides(localNotes);
+      }
+
+      const localSnapshot: PayrollOverridesSnapshot = {
+        performancePay: localPerformance,
+        notes: localNotes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const api = await fetchPayrollOverridesFromApi();
+      if (cancelled) return;
+
+      if (api?.storageConfigured) {
+        const merged = mergePayrollOverrides(api.snapshot, localSnapshot);
+        setPerformancePayOverrides(merged.performancePay);
+        setNoteOverrides(merged.notes);
+        savePayrollPerformancePayOverrides(merged.performancePay);
+        savePayrollNoteOverrides(merged.notes);
+        setCloudOverridesEnabled(true);
+
+        const cloudEmpty = !api.hasData;
+        const localHasData =
+          Object.keys(localPerformance).length > 0 ||
+          Object.keys(localNotes).length > 0;
+        if (cloudEmpty && localHasData) {
+          void savePayrollOverridesToApi({
+            performancePay: merged.performancePay,
+            notes: merged.notes,
+          });
+        } else if (
+          JSON.stringify(merged.performancePay) !==
+            JSON.stringify(api.snapshot.performancePay) ||
+          JSON.stringify(merged.notes) !== JSON.stringify(api.snapshot.notes)
+        ) {
+          void savePayrollOverridesToApi({
+            performancePay: merged.performancePay,
+            notes: merged.notes,
+          });
+        }
+      } else {
+        setPerformancePayOverrides(localPerformance);
+        setNoteOverrides(localNotes);
+        setCloudOverridesEnabled(false);
+      }
+
+      setPersonnelEmails(loadPersonnelEmails());
+      setOverridesReady(true);
+    }
+
+    void initOverrides();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!overridesReady || !cloudOverridesEnabled) return;
+
+    const timer = setTimeout(() => {
+      void savePayrollOverridesToApi({
+        performancePay: performancePayOverrides,
+        notes: noteOverrides,
+      });
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [
+    performancePayOverrides,
+    noteOverrides,
+    overridesReady,
+    cloudOverridesEnabled,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -939,18 +1056,26 @@ export function PayrollLedgerPage() {
   return (
     <div className="payroll-ledger-page flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
       <header className="sticky top-0 z-30 w-full max-w-full shrink-0 border-b border-slate-200/80 bg-slate-50/95 px-4 pb-3 pt-4 shadow-sm backdrop-blur-sm md:px-6">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-base font-semibold tracking-tight text-slate-900">
-              급여대장
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-base font-semibold tracking-tight text-slate-900">
+                급여대장
+              </h1>
+              <span className="rounded-full border border-slate-900 bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">
+                {formatPeriodLabel(reportingMonth)}
+              </span>
+            </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              고정 연봉 기준 · 성수린·김소연·니키·정수민
-              성과급 입력 · 비고 셀 직접 수정 가능
+              고정 연봉 기준 · 성수린·김소연·니키·정수민 성과급 입력 · 비고 셀
+              직접 수정 가능
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <ReportingMonthNav className="w-full sm:w-auto" />
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            <ReportingMonthNav
+              showQuickMonths={false}
+              className="w-auto shrink-0"
+            />
             <Button
               type="button"
               variant="outline"
@@ -1031,11 +1156,14 @@ export function PayrollLedgerPage() {
 
         <Card className="overflow-hidden border-slate-200/90 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-white py-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Users className="h-4 w-4 text-indigo-600" />
               <CardTitle className="text-sm font-semibold">
                 {activeCompany.label} 급여 명세 ({ledger.domestic.length}명)
               </CardTitle>
+              <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                {formatPeriodLabel(reportingMonth)}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="p-0">

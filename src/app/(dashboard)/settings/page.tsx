@@ -1,47 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useFinancial } from "@/contexts/financial-context";
 import {
   DEFAULT_PAYROLL_FROM_EMAIL,
   DEFAULT_PAYROLL_FROM_NAME,
 } from "@/lib/payroll-email-constants";
-import {
-  FIXED_PERSONNEL_NAMES,
-  isOverseasTeam,
-} from "@/lib/personnel";
-import {
-  loadPersonnelEmails,
-  savePersonnelEmails,
-  setPersonnelEmail,
-  type PersonnelEmails,
-} from "@/lib/personnel-emails-store";
-
-const DOMESTIC_NAMES = FIXED_PERSONNEL_NAMES.filter(
-  (name) => !isOverseasTeam(name)
-);
 
 export default function SettingsPage() {
   const { syncStatus, hydrated } = useFinancial();
-  const [emails, setEmails] = useState<PersonnelEmails>({});
-  const [emailsReady, setEmailsReady] = useState(false);
-  const [savedFlash, setSavedFlash] = useState(false);
-
-  useEffect(() => {
-    setEmails(loadPersonnelEmails());
-    setEmailsReady(true);
-  }, []);
-
-  function persist(next: PersonnelEmails) {
-    setEmails(next);
-    savePersonnelEmails(next);
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1500);
-  }
 
   return (
     <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto pb-4">
@@ -139,61 +107,23 @@ export default function SettingsPage() {
             등록 후 Redeploy (로컬은{" "}
             <code className="rounded bg-muted px-1 text-xs">.env.local</code>)
           </li>
-          <li>아래 직원 이메일을 등록한 뒤 급여대장에서 일괄 발송</li>
+          <li>
+            「명세서 발송」 메뉴에서 수신 인원·메일을 관리한 뒤 급여대장에서
+            일괄 발송
+          </li>
         </ol>
         <p className="mt-2 text-xs text-muted-foreground">
           선택:{" "}
           <code className="rounded bg-muted px-1">PAYROLL_FROM_EMAIL</code>{" "}
           (기본 {DEFAULT_PAYROLL_FROM_EMAIL})
         </p>
-      </div>
-
-      <div className="rounded-lg border border-border/80 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-medium">직원 이메일</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              급여명세서 수신 주소 (이 브라우저에 저장)
-            </p>
-          </div>
-          {savedFlash ? (
-            <span className="text-xs text-emerald-700">저장됨</span>
-          ) : null}
-        </div>
-        {!emailsReady ? (
-          <p className="mt-3 text-sm text-muted-foreground">불러오는 중…</p>
-        ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {DOMESTIC_NAMES.map((name) => (
-              <div key={name} className="grid gap-1.5">
-                <Label htmlFor={`email-${name}`}>{name}</Label>
-                <Input
-                  id={`email-${name}`}
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  value={emails[name] ?? ""}
-                  onChange={(e) => {
-                    setEmails(setPersonnelEmail(emails, name, e.target.value));
-                  }}
-                  onBlur={(e) => {
-                    persist(setPersonnelEmail(emails, name, e.target.value));
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
         <div className="mt-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => persist(emails)}
+          <Link
+            href="/hr/payslip-mail"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
           >
-            이메일 저장
-          </Button>
+            명세서 발송 관리로 이동
+          </Link>
         </div>
       </div>
 
