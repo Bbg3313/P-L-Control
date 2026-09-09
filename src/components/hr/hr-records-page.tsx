@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,9 @@ import {
   statusBadgeClass,
 } from "@/lib/hr-records-utils";
 import { cn } from "@/lib/utils";
+
+/** 목록 탭 순서 — 기본은 재직 */
+const STATUS_TABS: EmploymentStatus[] = ["재직", "휴직", "퇴직"];
 
 function recordToInput(record: HrEmployeeRecord): HrEmployeeRecordInput {
   return {
@@ -201,7 +204,7 @@ function EmployeeForm({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="hr-status">재직</Label>
+        <Label htmlFor="hr-status">재직 상태</Label>
         <select
           id="hr-status"
           value={value.status}
@@ -300,6 +303,7 @@ function EmployeeForm({
 
 export function HrRecordsPage() {
   const [records, setRecords] = useState<HrEmployeeRecord[]>([]);
+  const [statusTab, setStatusTab] = useState<EmploymentStatus>("재직");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [storageConfigured, setStorageConfigured] = useState(true);
@@ -308,6 +312,23 @@ export function HrRecordsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<HrEmployeeRecordInput>(createEmptyHrEmployeeInput());
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<EmploymentStatus, number> = {
+      재직: 0,
+      휴직: 0,
+      퇴직: 0,
+    };
+    for (const record of records) {
+      counts[record.status] += 1;
+    }
+    return counts;
+  }, [records]);
+
+  const visibleRecords = useMemo(
+    () => records.filter((record) => record.status === statusTab),
+    [records, statusTab]
+  );
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -338,7 +359,7 @@ export function HrRecordsPage() {
 
   function openCreate() {
     setEditingId(null);
-    setForm(createEmptyHrEmployeeInput());
+    setForm({ ...createEmptyHrEmployeeInput(), status: statusTab });
     setDialogOpen(true);
   }
 
@@ -426,9 +447,40 @@ export function HrRecordsPage() {
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground tabular-nums">
-          등록 {records.length}명
-        </p>
+        <div
+          className="inline-flex w-full max-w-md rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:w-auto"
+          role="tablist"
+          aria-label="재직 상태"
+        >
+          {STATUS_TABS.map((status) => {
+            const active = statusTab === status;
+            return (
+              <button
+                key={status}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatusTab(status)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:px-4",
+                  active
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                {status}
+                <span
+                  className={cn(
+                    "tabular-nums text-xs",
+                    active ? "text-violet-100" : "text-slate-400"
+                  )}
+                >
+                  {statusCounts[status]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
         <Button
           type="button"
           disabled={!storageConfigured}
@@ -472,9 +524,21 @@ export function HrRecordsPage() {
             첫 직원 추가
           </Button>
         </div>
+      ) : visibleRecords.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+          <UserRound className="mx-auto h-10 w-10 text-slate-300" />
+          <p className="mt-4 text-sm font-medium text-slate-800">
+            {statusTab} 직원이 없습니다
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {statusTab === "재직"
+              ? "재직 중인 직원이 없거나, 퇴직·휴직으로만 등록되어 있습니다."
+              : `다른 탭에서 상태를 「${statusTab}」으로 바꾸면 여기에 표시됩니다.`}
+          </p>
+        </div>
       ) : (
         <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(260px,300px))] gap-4">
-          {records.map((record) => (
+          {visibleRecords.map((record) => (
             <EmployeeCard
               key={record.id}
               record={record}
