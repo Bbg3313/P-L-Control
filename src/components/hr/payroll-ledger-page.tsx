@@ -6,6 +6,7 @@ import {
   Download,
   FileDown,
   Landmark,
+  Loader2,
   Mail,
   PiggyBank,
   RotateCcw,
@@ -441,7 +442,7 @@ const PAYROLL_TRAILING_COLUMNS = [
   },
   { key: "totalCost", label: "총인건비", align: "right" as const, minWidth: "6rem" },
   { key: "note", label: "비고", align: "center" as const, minWidth: "11rem" },
-  { key: "payslip", label: "명세서", align: "center" as const, minWidth: "5rem" },
+  { key: "payslip", label: "명세서", align: "center" as const, minWidth: "9.5rem" },
 ] as const;
 
 const PAYROLL_TABLE_COLUMNS = [
@@ -481,20 +482,28 @@ function PayrollTable({
   summary,
   reportingMonth,
   companyId,
+  emails,
+  sendingName,
+  sendingLocked,
   onPerformancePayChange,
   onPerformancePayReset,
   onNoteChange,
   onNoteReset,
+  onSendPayslip,
 }: {
   rows: PayrollLedgerRow[];
   ledger: PayrollLedgerResult;
   summary: PayrollLedgerSummary;
   reportingMonth: string;
   companyId: PayrollCompanyId;
+  emails: PersonnelEmails;
+  sendingName: string | null;
+  sendingLocked: boolean;
   onPerformancePayChange: (id: string, value: number) => void;
   onPerformancePayReset: (id: string) => void;
   onNoteChange: (id: string, value: string) => void;
   onNoteReset: (id: string) => void;
+  onSendPayslip: (row: PayrollLedgerRow) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -628,18 +637,42 @@ function PayrollTable({
               />
             </PayrollTd>
             <PayrollTd align="center">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 px-2.5 text-xs"
-                onClick={() =>
-                  downloadPayrollPayslipExcel(ledger, row, index + 1)
-                }
-              >
-                <FileDown className="h-3.5 w-3.5" />
-                명세서
-              </Button>
+              <div className="flex items-center justify-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 px-2 text-xs"
+                  onClick={() =>
+                    downloadPayrollPayslipExcel(ledger, row, index + 1)
+                  }
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  저장
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 px-2 text-xs"
+                  disabled={
+                    sendingLocked || !emails[row.name]?.trim()
+                  }
+                  title={
+                    emails[row.name]?.trim()
+                      ? `${row.name} 명세서 메일 발송`
+                      : "이메일이 등록되지 않았습니다"
+                  }
+                  onClick={() => onSendPayslip(row)}
+                >
+                  {sendingName === row.name ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="h-3.5 w-3.5" />
+                  )}
+                  발송
+                </Button>
+              </div>
             </PayrollTd>
           </TableRow>
         ))}
@@ -731,6 +764,11 @@ export function PayrollLedgerPage() {
   const [personnelEmails, setPersonnelEmails] = useState<PersonnelEmails>({});
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingName, setSendingName] = useState<string | null>(null);
+  const [singleSendMessage, setSingleSendMessage] = useState<{
+    type: "ok" | "error";
+    text: string;
+  } | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendResults, setSendResults] = useState<
     | {
@@ -977,6 +1015,87 @@ export function PayrollLedgerPage() {
     setSendDialogOpen(true);
   }, []);
 
+  const handleSendOnePayslip = useCallback(
+    async (row: PayrollLedgerRow) => {
+      const latestEmails = loadPersonnelEmails();
+      setPersonnelEmails(latestEmails);
+      const email = latestEmails[row.name]?.trim();
+      if (!email) {
+        setSingleSendMessage({
+          type: "error",
+          text: `${formatPersonnelDisplayName(row.name)} 이메일이 등록되지 않았습니다.`,
+        });
+        return;
+      }
+      if (
+        !window.confirm(
+          `${formatPersonnelDisplayName(row.name)} (${email})에게 ${formatPeriodLabel(reportingMonth)} 명세서를 발송할까요?`
+        )
+      ) {
+        return;
+      }
+
+      setSendingName(row.name);
+      setSingleSendMessage(null);
+      try {
+        const emailsForMonth: Record<string, string> = { [row.name]: email };
+        const res = await fetch("/api/payroll/send-payslips", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            yearMonth: reportingMonth,
+            companyId,
+            emails: emailsForMonth,
+            names: [row.name],
+            performancePayOverrides: monthPerformancePayOverrides,
+            noteOverrides: monthNoteOverrides,
+            personnel,
+            hrByName,
+          }),
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          sentCount?: number;
+          results?: { name: string; ok: boolean; error?: string }[];
+        };
+        if (!res.ok) {
+          setSingleSendMessage({
+            type: "error",
+            text: data.error ?? "개별 발송에 실패했습니다.",
+          });
+          return;
+        }
+        const item = data.results?.[0];
+        if (item?.ok || (data.sentCount ?? 0) > 0) {
+          setSingleSendMessage({
+            type: "ok",
+            text: `${formatPersonnelDisplayName(row.name)}에게 명세서를 발송했습니다.`,
+          });
+        } else {
+          setSingleSendMessage({
+            type: "error",
+            text: item?.error ?? "개별 발송에 실패했습니다.",
+          });
+        }
+      } catch {
+        setSingleSendMessage({
+          type: "error",
+          text: "발송 요청에 실패했습니다. 네트워크를 확인해 주세요.",
+        });
+      } finally {
+        setSendingName(null);
+      }
+    },
+    [
+      reportingMonth,
+      companyId,
+      monthPerformancePayOverrides,
+      monthNoteOverrides,
+      personnel,
+      hrByName,
+    ]
+  );
+
   const handleSendPayslips = useCallback(async () => {
     setSending(true);
     setSendError(null);
@@ -1080,6 +1199,7 @@ export function PayrollLedgerPage() {
               type="button"
               variant="outline"
               onClick={openSendDialog}
+              disabled={sending || sendingName !== null}
               className="h-8 gap-1.5 px-3 text-sm"
             >
               <Mail className="h-3.5 w-3.5" />
@@ -1167,16 +1287,32 @@ export function PayrollLedgerPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {singleSendMessage ? (
+              <p
+                className={
+                  singleSendMessage.type === "ok"
+                    ? "mb-3 text-sm text-emerald-700"
+                    : "mb-3 text-sm text-destructive"
+                }
+                role={singleSendMessage.type === "ok" ? "status" : "alert"}
+              >
+                {singleSendMessage.text}
+              </p>
+            ) : null}
             <PayrollTable
               rows={ledger.domestic}
               ledger={ledger}
               summary={summary}
               reportingMonth={reportingMonth}
               companyId={companyId}
+              emails={personnelEmails}
+              sendingName={sendingName}
+              sendingLocked={sending || sendingName !== null}
               onPerformancePayChange={handlePerformancePayChange}
               onPerformancePayReset={handlePerformancePayReset}
               onNoteChange={handleNoteChange}
               onNoteReset={handleNoteReset}
+              onSendPayslip={(row) => void handleSendOnePayslip(row)}
             />
           </CardContent>
         </Card>
@@ -1218,7 +1354,7 @@ export function PayrollLedgerPage() {
             <p className="text-sm text-amber-800">
               발송할 이메일이 없습니다.{" "}
               <Link
-                href="/settings"
+                href="/hr/payslip-mail"
                 className="font-medium text-primary underline-offset-2 hover:underline"
               >
                 설정
@@ -1266,7 +1402,7 @@ export function PayrollLedgerPage() {
             <Button
               type="button"
               onClick={handleSendPayslips}
-              disabled={sending || sendableCount === 0}
+              disabled={sending || sendingName !== null || sendableCount === 0}
               className="gap-1.5"
             >
               <Mail className="h-3.5 w-3.5" />

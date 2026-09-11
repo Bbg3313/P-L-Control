@@ -34,6 +34,8 @@ type SendBody = {
   yearMonth?: string;
   companyId?: PayrollCompanyId;
   emails?: Record<string, string>;
+  /** 지정 시 해당 성명만 발송 */
+  names?: string[];
   performancePayOverrides?: Record<string, number>;
   noteOverrides?: Record<string, string>;
   personnel?: PersonnelEntry[];
@@ -127,6 +129,15 @@ export async function POST(request: Request) {
   const hrByName =
     body.hrByName && typeof body.hrByName === "object" ? body.hrByName : {};
 
+  const nameFilter = Array.isArray(body.names)
+    ? new Set(
+        body.names
+          .filter((name): name is string => typeof name === "string")
+          .map((name) => name.trim())
+          .filter(Boolean)
+      )
+    : null;
+
   const personnel = normalizePersonnel(body.personnel);
   const ledger = buildPayrollLedger(
     yearMonth,
@@ -138,9 +149,18 @@ export async function POST(request: Request) {
   );
 
   const results: PayslipSendResultItem[] = [];
+  const targets = ledger.domestic
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => !nameFilter || nameFilter.has(row.name));
 
-  for (let i = 0; i < ledger.domestic.length; i += 1) {
-    const row = ledger.domestic[i];
+  if (nameFilter && nameFilter.size > 0 && targets.length === 0) {
+    return NextResponse.json(
+      { error: "선택한 인원이 해당 월 급여대장에 없습니다." },
+      { status: 400 }
+    );
+  }
+
+  for (const { row, index } of targets) {
     const emailRaw = emailsIn[row.name];
     const email =
       typeof emailRaw === "string" ? emailRaw.trim() : "";
@@ -166,7 +186,7 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const html = buildPayslipHtml(ledger, row, i + 1);
+    const html = buildPayslipHtml(ledger, row, index + 1);
     const sent = await sendPayslipEmail({
       to: email,
       employeeName: row.name,
