@@ -45,10 +45,24 @@ export const VARIABLE_PAY_PERSONNEL_NAMES = [
   "김소연",
   "니키",
   "정수민",
+  "안효재",
 ] as const;
 
-export function isVariablePayPersonnel(name: string): boolean {
-  return (VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name);
+/** 성과급 입력 시작 월 (해당 월 포함). 없으면 전 기간 */
+const VARIABLE_PAY_FIRST_MONTH: Record<string, string> = {
+  안효재: "2026-08",
+};
+
+export function isVariablePayPersonnel(
+  name: string,
+  yearMonth?: string
+): boolean {
+  if (!(VARIABLE_PAY_PERSONNEL_NAMES as readonly string[]).includes(name)) {
+    return false;
+  }
+  const first = VARIABLE_PAY_FIRST_MONTH[name];
+  if (first && yearMonth && yearMonth < first) return false;
+  return true;
 }
 
 /** 4대보험 보수월액 = 기본급여 − 비과세 (성과급 미반영) */
@@ -293,7 +307,8 @@ function buildDomesticRow(
   hrMeta: { department: string; position: string },
   performancePayOverride = 0,
   noteOverride?: string,
-  companyId: PayrollCompanyId = "bluebridge"
+  companyId: PayrollCompanyId = "bluebridge",
+  yearMonth?: string
 ): PayrollLedgerRow {
   const resolved = resolvePersonnelForPayroll(entry);
   const nonTaxable = getMonthlyNonTaxableAllowance(resolved.name);
@@ -302,7 +317,10 @@ function buildDomesticRow(
       ? monthlyGrossFromSalary(resolved.salaryAmount, resolved.salaryBasis)
       : resolved.directMonthlyAmount;
 
-  const usesSplitPayrollCalc = isVariablePayPersonnel(resolved.name);
+  const usesSplitPayrollCalc = isVariablePayPersonnel(
+    resolved.name,
+    yearMonth
+  );
   const performancePay = usesSplitPayrollCalc
     ? Math.max(0, Math.floor(performancePayOverride))
     : 0;
@@ -483,7 +501,8 @@ export function buildPayrollLedger(
         hrMeta,
         performancePayOverrides[entry.id] ?? 0,
         noteOverrides[entry.id],
-        companyId
+        companyId,
+        yearMonth
       )
     );
   }

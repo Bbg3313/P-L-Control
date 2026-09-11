@@ -1067,8 +1067,8 @@ export function PayrollLedgerPage() {
               </span>
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              고정 연봉 기준 · 성수린·김소연·니키·정수민 성과급 입력 · 비고 셀
-              직접 수정 가능
+              고정 연봉 기준 · 성수린·김소연·니키·정수민·안효재(8월~) 성과급
+              입력 · 비고 셀 직접 수정 가능
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
