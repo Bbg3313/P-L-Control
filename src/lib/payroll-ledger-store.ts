@@ -1,3 +1,5 @@
+import { renamePersonKeysByMonth } from "@/lib/personnel";
+
 export const PAYROLL_OVERRIDES_STORAGE_KEY =
   "pl-control-payroll-taxable-overrides-v1";
 
@@ -42,7 +44,7 @@ export function savePayrollTaxableOverrides(data: PayrollTaxableOverrides): void
 }
 
 export function loadPayrollPerformancePayOverrides(): PayrollPerformancePayOverrides {
-  return (
+  return renamePersonKeysByMonth(
     readJsonRecord<PayrollPerformancePayOverrides>(
       PAYROLL_PERFORMANCE_PAY_STORAGE_KEY
     ) ?? {}
@@ -57,7 +59,9 @@ export function savePayrollPerformancePayOverrides(
 }
 
 export function loadPayrollNoteOverrides(): PayrollNoteOverrides {
-  return readJsonRecord<PayrollNoteOverrides>(PAYROLL_NOTE_STORAGE_KEY) ?? {};
+  return renamePersonKeysByMonth(
+    readJsonRecord<PayrollNoteOverrides>(PAYROLL_NOTE_STORAGE_KEY) ?? {}
+  );
 }
 
 export function savePayrollNoteOverrides(data: PayrollNoteOverrides): void {

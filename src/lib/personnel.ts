@@ -42,7 +42,7 @@ export const FIXED_PERSONNEL_NAMES = [
   "아리",
   "김소연",
   "정수민",
-  "김하은",
+  "한하은",
   "김영창",
   "서미희",
   "이정석",
@@ -113,7 +113,7 @@ export function isUnpaidPayrollPersonnel(name: string): boolean {
  * 예: 김영창 2026-08 → 8월부터 급여대장 표시
  */
 export const PERSONNEL_FIRST_PAYROLL_MONTH: Record<string, string> = {
-  김하은: "2026-09",
+  한하은: "2026-09",
   김영창: "2026-08",
   서미희: "2026-08",
   이정석: "2026-08",
@@ -135,12 +135,39 @@ export function isOnPayrollForMonth(name: string, yearMonth: string): boolean {
   return true;
 }
 
+/** 이름 변경 이력 — 저장된 옛 이름 키를 새 이름으로 옮김 */
+export const PERSONNEL_RENAMES: Record<string, string> = {
+  김하은: "한하은",
+};
+
+export function resolvePersonnelRename(name: string): string {
+  return PERSONNEL_RENAMES[name] ?? name;
+}
+
+/** YYYY-MM → 이름 → 값 형태의 저장 데이터에서 옛 이름 키를 새 이름으로 변경 */
+export function renamePersonKeysByMonth<T>(
+  data: Record<string, Record<string, T>>
+): Record<string, Record<string, T>> {
+  let changed = false;
+  const next: Record<string, Record<string, T>> = {};
+  for (const [month, people] of Object.entries(data)) {
+    const renamed: Record<string, T> = {};
+    for (const [key, value] of Object.entries(people)) {
+      const newKey = resolvePersonnelRename(key);
+      if (newKey !== key) changed = true;
+      if (!(newKey in renamed) || newKey === key) renamed[newKey] = value;
+    }
+    next[month] = renamed;
+  }
+  return changed ? next : data;
+}
+
 /** UI·명세서 표시용 로마자/영문 이름 */
 const PERSONNEL_ROMANIZED_NAMES: Record<string, string> = {
   니키: "타오검파차라폰",
   김소연: "트란띠킴",
   아리: "NGUTEN THI LOI",
-  김하은: "DUONG THI THU TRANG",
+  한하은: "DUONG THI THU TRANG",
 };
 
 export function getPersonnelRomanizedName(name: string): string | undefined {

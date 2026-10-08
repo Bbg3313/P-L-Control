@@ -1,5 +1,7 @@
 /** 직원 급여명세서 수신 이메일 — 이름 → 이메일 */
 
+import { resolvePersonnelRename } from "@/lib/personnel";
+
 export const PERSONNEL_EMAILS_STORAGE_KEY = "pl-control-personnel-emails-v1";
 export const PERSONNEL_EMAIL_ROSTER_STORAGE_KEY =
   "pl-control-personnel-email-roster-v1";
@@ -36,7 +38,7 @@ function readLegacyEmails(): PersonnelEmails {
       parsed as Record<string, unknown>
     )) {
       if (typeof value === "string" && value.trim()) {
-        out[name.trim()] = value.trim();
+        out[resolvePersonnelRename(name.trim())] = value.trim();
       }
     }
     return out;
@@ -46,7 +48,8 @@ function readLegacyEmails(): PersonnelEmails {
 }
 
 function normalizeEntry(raw: Partial<PersonnelEmailEntry>): PersonnelEmailEntry | null {
-  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const name =
+    typeof raw.name === "string" ? resolvePersonnelRename(raw.name.trim()) : "";
   const email = typeof raw.email === "string" ? raw.email.trim() : "";
   if (!name) return null;
   return { name, email };

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  AlertCircle,
+  CheckCircle2,
   Download,
   FileDown,
   Landmark,
@@ -765,9 +767,11 @@ export function PayrollLedgerPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingName, setSendingName] = useState<string | null>(null);
-  const [singleSendMessage, setSingleSendMessage] = useState<{
-    type: "ok" | "error";
-    text: string;
+  const [resultDialog, setResultDialog] = useState<{
+    ok: boolean;
+    title: string;
+    detail: string;
+    lines?: string[];
   } | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendResults, setSendResults] = useState<
@@ -1021,9 +1025,10 @@ export function PayrollLedgerPage() {
       setPersonnelEmails(latestEmails);
       const email = latestEmails[row.name]?.trim();
       if (!email) {
-        setSingleSendMessage({
-          type: "error",
-          text: `${formatPersonnelDisplayName(row.name)} 이메일이 등록되지 않았습니다.`,
+        setResultDialog({
+          ok: false,
+          title: "발송 실패",
+          detail: `${formatPersonnelDisplayName(row.name)} 이메일이 등록되지 않았습니다.`,
         });
         return;
       }
@@ -1036,7 +1041,6 @@ export function PayrollLedgerPage() {
       }
 
       setSendingName(row.name);
-      setSingleSendMessage(null);
       try {
         const emailsForMonth: Record<string, string> = { [row.name]: email };
         const res = await fetch("/api/payroll/send-payslips", {
@@ -1059,28 +1063,32 @@ export function PayrollLedgerPage() {
           results?: { name: string; ok: boolean; error?: string }[];
         };
         if (!res.ok) {
-          setSingleSendMessage({
-            type: "error",
-            text: data.error ?? "개별 발송에 실패했습니다.",
+          setResultDialog({
+            ok: false,
+            title: "발송 실패",
+            detail: data.error ?? "개별 발송에 실패했습니다.",
           });
           return;
         }
         const item = data.results?.[0];
         if (item?.ok || (data.sentCount ?? 0) > 0) {
-          setSingleSendMessage({
-            type: "ok",
-            text: `${formatPersonnelDisplayName(row.name)}에게 명세서를 발송했습니다.`,
+          setResultDialog({
+            ok: true,
+            title: "발송 완료",
+            detail: `${formatPersonnelDisplayName(row.name)} (${email})에게 ${formatPeriodLabel(reportingMonth)} 명세서를 정상 발송했습니다.`,
           });
         } else {
-          setSingleSendMessage({
-            type: "error",
-            text: item?.error ?? "개별 발송에 실패했습니다.",
+          setResultDialog({
+            ok: false,
+            title: "발송 실패",
+            detail: item?.error ?? "개별 발송에 실패했습니다.",
           });
         }
       } catch {
-        setSingleSendMessage({
-          type: "error",
-          text: "발송 요청에 실패했습니다. 네트워크를 확인해 주세요.",
+        setResultDialog({
+          ok: false,
+          title: "발송 실패",
+          detail: "발송 요청에 실패했습니다. 네트워크를 확인해 주세요.",
         });
       } finally {
         setSendingName(null);
@@ -1137,17 +1145,41 @@ export function PayrollLedgerPage() {
 
       if (!res.ok) {
         setSendError(data.error ?? "발송에 실패했습니다.");
+        setResultDialog({
+          ok: false,
+          title: "발송 실패",
+          detail: data.error ?? "일괄 발송에 실패했습니다.",
+        });
         return;
       }
 
-      setSendResults({
+      const nextResults = {
         sentCount: data.sentCount ?? 0,
         failCount: data.failCount ?? 0,
         skipCount: data.skipCount ?? 0,
         results: data.results ?? [],
+      };
+      setSendResults(nextResults);
+      const allOk = nextResults.failCount === 0 && nextResults.sentCount > 0;
+      setResultDialog({
+        ok: allOk,
+        title: allOk ? "발송 완료" : "발송 결과",
+        detail: `${formatPeriodLabel(reportingMonth)} 명세서 ${
+          allOk ? "정상 발송했습니다." : "처리가 끝났습니다."
+        } 성공 ${nextResults.sentCount}명 · 실패 ${nextResults.failCount}명 · 스킵 ${nextResults.skipCount}명`,
+        lines: nextResults.results.map((r) =>
+          `${formatPersonnelDisplayName(r.name)}: ${
+            r.ok ? "발송 완료" : r.skipped ? "스킵" : r.error ?? "실패"
+          }`
+        ),
       });
     } catch {
       setSendError("발송 요청에 실패했습니다. 네트워크를 확인해 주세요.");
+      setResultDialog({
+        ok: false,
+        title: "발송 실패",
+        detail: "발송 요청에 실패했습니다. 네트워크를 확인해 주세요.",
+      });
     } finally {
       setSending(false);
     }
@@ -1287,18 +1319,6 @@ export function PayrollLedgerPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {singleSendMessage ? (
-              <p
-                className={
-                  singleSendMessage.type === "ok"
-                    ? "mb-3 text-sm text-emerald-700"
-                    : "mb-3 text-sm text-destructive"
-                }
-                role={singleSendMessage.type === "ok" ? "status" : "alert"}
-              >
-                {singleSendMessage.text}
-              </p>
-            ) : null}
             <PayrollTable
               rows={ledger.domestic}
               ledger={ledger}
@@ -1407,6 +1427,41 @@ export function PayrollLedgerPage() {
             >
               <Mail className="h-3.5 w-3.5" />
               {sending ? "발송 중…" : "발송"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={resultDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setResultDialog(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {resultDialog?.ok ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              )}
+              {resultDialog?.title ?? "발송 결과"}
+            </DialogTitle>
+            <DialogDescription>
+              {resultDialog?.detail ?? ""}
+            </DialogDescription>
+          </DialogHeader>
+          {resultDialog?.lines && resultDialog.lines.length > 0 ? (
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border/80 p-3 text-sm text-muted-foreground">
+              {resultDialog.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" onClick={() => setResultDialog(null)}>
+              확인
             </Button>
           </DialogFooter>
         </DialogContent>

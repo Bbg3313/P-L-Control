@@ -6,6 +6,7 @@ import {
   type PayrollOverridesSnapshot,
   type PayrollPerformancePayOverrides,
 } from "@/lib/payroll-ledger-store";
+import { renamePersonKeysByMonth } from "@/lib/personnel";
 import { isCloudStorageConfigured } from "@/lib/workspace-store";
 
 const REDIS_KEY = "pl-control-payroll-overrides";
@@ -90,8 +91,10 @@ export function normalizePayrollOverridesSnapshot(
   raw: Partial<PayrollOverridesSnapshot> | null | undefined
 ): PayrollOverridesSnapshot {
   return {
-    performancePay: normalizePerformancePay(raw?.performancePay),
-    notes: normalizeNotes(raw?.notes),
+    performancePay: renamePersonKeysByMonth(
+      normalizePerformancePay(raw?.performancePay)
+    ),
+    notes: renamePersonKeysByMonth(normalizeNotes(raw?.notes)),
     updatedAt:
       typeof raw?.updatedAt === "string" && raw.updatedAt
         ? raw.updatedAt
