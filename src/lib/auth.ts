@@ -19,6 +19,11 @@ export function getAuthPassword(): string {
   return process.env.PL_AUTH_PASSWORD ?? "dhflrhrl92!";
 }
 
+/** 사이트를 열 때마다 묻는 접속 비밀번호 (서버 API에서만 사용) */
+export function getAccessPin(): string {
+  return process.env.PL_ACCESS_PIN ?? "3313";
+}
+
 export function isAuthenticated(cookieValue: string | undefined): boolean {
   return cookieValue === getSessionToken();
 }
