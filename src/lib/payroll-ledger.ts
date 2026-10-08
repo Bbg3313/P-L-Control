@@ -6,6 +6,7 @@ import {
 } from "@/lib/income-tax-2026";
 import { getMonthlyNonTaxableAllowance } from "@/lib/non-taxable-allowance";
 import {
+  getMidMonthJoinProration,
   isEmploymentInsuranceExempt,
   isIndustrialAccidentExempt,
   isOnPayrollForMonth,
@@ -217,6 +218,33 @@ function withoutEmployerIndustrialAccident(
   };
 }
 
+/** 1일이 아닌 날 입사한 달: 국민연금·건강·장기요양은 익월부터 부과 */
+function withoutPensionAndHealth(
+  employee: EmployeeInsuranceBreakdown,
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
+): {
+  employee: EmployeeInsuranceBreakdown;
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>;
+} {
+  return {
+    employee: {
+      ...employee,
+      pension: 0,
+      health: 0,
+      longTermCare: 0,
+      total: employee.employment,
+    },
+    employer: {
+      ...employer,
+      pensionEmployer: 0,
+      healthEmployer: 0,
+      longTermCareEmployer: 0,
+      totalEmployerContributions:
+        employer.employmentEmployer + employer.industrialAccidentEmployer,
+    },
+  };
+}
+
 /** 골드펜더: 건강·장기요양만 십원 미만 절사 */
 function applyGoldfenderHealthLtcTruncate(
   employee: EmployeeInsuranceBreakdown,
@@ -311,11 +339,24 @@ function buildDomesticRow(
   yearMonth?: string
 ): PayrollLedgerRow {
   const resolved = resolvePersonnelForPayroll(entry);
-  const nonTaxable = getMonthlyNonTaxableAllowance(resolved.name);
-  const baseMonthlyGross =
+  const fullMonthlyGross =
     resolved.inputMode === "salary" && resolved.salaryAmount > 0
       ? monthlyGrossFromSalary(resolved.salaryAmount, resolved.salaryBasis)
       : resolved.directMonthlyAmount;
+  const joinProration = yearMonth
+    ? getMidMonthJoinProration(resolved.name, yearMonth)
+    : null;
+  const baseMonthlyGross = joinProration
+    ? Math.floor(
+        (fullMonthlyGross * joinProration.workedDays) /
+          joinProration.daysInMonth
+      )
+    : fullMonthlyGross;
+  // 식대 비과세는 월 20만 한도 내 실지급액 기준 — 입사월에도 일할하지 않음
+  const nonTaxable = Math.min(
+    getMonthlyNonTaxableAllowance(resolved.name),
+    baseMonthlyGross
+  );
 
   const usesSplitPayrollCalc = isVariablePayPersonnel(
     resolved.name,
@@ -355,6 +396,9 @@ function buildDomesticRow(
   if (industrialExempt) {
     employer = withoutEmployerIndustrialAccident(employer);
   }
+  if (joinProration) {
+    ({ employee, employer } = withoutPensionAndHealth(employee, employer));
+  }
   const youthEligible = isYouthIncomeTaxReliefEligible(resolved.name);
 
   let incomeTax = 0;
@@ -383,6 +427,12 @@ function buildDomesticRow(
 
   const totalDeductions = employee.total + incomeTax + localIncomeTax;
   const notes: string[] = [];
+  if (joinProration) {
+    const [, m, d] = joinProration.joinDate.split("-").map(Number);
+    notes.push(
+      `${m}/${d} 입사 일할(${joinProration.workedDays}/${joinProration.daysInMonth}일) · 연금·건강 익월부터`
+    );
+  }
   if (employmentExempt) notes.push("고용보험 미가입");
   if (industrialExempt) notes.push("산재보험 제외");
   if (youthEligible) notes.push("청년소득세 90% 감면");

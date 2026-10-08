@@ -127,6 +127,36 @@ export const PERSONNEL_LAST_PAYROLL_MONTH: Record<string, string> = {
   아리: "2026-07",
 };
 
+/** 월 중도 입사일 (YYYY-MM-DD). 1일이 아니면 입사월 급여를 일할 */
+export const PERSONNEL_JOIN_DATES: Record<string, string> = {
+  한하은: "2026-09-07",
+};
+
+export interface MidMonthJoinProration {
+  joinDate: string;
+  joinDay: number;
+  workedDays: number;
+  daysInMonth: number;
+}
+
+/** 입사월이면서 1일 입사가 아닐 때만 일할 정보를 반환 */
+export function getMidMonthJoinProration(
+  name: string,
+  yearMonth: string
+): MidMonthJoinProration | null {
+  const joinDate = PERSONNEL_JOIN_DATES[name];
+  if (!joinDate || joinDate.slice(0, 7) !== yearMonth) return null;
+  const [year, month, day] = joinDate.split("-").map(Number);
+  if (!year || !month || !day || day === 1) return null;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return {
+    joinDate,
+    joinDay: day,
+    workedDays: daysInMonth - day + 1,
+    daysInMonth,
+  };
+}
+
 export function isOnPayrollForMonth(name: string, yearMonth: string): boolean {
   const first = PERSONNEL_FIRST_PAYROLL_MONTH[name];
   if (first && yearMonth < first) return false;
