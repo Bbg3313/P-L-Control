@@ -218,29 +218,41 @@ function withoutEmployerIndustrialAccident(
   };
 }
 
-/** 1일이 아닌 날 입사한 달: 국민연금·건강·장기요양은 익월부터 부과 */
-function withoutPensionAndHealth(
+/** 중도 입사월: 국민연금·건강·장기요양은 신고 보수월액(한 달 전체) 기준으로 공제 */
+function withFullMonthPensionAndHealth(
   employee: EmployeeInsuranceBreakdown,
-  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
+  employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>,
+  fullEmployee: EmployeeInsuranceBreakdown,
+  fullEmployer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>
 ): {
   employee: EmployeeInsuranceBreakdown;
   employer: ReturnType<typeof calcEmployerContributionsFromInsuranceBase>;
 } {
+  const pension = fullEmployee.pension;
+  const health = fullEmployee.health;
+  const longTermCare = fullEmployee.longTermCare;
+  const pensionEmployer = fullEmployer.pensionEmployer;
+  const healthEmployer = fullEmployer.healthEmployer;
+  const longTermCareEmployer = fullEmployer.longTermCareEmployer;
   return {
     employee: {
       ...employee,
-      pension: 0,
-      health: 0,
-      longTermCare: 0,
-      total: employee.employment,
+      pension,
+      health,
+      longTermCare,
+      total: pension + health + longTermCare + employee.employment,
     },
     employer: {
       ...employer,
-      pensionEmployer: 0,
-      healthEmployer: 0,
-      longTermCareEmployer: 0,
+      pensionEmployer,
+      healthEmployer,
+      longTermCareEmployer,
       totalEmployerContributions:
-        employer.employmentEmployer + employer.industrialAccidentEmployer,
+        pensionEmployer +
+        healthEmployer +
+        longTermCareEmployer +
+        employer.employmentEmployer +
+        employer.industrialAccidentEmployer,
     },
   };
 }
@@ -397,7 +409,22 @@ function buildDomesticRow(
     employer = withoutEmployerIndustrialAccident(employer);
   }
   if (joinProration) {
-    ({ employee, employer } = withoutPensionAndHealth(employee, employer));
+    const fullBase = getInsuranceRemunerationBase(
+      fullMonthlyGross,
+      getMonthlyNonTaxableAllowance(resolved.name)
+    );
+    let fullEmployee = calcEmployeeInsuranceBreakdown(fullBase);
+    let fullEmployer = calcEmployerContributionsFromInsuranceBase(fullBase);
+    if (companyId === "goldfender") {
+      ({ employee: fullEmployee, employer: fullEmployer } =
+        applyGoldfenderHealthLtcTruncate(fullEmployee, fullEmployer));
+    }
+    ({ employee, employer } = withFullMonthPensionAndHealth(
+      employee,
+      employer,
+      fullEmployee,
+      fullEmployer
+    ));
   }
   const youthEligible = isYouthIncomeTaxReliefEligible(resolved.name);
 
@@ -430,7 +457,7 @@ function buildDomesticRow(
   if (joinProration) {
     const [, m, d] = joinProration.joinDate.split("-").map(Number);
     notes.push(
-      `${m}/${d} 입사 일할(${joinProration.workedDays}/${joinProration.daysInMonth}일) · 연금·건강 익월부터`
+      `${m}/${d} 입사 일할(${joinProration.workedDays}/${joinProration.daysInMonth}일) · 연금·건강 월 전액 공제`
     );
   }
   if (employmentExempt) notes.push("고용보험 미가입");
