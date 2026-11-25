@@ -836,7 +836,7 @@ export function CashflowPage() {
                   );
                   const label =
                     remaining <= 0 && row.amount > 0
-                      ? "기지급"
+                      ? "지급"
                       : paid > 0
                         ? "일부"
                         : "미지급";
@@ -864,7 +864,7 @@ export function CashflowPage() {
                                 ? "bg-sky-500 text-white"
                                 : "bg-amber-400 text-amber-950"
                           )}
-                          title="클릭: 전액 기지급 ↔ 미지급"
+                          title="클릭: 전액 지급 ↔ 미지급"
                           onClick={(e) => {
                             e.stopPropagation();
                             const full = Math.max(
