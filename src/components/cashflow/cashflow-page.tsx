@@ -558,7 +558,7 @@ export function CashflowPage() {
     const expenses = month.expenses.map((row) => {
       const linked = resolvePayrollLinkedAmount(
         row.source,
-        reportingMonth,
+        cashflowMonth,
         perfOverrides
       );
       if (linked == null) return row;
@@ -574,7 +574,7 @@ export function CashflowPage() {
       if (ids.has(t.id)) continue;
       const linked = resolvePayrollLinkedAmount(
         t.source,
-        reportingMonth,
+        cashflowMonth,
         perfOverrides
       );
       expenses.push(
