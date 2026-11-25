@@ -547,7 +547,7 @@ export function CashflowPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h1 className="text-base font-semibold text-slate-900">
-              영업이익 · 수금현황
+              수금현황
             </h1>
             <span className="text-sm text-slate-500">
               {formatPeriodLabel(reportingMonth)}
@@ -571,7 +571,7 @@ export function CashflowPage() {
           <ReportingMonthNav showQuickMonths={false} />
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {(
             [
               {
@@ -593,14 +593,6 @@ export function CashflowPage() {
                 label: "비용",
                 value: summary.expenseTotal,
                 tone: "text-slate-900",
-              },
-              {
-                label: "영업이익",
-                value: summary.operatingProfit,
-                tone:
-                  summary.operatingProfit >= 0
-                    ? "text-emerald-700"
-                    : "text-red-600",
               },
             ] as const
           ).map((item) => (

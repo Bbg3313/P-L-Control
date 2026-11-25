@@ -12,8 +12,6 @@ export interface CashflowSummary {
   receivedTotal: number;
   unpaidTotal: number;
   expenseTotal: number;
-  /** 수금 − 비용 */
-  operatingProfit: number;
   paidCount: number;
   unpaidCount: number;
   hospitalCount: number;
@@ -106,7 +104,6 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     receivedTotal,
     unpaidTotal: Math.max(0, billedTotal - receivedTotal),
     expenseTotal,
-    operatingProfit: receivedTotal - expenseTotal,
     paidCount,
     unpaidCount,
     hospitalCount: activeCount,

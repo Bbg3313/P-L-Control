@@ -30,7 +30,7 @@ const HOME_HREF = "/cashflow";
 const navItems: NavItem[] = [
   {
     href: "/cashflow",
-    label: "영업이익",
+    label: "수금현황",
     icon: LineChart,
     iconTone: "bg-emerald-100 text-emerald-700",
   },
