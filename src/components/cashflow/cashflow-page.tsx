@@ -6,9 +6,9 @@ import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFinancial } from "@/contexts/financial-context";
-import { CashflowDailyChart } from "@/components/cashflow/cashflow-daily-chart";
+import { CashflowGapOverview } from "@/components/cashflow/cashflow-gap-overview";
 import {
-  buildDailyCashflowSeries,
+  buildCheckpoints,
   emptyExpenseRow,
   emptyHospitalRow,
   emptyMiscRow,
@@ -184,7 +184,7 @@ export function CashflowPage() {
   );
 
   const summary = useMemo(() => summarizeMonth(month), [month]);
-  const dailySeries = useMemo(() => buildDailyCashflowSeries(month), [month]);
+  const checkpoints = useMemo(() => buildCheckpoints(month), [month]);
   const hospitalsByDay = useMemo(() => {
     return [...month.hospitals].sort((a, b) => {
       const da = a.expectedDay ?? 99;
@@ -740,7 +740,7 @@ export function CashflowPage() {
           ))}
         </div>
 
-        <CashflowDailyChart data={dailySeries} />
+        <CashflowGapOverview checkpoints={checkpoints} />
       </div>
 
       {/* 비용 | 병원 수금 | 기타 수금 */}
