@@ -158,6 +158,7 @@ export function withSeedHospitalsIfEmpty(
         amount,
         paidAmount,
         status: amount > 0 && paidAmount >= amount ? "paid" : "unpaid",
+        excluded: prev.excluded === true,
         ...(dailyAmount ? { dailyAmount } : {}),
         note: prev.note || expenseNote(t.source, t.name),
       };

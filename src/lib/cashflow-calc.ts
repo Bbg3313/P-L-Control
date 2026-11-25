@@ -150,6 +150,7 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
   let expensePaidCount = 0;
   let expenseUnpaidCount = 0;
   for (const row of expenses) {
+    if (row.excluded) continue;
     const amount = Math.max(0, Math.floor(row.amount || 0));
     const paid = Math.min(
       amount,
@@ -209,6 +210,7 @@ export function sumExpensesByPayDayLimit(
   const daysInMonth = daysInCashflowMonth(yearMonth);
   let total = 0;
   for (const row of expenses) {
+    if (row.excluded) continue;
     const amount = Math.max(0, Math.floor(row.amount || 0));
 
     // Meta 등 일별: 1일=70만, 10일=700만, 말일=70만×일수
@@ -255,6 +257,7 @@ export function sumPaidExpenseByPayDayLimit(
   const daysInMonth = daysInCashflowMonth(yearMonth);
   let total = 0;
   for (const row of expenses) {
+    if (row.excluded) continue;
     const amount = Math.max(0, Math.floor(row.amount || 0));
     const paid = Math.min(
       amount || Number.MAX_SAFE_INTEGER,
@@ -413,6 +416,7 @@ export function emptyExpenseRow(
     payDay,
     source,
     status: "unpaid",
+    excluded: false,
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
   };
 }

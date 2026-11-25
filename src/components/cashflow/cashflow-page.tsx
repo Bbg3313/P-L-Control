@@ -826,7 +826,10 @@ export function CashflowPage() {
                 {month.expenses.map((row) => (
                   <div
                     key={row.id}
-                    className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-slate-50"
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-slate-50",
+                      row.excluded && "bg-slate-50/80 opacity-60"
+                    )}
                   >
                     <Input
                       value={row.name}
@@ -877,6 +880,26 @@ export function CashflowPage() {
                         ))}
                       </select>
                     )}
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-8 shrink-0 rounded-md border px-1.5 text-[10px] font-semibold",
+                        row.excluded
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                      )}
+                      aria-label={row.excluded ? "현황에 포함" : "현황에서 제외"}
+                      title={
+                        row.excluded
+                          ? "상단 현황에 다시 포함"
+                          : "이번 달 안 나가면 상단 현황에서 제외"
+                      }
+                      onClick={() =>
+                        updateExpense(row.id, { excluded: !row.excluded })
+                      }
+                    >
+                      {row.excluded ? "제외됨" : "제외"}
+                    </button>
                     <button
                       type="button"
                       className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"

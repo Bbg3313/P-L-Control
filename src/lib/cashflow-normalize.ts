@@ -157,6 +157,7 @@ function normalizeExpenseRow(raw: unknown): ExpenseMonthRow | null {
     payDay: asPayDay(o.payDay),
     source: asExpenseSource(o.source),
     status,
+    excluded: o.excluded === true,
     ...(dailyAmount > 0 ? { dailyAmount } : {}),
   };
 }

@@ -62,12 +62,13 @@ export function CashflowExpenseMix({
   expenses,
   className,
 }: CashflowExpenseMixProps) {
-  const total = expenses.reduce(
+  const active = expenses.filter((row) => !row.excluded);
+  const total = active.reduce(
     (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
     0
   );
 
-  const slices: MixSlice[] = expenses
+  const slices: MixSlice[] = active
     .map((row) => {
       const value = Math.max(0, Math.floor(row.amount || 0));
       return {

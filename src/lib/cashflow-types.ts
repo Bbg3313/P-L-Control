@@ -78,6 +78,11 @@ export interface ExpenseMonthRow {
   dailyAmount?: number;
   /** paidAmount 기준 요약: 전액이면 paid, 아니면 unpaid(일부 포함) */
   status: CollectionStatus;
+  /**
+   * true면 목록에는 남기고 상단 KPI·비중·체크포인트 집계에서 제외
+   * (이번 달 안 나가는 비용)
+   */
+  excluded?: boolean;
 }
 
 /** 병원 외 기타 수금 (수동 추가) */
