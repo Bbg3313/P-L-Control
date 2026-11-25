@@ -73,7 +73,10 @@ function MoneyInput({
       inputMode="numeric"
       aria-label={ariaLabel}
       title={ariaLabel}
-      className={cn("text-right tabular-nums", className)}
+      className={cn(
+        "min-w-0 overflow-visible text-right tabular-nums tracking-tight",
+        className
+      )}
       value={text}
       onChange={(e) => {
         const next = normalizeAmountInputString(e.target.value);
@@ -163,6 +166,9 @@ export function CashflowPage() {
   );
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipFirstSave = useRef(true);
+  const [expandedExpenseId, setExpandedExpenseId] = useState<string | null>(
+    null
+  );
 
   const cashflowMonth =
     reportingMonth < CASHFLOW_START_MONTH
@@ -834,11 +840,12 @@ export function CashflowPage() {
                       : paid > 0
                         ? "일부"
                         : "미지급";
+                  const open = expandedExpenseId === row.id;
                   return (
                     <div
                       key={row.id}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-md px-1.5 py-1",
+                        "rounded-md",
                         remaining <= 0 && row.amount > 0
                           ? "bg-emerald-50/70"
                           : paid > 0
@@ -846,103 +853,143 @@ export function CashflowPage() {
                             : "bg-amber-50/50"
                       )}
                     >
-                      <button
-                        type="button"
-                        className={cn(
-                          "h-8 w-[3.25rem] shrink-0 rounded-md text-[11px] font-bold leading-tight",
-                          remaining <= 0 && row.amount > 0
-                            ? "bg-emerald-500 text-white"
-                            : paid > 0
-                              ? "bg-sky-500 text-white"
-                              : "bg-amber-400 text-amber-950"
-                        )}
-                        title="클릭: 전액 기지급 ↔ 미지급"
-                        onClick={() => {
-                          const full = Math.max(0, Math.floor(row.amount || 0));
-                          const next =
-                            remaining <= 0 && full > 0 ? 0 : full;
-                          updateExpense(
-                            row.id,
-                            withExpensePaidAmount(row, next)
-                          );
-                        }}
-                      >
-                        {label}
-                      </button>
-                      <Input
-                        value={row.name}
-                        onChange={(e) =>
-                          updateExpense(row.id, { name: e.target.value })
-                        }
-                        className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
-                      />
-                      <MoneyInput
-                        value={row.amount}
-                        onChange={(n) => {
-                          const capped = Math.min(
-                            Math.max(0, Math.floor(row.paidAmount || 0)),
-                            n
-                          );
-                          updateExpense(
-                            row.id,
-                            withExpensePaidAmount(
-                              { ...row, amount: n },
-                              capped
-                            )
-                          );
-                        }}
-                        className="h-8 w-[4.5rem] shrink-0 border-slate-200 bg-white px-1 text-sm"
-                        aria-label="총액"
-                      />
-                      <MoneyInput
-                        value={paid}
-                        onChange={(n) =>
-                          updateExpense(
-                            row.id,
-                            withExpensePaidAmount(row, n)
-                          )
-                        }
-                        className="h-8 w-[4.5rem] shrink-0 border-sky-200 bg-sky-50/80 px-1 text-sm"
-                        aria-label="지급액"
-                      />
-                      {row.source === "meta-daily" ? (
-                        <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-[10px] font-semibold text-sky-700">
-                          매일
-                        </span>
-                      ) : (
-                        <select
-                          className="h-8 w-12 shrink-0 rounded-md border border-slate-200 bg-white px-0.5 text-[10px] font-semibold text-slate-700"
-                          value={row.payDay ?? ""}
-                          aria-label="지출일"
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            updateExpensePayDay(
+                      <div className="flex items-center gap-1.5 px-1.5 py-1">
+                        <button
+                          type="button"
+                          className={cn(
+                            "h-8 w-[3.25rem] shrink-0 rounded-md text-[11px] font-bold leading-tight",
+                            remaining <= 0 && row.amount > 0
+                              ? "bg-emerald-500 text-white"
+                              : paid > 0
+                                ? "bg-sky-500 text-white"
+                                : "bg-amber-400 text-amber-950"
+                          )}
+                          title="클릭: 전액 기지급 ↔ 미지급"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const full = Math.max(
+                              0,
+                              Math.floor(row.amount || 0)
+                            );
+                            const next = remaining <= 0 && full > 0 ? 0 : full;
+                            updateExpense(
                               row.id,
-                              v === "" ? null : Number(v)
+                              withExpensePaidAmount(row, next)
                             );
                           }}
                         >
-                          <option value="">—</option>
-                          <option value={1}>1</option>
-                          <option value={10}>10</option>
-                          <option value={20}>20</option>
-                          <option value={25}>25</option>
-                          <option value={31}>말</option>
-                          {[5, 15].map((d) => (
-                            <option key={d} value={d}>
-                              {d}
-                            </option>
-                          ))}
-                        </select>
+                          {label}
+                        </button>
+                        <button
+                          type="button"
+                          className="h-8 min-w-0 flex-1 truncate rounded px-1 text-left text-sm text-slate-800 hover:bg-white/60"
+                          onClick={() =>
+                            setExpandedExpenseId(open ? null : row.id)
+                          }
+                        >
+                          {row.name || "이름 없음"}
+                        </button>
+                        <MoneyInput
+                          value={row.amount}
+                          onChange={(n) => {
+                            const capped = Math.min(
+                              Math.max(0, Math.floor(row.paidAmount || 0)),
+                              n
+                            );
+                            updateExpense(
+                              row.id,
+                              withExpensePaidAmount(
+                                { ...row, amount: n },
+                                capped
+                              )
+                            );
+                          }}
+                          className="h-8 w-[7.5rem] shrink-0 border-slate-200 bg-white px-1.5 text-xs"
+                          aria-label="총액"
+                        />
+                        {row.source === "meta-daily" ? (
+                          <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-[10px] font-semibold text-sky-700">
+                            매일
+                          </span>
+                        ) : (
+                          <select
+                            className="h-8 w-12 shrink-0 rounded-md border border-slate-200 bg-white px-0.5 text-[10px] font-semibold text-slate-700"
+                            value={row.payDay ?? ""}
+                            aria-label="지출일"
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              updateExpensePayDay(
+                                row.id,
+                                v === "" ? null : Number(v)
+                              );
+                            }}
+                          >
+                            <option value="">—</option>
+                            <option value={1}>1</option>
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={25}>25</option>
+                            <option value={31}>말</option>
+                            {[5, 15].map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+                          aria-label="삭제"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeExpense(row.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {open && (
+                        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 px-2 py-2">
+                          <span className="text-[11px] text-slate-500">
+                            일부지급
+                          </span>
+                          <MoneyInput
+                            value={paid}
+                            onChange={(n) =>
+                              updateExpense(
+                                row.id,
+                                withExpensePaidAmount(row, n)
+                              )
+                            }
+                            className="h-8 w-[7.5rem] border-sky-200 bg-white px-1.5 text-xs"
+                            aria-label="지급액"
+                          />
+                          <span className="text-[11px] tabular-nums text-slate-500">
+                            잔여 {formatCurrency(remaining)}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-[11px] font-medium text-slate-500 hover:text-slate-800"
+                            onClick={() =>
+                              updateExpense(
+                                row.id,
+                                withExpensePaidAmount(row, 0)
+                              )
+                            }
+                          >
+                            지급액 초기화
+                          </button>
+                          <Input
+                            value={row.name}
+                            onChange={(e) =>
+                              updateExpense(row.id, { name: e.target.value })
+                            }
+                            className="h-8 min-w-[8rem] flex-1 border-slate-200 bg-white px-2 text-sm"
+                            placeholder="항목명"
+                          />
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
-                        aria-label="삭제"
-                        onClick={() => removeExpense(row.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   );
                 })}
@@ -1061,7 +1108,7 @@ export function CashflowPage() {
                           updateHospital(row.id, { amount: n });
                           setHospitalDefaultAmount(row.id, n);
                         }}
-                        className="h-8 w-24 shrink-0 border-slate-200 bg-white px-1.5 text-sm"
+                        className="h-8 w-[7.5rem] shrink-0 border-slate-200 bg-white px-1.5 text-xs"
                       />
                       <button
                         type="button"
@@ -1157,7 +1204,7 @@ export function CashflowPage() {
                     <MoneyInput
                       value={row.amount}
                       onChange={(n) => updateMisc(row.id, { amount: n })}
-                      className="h-8 w-24 shrink-0 border-slate-200 bg-white px-1.5 text-sm"
+                      className="h-8 w-[7.5rem] shrink-0 border-slate-200 bg-white px-1.5 text-xs"
                     />
                     <button
                       type="button"
