@@ -1,5 +1,8 @@
 import { emptyExpenseRow, emptyHospitalRow } from "@/lib/cashflow-calc";
-import { SEED_HOSPITALS } from "@/lib/cashflow-seed";
+import {
+  resolveHospitalMonthAmount,
+  SEED_HOSPITALS,
+} from "@/lib/cashflow-seed";
 import {
   resolveLinkedExpenseAmount,
   SEED_EXPENSE_TEMPLATES,
@@ -73,11 +76,17 @@ export function withSeedHospitalsIfEmpty(
 
     const nextHospitals: HospitalMonthRow[] = hospitals.map((h) => {
       const prev = prevH.get(h.id);
+      const amount = resolveHospitalMonthAmount(
+        h.id,
+        ym,
+        h.defaultAmount,
+        prev?.amount
+      );
       if (!prev) {
         return emptyHospitalRow(
           h.id,
           h.name,
-          h.defaultAmount,
+          amount,
           h.contractStatus,
           h.expectedDay
         );
@@ -87,7 +96,7 @@ export function withSeedHospitalsIfEmpty(
         name: h.name,
         contractStatus: h.contractStatus,
         expectedDay: prev.expectedDay ?? h.expectedDay,
-        amount: prev.amount > 0 ? prev.amount : h.defaultAmount,
+        amount,
       };
     });
 
@@ -152,7 +161,7 @@ export function buildMonthFromTemplates(
     emptyHospitalRow(
       h.id,
       h.name,
-      h.defaultAmount,
+      resolveHospitalMonthAmount(h.id, yearMonth, h.defaultAmount),
       h.contractStatus,
       h.expectedDay
     )

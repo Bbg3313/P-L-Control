@@ -1,6 +1,33 @@
 import type { HospitalTemplate } from "@/lib/cashflow-types";
 
 /**
+ * 병원·월별 청구액 강제 (용역비 특약).
+ * 키: hospitalId → yearMonth → amount
+ */
+export const HOSPITAL_MONTH_AMOUNT_OVERRIDES: Record<
+  string,
+  Record<string, number>
+> = {
+  // 강남서울안과: 11·12월분 11월에 일괄, 12월 0
+  "h-gangnam-seoul-eye": {
+    "2026-11": 8_250_000, // 4,125,000 × 2
+    "2026-12": 0,
+  },
+};
+
+export function resolveHospitalMonthAmount(
+  hospitalId: string,
+  yearMonth: string,
+  defaultAmount: number,
+  previousAmount?: number
+): number {
+  const forced = HOSPITAL_MONTH_AMOUNT_OVERRIDES[hospitalId]?.[yearMonth];
+  if (forced !== undefined) return forced;
+  if (previousAmount !== undefined && previousAmount > 0) return previousAmount;
+  return defaultAmount;
+}
+
+/**
  * 병원 계약 현황 (부가세 포함) — 엑셀 목록 그대로
  * 미케이의원 2건 = 베트남 / 태국
  */
