@@ -1,4 +1,5 @@
 import {
+  CASHFLOW_START_MONTH,
   createEmptyCashflow,
   type CashflowMonth,
   type CashflowSnapshot,
@@ -215,6 +216,7 @@ export function normalizeCashflowSnapshot(
   if (raw?.months && typeof raw.months === "object") {
     for (const [ym, value] of Object.entries(raw.months)) {
       if (!isYearMonth(ym)) continue;
+      if (ym < CASHFLOW_START_MONTH) continue;
       const month = normalizeMonth(ym, value);
       if (month) months[ym] = month;
     }

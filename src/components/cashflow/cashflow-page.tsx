@@ -28,6 +28,7 @@ import {
   saveCashflowLocal,
 } from "@/lib/cashflow-local";
 import {
+  CASHFLOW_START_MONTH,
   CONTRACT_STATUS_OPTIONS,
   createEmptyCashflow,
   newId,
@@ -143,7 +144,11 @@ function ensureMonth(
 }
 
 export function CashflowPage() {
-  const { reportingMonth, hydrated: monthHydrated } = useFinancial();
+  const {
+    reportingMonth,
+    setReportingMonth,
+    hydrated: monthHydrated,
+  } = useFinancial();
   const [snapshot, setSnapshot] = useState<CashflowSnapshot>(
     createEmptyCashflow
   );
@@ -159,9 +164,21 @@ export function CashflowPage() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipFirstSave = useRef(true);
 
+  const cashflowMonth =
+    reportingMonth < CASHFLOW_START_MONTH
+      ? CASHFLOW_START_MONTH
+      : reportingMonth;
+
+  useEffect(() => {
+    if (!monthHydrated) return;
+    if (reportingMonth < CASHFLOW_START_MONTH) {
+      setReportingMonth(CASHFLOW_START_MONTH);
+    }
+  }, [monthHydrated, reportingMonth, setReportingMonth]);
+
   const month = useMemo(
-    () => ensureMonth(snapshot, reportingMonth, perfOverrides),
-    [snapshot, reportingMonth, perfOverrides]
+    () => ensureMonth(snapshot, cashflowMonth, perfOverrides),
+    [snapshot, cashflowMonth, perfOverrides]
   );
 
   const summary = useMemo(() => summarizeMonth(month), [month]);
@@ -195,13 +212,13 @@ export function CashflowPage() {
       setSnapshot((prev) => {
         const next: CashflowSnapshot = {
           ...prev,
-          months: { ...prev.months, [reportingMonth]: nextMonth },
+          months: { ...prev.months, [cashflowMonth]: nextMonth },
           updatedAt: new Date().toISOString(),
         };
         return next;
       });
     },
-    [reportingMonth]
+    [cashflowMonth]
   );
 
   // 보고월 없으면 생성, 비용 템플릿이 월에 빠져 있으면 보강
@@ -212,18 +229,18 @@ export function CashflowPage() {
         prev.expenseTemplates.length > 0
           ? prev.expenseTemplates
           : [];
-      let current = prev.months[reportingMonth];
+      let current = prev.months[cashflowMonth];
       if (!current) {
-        current = ensureMonth(prev, reportingMonth, perfOverrides);
+        current = ensureMonth(prev, cashflowMonth, perfOverrides);
       }
       const existingIds = new Set(current.expenses.map((e) => e.id));
       const missing = templates.filter((t) => !existingIds.has(t.id));
-      if (prev.months[reportingMonth] && missing.length === 0) return prev;
+      if (prev.months[cashflowMonth] && missing.length === 0) return prev;
 
       const extras = missing.map((t) => {
         const linked = resolvePayrollLinkedAmount(
           t.source,
-          reportingMonth,
+          cashflowMonth,
           perfOverrides
         );
         return emptyExpenseRow(
@@ -239,7 +256,7 @@ export function CashflowPage() {
         ...prev,
         months: {
           ...prev.months,
-          [reportingMonth]: {
+          [cashflowMonth]: {
             ...current,
             expenses: [...current.expenses, ...extras],
           },
@@ -247,7 +264,7 @@ export function CashflowPage() {
         updatedAt: new Date().toISOString(),
       };
     });
-  }, [hydrated, reportingMonth, perfOverrides]);
+  }, [hydrated, cashflowMonth, perfOverrides]);
 
   useEffect(() => {
     let cancelled = false;
@@ -293,7 +310,7 @@ export function CashflowPage() {
             setSnapshot(chosen);
             saveCashflowLocal(chosen);
             setPerfOverrides(
-              perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+              perfAll[payrollSourceYearMonth(cashflowMonth)] ?? {}
             );
           }
         } else if (!cancelled) {
@@ -301,7 +318,7 @@ export function CashflowPage() {
           setSnapshot(seeded);
           saveCashflowLocal(seeded);
           setPerfOverrides(
-            perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+            perfAll[payrollSourceYearMonth(cashflowMonth)] ?? {}
           );
         }
       } catch {
@@ -310,7 +327,7 @@ export function CashflowPage() {
           setSnapshot(seeded);
           saveCashflowLocal(seeded);
           setPerfOverrides(
-            perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+            perfAll[payrollSourceYearMonth(cashflowMonth)] ?? {}
           );
         }
       } finally {
@@ -339,7 +356,7 @@ export function CashflowPage() {
         };
         if (!cancelled) {
           setPerfOverrides(
-            ov.performancePay?.[payrollSourceYearMonth(reportingMonth)] ?? {}
+            ov.performancePay?.[payrollSourceYearMonth(cashflowMonth)] ?? {}
           );
         }
       } catch {
@@ -350,7 +367,7 @@ export function CashflowPage() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, reportingMonth]);
+  }, [hydrated, cashflowMonth]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -432,7 +449,7 @@ export function CashflowPage() {
       ],
       months: {
         ...prev.months,
-        [reportingMonth]: {
+        [cashflowMonth]: {
           ...month,
           hospitals: [
             ...month.hospitals,
@@ -525,7 +542,7 @@ export function CashflowPage() {
       ],
       months: {
         ...prev.months,
-        [reportingMonth]: {
+        [cashflowMonth]: {
           ...month,
           expenses: [
             ...month.expenses,
@@ -655,7 +672,7 @@ export function CashflowPage() {
               수금현황
             </h1>
             <span className="text-sm text-slate-500">
-              {formatPeriodLabel(reportingMonth)}
+              {formatPeriodLabel(cashflowMonth)}
             </span>
             {saveState === "saving" && (
               <span className="inline-flex items-center gap-1 text-xs text-slate-400">

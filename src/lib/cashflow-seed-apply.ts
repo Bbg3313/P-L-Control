@@ -13,6 +13,7 @@ import {
 } from "@/lib/cashflow-payroll-expenses";
 import {
   CASHFLOW_SEED_VERSION,
+  CASHFLOW_START_MONTH,
   type CashflowMonth,
   type CashflowSnapshot,
   type ExpenseMonthRow,
@@ -70,7 +71,12 @@ export function withSeedHospitalsIfEmpty(
   const expenseTemplates = SEED_EXPENSE_TEMPLATES.map((e) => ({ ...e }));
   const months: Record<string, CashflowMonth> = {};
 
-  const yearMonths = Object.keys(snapshot.months);
+  const yearMonths = Object.keys(snapshot.months).filter(
+    (ym) => ym >= CASHFLOW_START_MONTH
+  );
+  if (yearMonths.length === 0) {
+    yearMonths.push(CASHFLOW_START_MONTH);
+  }
 
   for (const ym of yearMonths) {
     const month = snapshot.months[ym];
