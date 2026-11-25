@@ -141,15 +141,46 @@ export function CashflowPage() {
     [reportingMonth]
   );
 
-  // 보고월이 바뀌었는데 해당 월 데이터가 없으면 마스터에서 생성
+  // 보고월 없으면 생성, 비용 템플릿이 월에 빠져 있으면 보강
   useEffect(() => {
     if (!hydrated) return;
     setSnapshot((prev) => {
-      if (prev.months[reportingMonth]) return prev;
-      const seeded = ensureMonth(prev, reportingMonth, perfOverrides);
+      const templates =
+        prev.expenseTemplates.length > 0
+          ? prev.expenseTemplates
+          : [];
+      let current = prev.months[reportingMonth];
+      if (!current) {
+        current = ensureMonth(prev, reportingMonth, perfOverrides);
+      }
+      const existingIds = new Set(current.expenses.map((e) => e.id));
+      const missing = templates.filter((t) => !existingIds.has(t.id));
+      if (prev.months[reportingMonth] && missing.length === 0) return prev;
+
+      const extras = missing.map((t) => {
+        const linked = resolvePayrollLinkedAmount(
+          t.source,
+          reportingMonth,
+          perfOverrides
+        );
+        return emptyExpenseRow(
+          t.id,
+          t.name,
+          linked ?? t.defaultAmount,
+          t.payDay,
+          t.source,
+          t.dailyAmount
+        );
+      });
       return {
         ...prev,
-        months: { ...prev.months, [reportingMonth]: seeded },
+        months: {
+          ...prev.months,
+          [reportingMonth]: {
+            ...current,
+            expenses: [...current.expenses, ...extras],
+          },
+        },
         updatedAt: new Date().toISOString(),
       };
     });
@@ -535,7 +566,7 @@ export function CashflowPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-y-contain pb-8 [scrollbar-gutter:stable]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -637,6 +668,137 @@ export function CashflowPage() {
           </div>
         ))}
       </div>
+
+      {/* 비용 — 병원보다 위에 두어 바로 보이게 */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold">월 비용</h2>
+            <p className="text-xs text-muted-foreground">
+              Meta 일 70만(매일) · 인건비 BBG 10일 / 골드펜더·태국·베트남
+              말일 · 임대·관리 1일 · 4대보험·대출 10일 · AI 25일 · 영업커미션
+              직접입력
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={syncPayrollExpenses}
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              급여 실지급 반영
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={addExpense}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              비용 추가
+            </Button>
+          </div>
+        </div>
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-medium">항목</th>
+                <th className="px-3 py-2 font-medium text-right">금액</th>
+                <th className="px-3 py-2 font-medium">지출일</th>
+                <th className="px-3 py-2 font-medium">비고</th>
+                <th className="px-3 py-2 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {month.expenses.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-3 py-8 text-center text-muted-foreground"
+                  >
+                    비용을 불러오는 중이거나 비어 있습니다. 「급여 실지급
+                    반영」을 눌러 보세요.
+                  </td>
+                </tr>
+              )}
+              {month.expenses.map((row) => (
+                <tr key={row.id} className="border-t border-border">
+                  <td className="px-3 py-1.5">
+                    <Input
+                      value={row.name}
+                      onChange={(e) =>
+                        updateExpense(row.id, { name: e.target.value })
+                      }
+                    />
+                  </td>
+                  <td className="px-3 py-1.5">
+                    <MoneyInput
+                      value={row.amount}
+                      onChange={(n) => updateExpense(row.id, { amount: n })}
+                    />
+                  </td>
+                  <td className="px-3 py-1.5">
+                    {row.source === "meta-daily" ? (
+                      <p className="text-sm text-muted-foreground">매일</p>
+                    ) : (
+                      <select
+                        className="h-8 w-full min-w-[5.5rem] rounded-lg border border-input bg-transparent px-2 text-sm"
+                        value={row.payDay ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateExpensePayDay(
+                            row.id,
+                            v === "" ? null : Number(v)
+                          );
+                        }}
+                      >
+                        <option value="">—</option>
+                        <option value={1}>1일</option>
+                        <option value={10}>10일</option>
+                        <option value={25}>25일</option>
+                        <option value={31}>말일</option>
+                        {[5, 15, 20].map((d) => (
+                          <option key={d} value={d}>
+                            {d}일
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      {row.source === "meta-daily"
+                        ? `일 ${formatCurrency(row.dailyAmount ?? 700_000)}`
+                        : payDayLabel(row.payDay)}
+                    </p>
+                  </td>
+                  <td className="px-3 py-1.5">
+                    <Input
+                      value={row.note}
+                      onChange={(e) =>
+                        updateExpense(row.id, { note: e.target.value })
+                      }
+                      placeholder="메모"
+                    />
+                  </td>
+                  <td className="px-3 py-1.5">
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label="삭제"
+                      onClick={() => removeExpense(row.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* 병원 수금 */}
       <section className="space-y-3">
@@ -790,136 +952,6 @@ export function CashflowPage() {
                       variant="ghost"
                       aria-label="삭제"
                       onClick={() => removeHospital(row.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* 비용 */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold">월 비용</h2>
-            <p className="text-xs text-muted-foreground">
-              Meta 일 70만(매일) · 인건비 BBG 10일 / 골드펜더·태국·베트남
-              말일 · 임대·관리 1일 · 4대보험·대출 10일 · AI 25일 · 영업커미션
-              직접입력
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={syncPayrollExpenses}
-            >
-              <RefreshCw className="mr-1 h-4 w-4" />
-              급여 실지급 반영
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={addExpense}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              비용 추가
-            </Button>
-          </div>
-        </div>
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-medium">항목</th>
-                <th className="px-3 py-2 font-medium text-right">금액</th>
-                <th className="px-3 py-2 font-medium">지출일</th>
-                <th className="px-3 py-2 font-medium">비고</th>
-                <th className="px-3 py-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {month.expenses.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
-                    비용을 추가해 주세요. (인건비, 광고비 등)
-                  </td>
-                </tr>
-              )}
-              {month.expenses.map((row) => (
-                <tr key={row.id} className="border-t border-border">
-                  <td className="px-3 py-1.5">
-                    <Input
-                      value={row.name}
-                      onChange={(e) =>
-                        updateExpense(row.id, { name: e.target.value })
-                      }
-                    />
-                  </td>
-                  <td className="px-3 py-1.5">
-                    <MoneyInput
-                      value={row.amount}
-                      onChange={(n) => updateExpense(row.id, { amount: n })}
-                    />
-                  </td>
-                  <td className="px-3 py-1.5">
-                    {row.source === "meta-daily" ? (
-                      <p className="text-sm text-muted-foreground">매일</p>
-                    ) : (
-                      <select
-                        className="h-8 w-full min-w-[5.5rem] rounded-lg border border-input bg-transparent px-2 text-sm"
-                        value={row.payDay ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          updateExpensePayDay(
-                            row.id,
-                            v === "" ? null : Number(v)
-                          );
-                        }}
-                      >
-                        <option value="">—</option>
-                        <option value={1}>1일</option>
-                        <option value={10}>10일</option>
-                        <option value={25}>25일</option>
-                        <option value={31}>말일</option>
-                        {[5, 15, 20].map((d) => (
-                          <option key={d} value={d}>
-                            {d}일
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {row.source === "meta-daily"
-                        ? `일 ${formatCurrency(row.dailyAmount ?? 700_000)}`
-                        : payDayLabel(row.payDay)}
-                    </p>
-                  </td>
-                  <td className="px-3 py-1.5">
-                    <Input
-                      value={row.note}
-                      onChange={(e) =>
-                        updateExpense(row.id, { note: e.target.value })
-                      }
-                      placeholder="메모"
-                    />
-                  </td>
-                  <td className="px-3 py-1.5">
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label="삭제"
-                      onClick={() => removeExpense(row.id)}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>

@@ -45,10 +45,14 @@ export function withSeedHospitalsIfEmpty(
   > = {}
 ): CashflowSnapshot {
   const version = snapshot.seedVersion ?? 0;
+  const monthsNeedExpenses = Object.values(snapshot.months).some(
+    (m) => m.expenses.length < SEED_EXPENSE_TEMPLATES.length
+  );
   if (
     version >= CASHFLOW_SEED_VERSION &&
     snapshot.hospitals.length > 0 &&
-    snapshot.expenseTemplates.length >= SEED_EXPENSE_TEMPLATES.length
+    snapshot.expenseTemplates.length >= SEED_EXPENSE_TEMPLATES.length &&
+    !monthsNeedExpenses
   ) {
     return snapshot;
   }
