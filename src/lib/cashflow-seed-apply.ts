@@ -1,4 +1,7 @@
-import { emptyExpenseRow, emptyHospitalRow } from "@/lib/cashflow-calc";
+import {
+  emptyExpenseRow,
+  emptyHospitalRow,
+} from "@/lib/cashflow-calc";
 import {
   resolveHospitalMonthAmount,
   SEED_HOSPITALS,
@@ -139,6 +142,7 @@ export function withSeedHospitalsIfEmpty(
       yearMonth: ym,
       hospitals: nextHospitals,
       expenses: nextExpenses,
+      miscCollections: month?.miscCollections ?? [],
     };
   }
 
@@ -184,5 +188,5 @@ export function buildMonthFromTemplates(
       note: expenseNote(t.source, t.name),
     };
   });
-  return { yearMonth, hospitals, expenses };
+  return { yearMonth, hospitals, expenses, miscCollections: [] };
 }

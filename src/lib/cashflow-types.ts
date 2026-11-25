@@ -71,10 +71,20 @@ export interface ExpenseMonthRow {
   dailyAmount?: number;
 }
 
+/** 병원 외 기타 수금 (수동 추가) */
+export interface MiscCollectionRow {
+  id: string;
+  name: string;
+  amount: number;
+  expectedDay: number | null;
+  status: CollectionStatus;
+}
+
 export interface CashflowMonth {
   yearMonth: string;
   hospitals: HospitalMonthRow[];
   expenses: ExpenseMonthRow[];
+  miscCollections: MiscCollectionRow[];
 }
 
 export interface CashflowSnapshot {

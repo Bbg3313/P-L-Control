@@ -4,6 +4,7 @@ import type {
   ExpenseMonthRow,
   ExpenseSource,
   HospitalMonthRow,
+  MiscCollectionRow,
 } from "@/lib/cashflow-types";
 import { isActiveContract } from "@/lib/cashflow-types";
 
@@ -12,6 +13,8 @@ export interface CashflowSummary {
   receivedTotal: number;
   unpaidTotal: number;
   expenseTotal: number;
+  miscBilledTotal: number;
+  miscReceivedTotal: number;
   paidCount: number;
   unpaidCount: number;
   hospitalCount: number;
@@ -45,6 +48,21 @@ export function sumExpectedByDayLimit(
   return total;
 }
 
+/** 기타 수금 중 예정일이 maxDay 이하인 금액 합 */
+export function sumMiscExpectedByDayLimit(
+  rows: MiscCollectionRow[],
+  maxDay: number
+): number {
+  let total = 0;
+  for (const row of rows) {
+    const day = row.expectedDay ?? 31;
+    if (day <= maxDay) {
+      total += Math.max(0, Math.floor(row.amount || 0));
+    }
+  }
+  return total;
+}
+
 /** 입금완료이고 예정일이 maxDay 이하인 청구액 합 */
 export function sumReceivedByDayLimit(
   hospitals: HospitalMonthRow[],
@@ -65,6 +83,7 @@ export function sumReceivedByDayLimit(
 export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
   const hospitals = month?.hospitals ?? [];
   const expenses = month?.expenses ?? [];
+  const misc = month?.miscCollections ?? [];
 
   let billedTotal = 0;
   let receivedTotal = 0;
@@ -94,6 +113,18 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
   }
 
+  let miscBilledTotal = 0;
+  let miscReceivedTotal = 0;
+  for (const row of misc) {
+    const billed = Math.max(0, Math.floor(row.amount || 0));
+    miscBilledTotal += billed;
+    billedTotal += billed;
+    if (row.status === "paid") {
+      miscReceivedTotal += billed;
+      receivedTotal += billed;
+    }
+  }
+
   const expenseTotal = expenses.reduce(
     (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
     0
@@ -104,6 +135,8 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     receivedTotal,
     unpaidTotal: Math.max(0, billedTotal - receivedTotal),
     expenseTotal,
+    miscBilledTotal,
+    miscReceivedTotal,
     paidCount,
     unpaidCount,
     hospitalCount: activeCount,
@@ -159,14 +192,22 @@ export function buildCheckpoints(
 ): CheckpointSummary[] {
   const hospitals = month?.hospitals ?? [];
   const expenses = month?.expenses ?? [];
+  const misc = month?.miscCollections ?? [];
   const ym = month?.yearMonth;
 
-  const startIn = sumExpectedByDayLimit(hospitals, 1);
-  const day10In = sumExpectedByDayLimit(hospitals, 10);
-  const endIn = hospitals.reduce((sum, row) => {
-    if (!isActiveContract(row.contractStatus)) return sum;
-    return sum + Math.max(0, Math.floor(row.amount || 0));
-  }, 0);
+  const startIn =
+    sumExpectedByDayLimit(hospitals, 1) + sumMiscExpectedByDayLimit(misc, 1);
+  const day10In =
+    sumExpectedByDayLimit(hospitals, 10) + sumMiscExpectedByDayLimit(misc, 10);
+  const endIn =
+    hospitals.reduce((sum, row) => {
+      if (!isActiveContract(row.contractStatus)) return sum;
+      return sum + Math.max(0, Math.floor(row.amount || 0));
+    }, 0) +
+    misc.reduce(
+      (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
+      0
+    );
 
   const startExp = sumExpensesByPayDayLimit(expenses, 1, ym);
   const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym);
@@ -230,5 +271,20 @@ export function emptyExpenseRow(
     payDay,
     source,
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
+  };
+}
+
+export function emptyMiscRow(
+  id: string,
+  name = "",
+  amount = 0,
+  expectedDay: number | null = null
+): MiscCollectionRow {
+  return {
+    id,
+    name,
+    amount,
+    expectedDay,
+    status: "unpaid",
   };
 }

@@ -10,6 +10,7 @@ import {
   buildCheckpoints,
   emptyExpenseRow,
   emptyHospitalRow,
+  emptyMiscRow,
   summarizeMonth,
 } from "@/lib/cashflow-calc";
 import {
@@ -30,6 +31,7 @@ import {
   type ContractStatus,
   type ExpenseMonthRow,
   type HospitalMonthRow,
+  type MiscCollectionRow,
 } from "@/lib/cashflow-types";
 import { formatCurrency, normalizeAmountInputString } from "@/lib/format";
 import { formatPeriodLabel } from "@/lib/calculations";
@@ -119,6 +121,21 @@ export function CashflowPage() {
       return a.name.localeCompare(b.name, "ko");
     });
   }, [month.hospitals]);
+
+  const miscByDay = useMemo(() => {
+    return [...(month.miscCollections ?? [])].sort((a, b) => {
+      const da = a.expectedDay ?? 99;
+      const db = b.expectedDay ?? 99;
+      if (da !== db) return da - db;
+      return a.name.localeCompare(b.name, "ko");
+    });
+  }, [month.miscCollections]);
+
+  const miscPaidCount = useMemo(
+    () =>
+      (month.miscCollections ?? []).filter((r) => r.status === "paid").length,
+    [month.miscCollections]
+  );
 
   const persistMonth = useCallback(
     (nextMonth: CashflowMonth) => {
@@ -405,6 +422,32 @@ export function CashflowPage() {
     });
   }
 
+  function updateMisc(id: string, patch: Partial<MiscCollectionRow>) {
+    const miscCollections = (month.miscCollections ?? []).map((row) =>
+      row.id === id ? { ...row, ...patch } : row
+    );
+    persistMonth({ ...month, miscCollections });
+  }
+
+  function addMisc() {
+    persistMonth({
+      ...month,
+      miscCollections: [
+        ...(month.miscCollections ?? []),
+        emptyMiscRow(newId("misc"), "새 수금", 0, 10),
+      ],
+    });
+  }
+
+  function removeMisc(id: string) {
+    persistMonth({
+      ...month,
+      miscCollections: (month.miscCollections ?? []).filter(
+        (row) => row.id !== id
+      ),
+    });
+  }
+
   function addExpense() {
     const id = newId("e");
     setSnapshot((prev) => ({
@@ -661,8 +704,8 @@ export function CashflowPage() {
         </div>
       </div>
 
-      {/* 비용 | 병원 수금 — 좌우 분할, 스크롤 없이 한 화면 */}
-      <div className="grid min-h-0 flex-1 gap-0.5 overflow-hidden lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      {/* 비용 | 병원 수금 | 기타 수금 */}
+      <div className="grid min-h-0 flex-1 gap-0.5 overflow-hidden lg:grid-cols-3">
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1.5">
             <h2 className="text-sm font-semibold text-slate-800">
@@ -714,7 +757,7 @@ export function CashflowPage() {
                     <MoneyInput
                       value={row.amount}
                       onChange={(n) => updateExpense(row.id, { amount: n })}
-                      className="h-8 w-28 shrink-0 border-slate-200 bg-white px-2 text-sm"
+                      className="h-8 w-24 shrink-0 border-slate-200 bg-white px-1.5 text-sm"
                     />
                     {row.source === "meta-daily" ? (
                       <span className="flex h-8 w-14 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-xs font-semibold text-sky-700">
@@ -871,7 +914,7 @@ export function CashflowPage() {
                           updateHospital(row.id, { amount: n });
                           setHospitalDefaultAmount(row.id, n);
                         }}
-                        className="h-8 w-28 shrink-0 border-slate-200 bg-white px-2 text-sm"
+                        className="h-8 w-24 shrink-0 border-slate-200 bg-white px-1.5 text-sm"
                       />
                       <button
                         type="button"
@@ -884,6 +927,104 @@ export function CashflowPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
+          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1.5">
+            <h2 className="text-sm font-semibold text-slate-800">
+              기타 수금
+              <span className="ml-1.5 text-xs font-normal text-slate-500">
+                {miscPaidCount}/{miscByDay.length} 완료 ·{" "}
+                {formatCurrency(summary.miscBilledTotal)}
+              </span>
+            </h2>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 border-slate-200 px-2 text-xs"
+              onClick={addMisc}
+            >
+              + 추가
+            </Button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+            {miscByDay.length === 0 ? (
+              <p className="py-2 text-center text-xs text-slate-400">
+                내역 없음 · + 추가
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {miscByDay.map((row) => (
+                  <div
+                    key={row.id}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-1.5 py-1",
+                      row.status === "paid"
+                        ? "bg-emerald-50/70"
+                        : "bg-amber-50/50"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-8 w-14 shrink-0 rounded-md text-xs font-bold",
+                        row.status === "paid"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-amber-400 text-amber-950"
+                      )}
+                      onClick={() =>
+                        updateMisc(row.id, {
+                          status: row.status === "paid" ? "unpaid" : "paid",
+                        })
+                      }
+                    >
+                      {row.status === "paid" ? "완료" : "미수"}
+                    </button>
+                    <Input
+                      value={row.name}
+                      onChange={(e) =>
+                        updateMisc(row.id, { name: e.target.value })
+                      }
+                      className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
+                      placeholder="항목"
+                    />
+                    <select
+                      className="h-8 w-14 shrink-0 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700"
+                      value={row.expectedDay ?? ""}
+                      aria-label="수금일"
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        updateMisc(row.id, {
+                          expectedDay: v === "" ? null : Number(v),
+                        });
+                      }}
+                    >
+                      <option value="">—</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={d}>
+                          {d}일
+                        </option>
+                      ))}
+                    </select>
+                    <MoneyInput
+                      value={row.amount}
+                      onChange={(n) => updateMisc(row.id, { amount: n })}
+                      className="h-8 w-24 shrink-0 border-slate-200 bg-white px-1.5 text-sm"
+                    />
+                    <button
+                      type="button"
+                      className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+                      aria-label="삭제"
+                      onClick={() => removeMisc(row.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

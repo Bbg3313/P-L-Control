@@ -9,6 +9,7 @@ import {
   type ExpenseTemplate,
   type HospitalMonthRow,
   type HospitalTemplate,
+  type MiscCollectionRow,
 } from "@/lib/cashflow-types";
 
 function isYearMonth(key: string): boolean {
@@ -149,6 +150,20 @@ function normalizeExpenseRow(raw: unknown): ExpenseMonthRow | null {
   };
 }
 
+function normalizeMiscRow(raw: unknown): MiscCollectionRow | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const id = typeof o.id === "string" ? o.id.trim() : "";
+  if (!id) return null;
+  return {
+    id,
+    name: typeof o.name === "string" ? o.name.trim() : "",
+    amount: asMoney(o.amount),
+    expectedDay: asDay(o.expectedDay),
+    status: asStatus(o.status),
+  };
+}
+
 function normalizeMonth(
   yearMonth: string,
   raw: unknown
@@ -165,7 +180,12 @@ function normalizeMonth(
         .map(normalizeExpenseRow)
         .filter((r): r is ExpenseMonthRow => Boolean(r))
     : [];
-  return { yearMonth, hospitals, expenses };
+  const miscCollections = Array.isArray(o.miscCollections)
+    ? o.miscCollections
+        .map(normalizeMiscRow)
+        .filter((r): r is MiscCollectionRow => Boolean(r))
+    : [];
+  return { yearMonth, hospitals, expenses, miscCollections };
 }
 
 export function normalizeCashflowSnapshot(
