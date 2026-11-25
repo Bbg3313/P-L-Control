@@ -541,9 +541,9 @@ export function CashflowPage() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-1.5 overflow-hidden">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       {/* 헤더 + 현황 KPI + 기준일 현금흐름 */}
-      <div className="shrink-0 space-y-2">
+      <div className="shrink-0 space-y-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h1 className="text-base font-semibold text-slate-900">
@@ -670,21 +670,21 @@ export function CashflowPage() {
       </div>
 
       {/* 비용 | 병원 수금 — 좌우 분할, 스크롤 없이 한 화면 */}
-      <div className="grid min-h-0 flex-1 gap-1.5 overflow-hidden lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+      <div className="grid min-h-0 flex-1 gap-0.5 overflow-hidden lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
-          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1">
-            <h2 className="text-xs font-semibold text-slate-800">
+          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1.5">
+            <h2 className="text-sm font-semibold text-slate-800">
               월 비용
-              <span className="ml-1 font-normal text-slate-500">
+              <span className="ml-1.5 text-xs font-normal text-slate-500">
                 {formatCurrency(summary.expenseTotal)}
               </span>
             </h2>
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-5 border-slate-200 px-1.5 text-[10px]"
+                className="h-7 border-slate-200 px-2 text-xs"
                 onClick={syncPayrollExpenses}
               >
                 급여반영
@@ -693,44 +693,44 @@ export function CashflowPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-5 border-slate-200 px-1.5 text-[10px]"
+                className="h-7 border-slate-200 px-2 text-xs"
                 onClick={addExpense}
               >
-                +
+                + 추가
               </Button>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-1">
+          <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
             {month.expenses.length === 0 ? (
-              <p className="py-2 text-center text-[11px] text-slate-400">
+              <p className="py-2 text-center text-xs text-slate-400">
                 비용 없음
               </p>
             ) : (
-              <div className="space-y-0.5">
+              <div className="flex flex-col gap-1">
                 {month.expenses.map((row) => (
                   <div
                     key={row.id}
-                    className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-slate-50"
                   >
                     <Input
                       value={row.name}
                       onChange={(e) =>
                         updateExpense(row.id, { name: e.target.value })
                       }
-                      className="h-5 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[11px] shadow-none focus-visible:ring-1"
+                      className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
                     />
                     <MoneyInput
                       value={row.amount}
                       onChange={(n) => updateExpense(row.id, { amount: n })}
-                      className="h-5 w-[5.5rem] shrink-0 border-slate-200 bg-white px-1 text-[11px]"
+                      className="h-8 w-28 shrink-0 border-slate-200 bg-white px-2 text-sm"
                     />
                     {row.source === "meta-daily" ? (
-                      <span className="w-7 shrink-0 text-center text-[10px] text-sky-700">
+                      <span className="flex h-8 w-14 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-xs font-semibold text-sky-700">
                         매일
                       </span>
                     ) : (
                       <select
-                        className="h-5 w-9 shrink-0 rounded border border-slate-200 bg-white text-[10px]"
+                        className="h-8 w-14 shrink-0 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700"
                         value={row.payDay ?? ""}
                         aria-label="지출일"
                         onChange={(e) => {
@@ -742,25 +742,25 @@ export function CashflowPage() {
                         }}
                       >
                         <option value="">—</option>
-                        <option value={1}>1</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={25}>25</option>
-                        <option value={31}>말</option>
+                        <option value={1}>1일</option>
+                        <option value={10}>10일</option>
+                        <option value={20}>20일</option>
+                        <option value={25}>25일</option>
+                        <option value={31}>말일</option>
                         {[5, 15].map((d) => (
                           <option key={d} value={d}>
-                            {d}
+                            {d}일
                           </option>
                         ))}
                       </select>
                     )}
                     <button
                       type="button"
-                      className="shrink-0 text-slate-300 hover:text-slate-600"
+                      className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
                       aria-label="삭제"
                       onClick={() => removeExpense(row.id)}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
@@ -770,10 +770,10 @@ export function CashflowPage() {
         </section>
 
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
-          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1">
-            <h2 className="text-xs font-semibold text-slate-800">
+          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1.5">
+            <h2 className="text-sm font-semibold text-slate-800">
               병원 수금
-              <span className="ml-1 font-normal text-slate-500">
+              <span className="ml-1.5 text-xs font-normal text-slate-500">
                 {summary.paidCount}/{summary.hospitalCount} 완료
               </span>
             </h2>
