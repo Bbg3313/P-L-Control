@@ -25,7 +25,7 @@ export type ExpenseSource =
   | "fixed-vn"
   | "meta-daily";
 
-export const CASHFLOW_SEED_VERSION = 8;
+export const CASHFLOW_SEED_VERSION = 9;
 
 export interface HospitalTemplate {
   id: string;

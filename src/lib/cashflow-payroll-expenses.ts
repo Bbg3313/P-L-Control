@@ -87,7 +87,7 @@ export function calcMetaMonthlyAmount(yearMonth: string): number {
 export const SEED_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
   {
     id: EXPENSE_IDS.payrollBbg,
-    name: "인건비",
+    name: "인건비 (BBG)",
     defaultAmount: 0,
     payDay: 10,
     source: "payroll-bbg",
