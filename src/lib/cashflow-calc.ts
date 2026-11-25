@@ -239,7 +239,8 @@ export function sumExpensesByPayDayLimit(
       total += remaining;
       continue;
     }
-    const payDay = row.payDay ?? 31;
+    // payDay 31(말)은 해당 월 말일로 본다
+    const payDay = Math.min(row.payDay ?? 31, daysInMonth);
     if (payDay <= maxDay) total += remaining;
   }
   return total;
@@ -278,7 +279,7 @@ export function sumPaidExpenseByPayDayLimit(
       total += paid;
       continue;
     }
-    const payDay = row.payDay ?? 31;
+    const payDay = Math.min(row.payDay ?? 31, daysInMonth);
     if (payDay <= maxDay) total += paid;
   }
   return total;
@@ -303,15 +304,18 @@ function packDayCashflow(
   expenses: ExpenseMonthRow[],
   misc: MiscCollectionRow[],
   ym: string | undefined,
-  day: number
+  /** 수금 기준일. null = 말일(전체) */
+  day: number | null
 ): Omit<DailyCashflowPoint, "day" | "label"> {
+  const receiveDay = day ?? 31;
   const paidReceived =
-    sumReceivedByDayLimit(hospitals, day) +
-    sumMiscExpectedByDayLimit(misc, day, { paidOnly: true });
+    sumReceivedByDayLimit(hospitals, receiveDay) +
+    sumMiscExpectedByDayLimit(misc, receiveDay, { paidOnly: true });
   const unpaidReceived =
-    sumExpectedByDayLimit(hospitals, day, true) +
-    sumMiscExpectedByDayLimit(misc, day, { unpaidOnly: true });
+    sumExpectedByDayLimit(hospitals, receiveDay, true) +
+    sumMiscExpectedByDayLimit(misc, receiveDay, { unpaidOnly: true });
   const received = paidReceived + unpaidReceived;
+  // 비용: null이면 월 비용 전부(말일 지급 포함)
   const total = sumExpensesByPayDayLimit(expenses, day, ym, false);
   return {
     paidReceived,
@@ -361,11 +365,10 @@ export function buildCheckpoints(
     label: string,
     key: CheckpointSummary["key"]
   ): CheckpointSummary {
-    const day = maxDay ?? daysInCashflowMonth(ym);
     return {
       key,
       label,
-      ...packDayCashflow(hospitals, expenses, misc, ym, day),
+      ...packDayCashflow(hospitals, expenses, misc, ym, maxDay),
     };
   }
 
