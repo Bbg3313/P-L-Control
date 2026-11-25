@@ -23,6 +23,7 @@ export const EXPENSE_IDS = {
   interpretation: "exp-interpretation",
   rent: "exp-rent",
   maintenance: "exp-maintenance",
+  cleaning: "exp-cleaning",
   telecom: "exp-telecom",
   loan: "exp-loan-repay",
   socialInsurance: "exp-social-insurance",
@@ -36,6 +37,7 @@ export const FIXED_VIETNAM_PAYROLL = 1_750_000;
 export const META_DAILY_AMOUNT = 700_000;
 export const FIXED_RENT = 1_210_000;
 export const FIXED_MAINTENANCE = 500_000;
+export const FIXED_CLEANING = 100_000;
 export const FIXED_TELECOM = 500_000;
 export const FIXED_LOAN_REPAY = 5_000_000;
 export const FIXED_SOCIAL_INSURANCE = 4_000_000;
@@ -193,6 +195,13 @@ export const SEED_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
     id: EXPENSE_IDS.maintenance,
     name: "관리비",
     defaultAmount: FIXED_MAINTENANCE,
+    payDay: 1,
+    source: "manual",
+  },
+  {
+    id: EXPENSE_IDS.cleaning,
+    name: "청소비",
+    defaultAmount: FIXED_CLEANING,
     payDay: 1,
     source: "manual",
   },
