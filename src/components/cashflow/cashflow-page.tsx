@@ -78,6 +78,50 @@ function MoneyInput({
   );
 }
 
+/** 한글 IME·매 키 저장으로 입력이 깨지지 않게 로컬 초안 후 blur 반영 */
+function DraftTextInput({
+  value,
+  onCommit,
+  className,
+  placeholder,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState(value);
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setDraft(value);
+  }, [value]);
+
+  return (
+    <input
+      value={draft}
+      placeholder={placeholder}
+      className={cn(
+        "h-8 min-w-0 flex-1 rounded-md border-0 bg-transparent px-1 text-sm text-slate-900 outline-none ring-offset-0 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-slate-300",
+        className
+      )}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        focused.current = false;
+        if (draft !== value) onCommit(draft);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+    />
+  );
+}
+
 function ensureMonth(
   snapshot: CashflowSnapshot,
   yearMonth: string,
@@ -445,7 +489,7 @@ export function CashflowPage() {
       ...month,
       miscCollections: [
         ...(month.miscCollections ?? []),
-        emptyMiscRow(newId("misc"), "새 수금", 0, 10),
+        emptyMiscRow(newId("misc"), "", 0, 10),
       ],
     });
   }
@@ -970,7 +1014,7 @@ export function CashflowPage() {
             <h2 className="text-sm font-semibold text-slate-800">
               기타 수금
               <span className="ml-1.5 text-xs font-normal text-slate-500">
-                {miscPaidCount}/{miscByDay.length} 완료 ·{" "}
+                예상 추가매출 · {miscPaidCount}/{miscByDay.length} 입금 ·{" "}
                 {formatCurrency(summary.miscBilledTotal)}
               </span>
             </h2>
@@ -998,7 +1042,7 @@ export function CashflowPage() {
                       "flex items-center gap-1.5 rounded-md px-1.5 py-1",
                       row.status === "paid"
                         ? "bg-emerald-50/70"
-                        : "bg-amber-50/50"
+                        : "bg-sky-50/70"
                     )}
                   >
                     <button
@@ -1007,7 +1051,7 @@ export function CashflowPage() {
                         "h-8 w-14 shrink-0 rounded-md text-xs font-bold",
                         row.status === "paid"
                           ? "bg-emerald-500 text-white"
-                          : "bg-amber-400 text-amber-950"
+                          : "bg-sky-500 text-white"
                       )}
                       onClick={() =>
                         updateMisc(row.id, {
@@ -1015,20 +1059,17 @@ export function CashflowPage() {
                         })
                       }
                     >
-                      {row.status === "paid" ? "완료" : "미수"}
+                      {row.status === "paid" ? "입금" : "예상"}
                     </button>
-                    <Input
+                    <DraftTextInput
                       value={row.name}
-                      onChange={(e) =>
-                        updateMisc(row.id, { name: e.target.value })
-                      }
-                      className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
-                      placeholder="항목"
+                      onCommit={(name) => updateMisc(row.id, { name })}
+                      placeholder="항목명"
                     />
                     <select
                       className="h-8 w-14 shrink-0 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700"
                       value={row.expectedDay ?? ""}
-                      aria-label="수금일"
+                      aria-label="예정일"
                       onChange={(e) => {
                         const v = e.target.value;
                         updateMisc(row.id, {

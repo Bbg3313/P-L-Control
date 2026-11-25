@@ -117,12 +117,12 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
   }
 
+  // 기타 수금 = 예상 추가매출 (병원 미수와 별도). 입금된 건만 수금에 합산
   let miscBilledTotal = 0;
   let miscReceivedTotal = 0;
   for (const row of misc) {
     const billed = Math.max(0, Math.floor(row.amount || 0));
     miscBilledTotal += billed;
-    billedTotal += billed;
     if (row.status === "paid") {
       miscReceivedTotal += billed;
       receivedTotal += billed;
