@@ -96,12 +96,6 @@ function ensureMonth(
   );
 }
 
-function payDayLabel(payDay: number | null): string {
-  if (payDay == null) return "—";
-  if (payDay >= 28) return "말일";
-  return `${payDay}일`;
-}
-
 export function CashflowPage() {
   const { reportingMonth, hydrated: monthHydrated } = useFinancial();
   const [snapshot, setSnapshot] = useState<CashflowSnapshot>(
