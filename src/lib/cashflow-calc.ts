@@ -295,7 +295,10 @@ export function buildExpenseAccountMix(
     sums.set(key, (sums.get(key) ?? 0) + amount);
   }
 
-  const total = [...sums.values()].reduce((a, b) => a + b, 0);
+  let total = 0;
+  for (const key of EXPENSE_ACCOUNT_ORDER) {
+    total += sums.get(key) ?? 0;
+  }
   return EXPENSE_ACCOUNT_ORDER.map((key) => {
     const value = sums.get(key) ?? 0;
     return {
