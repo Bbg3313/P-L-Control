@@ -35,6 +35,8 @@ function expenseNote(source: ExpenseSource, name: string): string {
       return "일 70만 카드 · 매일";
     default:
       if (name === "영업커미션") return "금액 직접 입력";
+      if (name === "기타영업커미션") return "금액 직접 입력";
+      if (name === "통역비") return "금액 직접 입력";
       if (name === "임대료") return "121만 · 1일";
       if (name === "관리비") return "50만 · 1일";
       if (name === "대출상환") return "500만 · 10일";
