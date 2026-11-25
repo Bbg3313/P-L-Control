@@ -36,14 +36,16 @@ export interface CheckpointSummary {
   net: number;
 }
 
-/** 활성 계약 중 예정일이 maxDay 이하인 청구액 합(미수 포함 — 현금 계획용) */
+/** 활성(외주·자체) 계약만. 보류·해지 제외 */
 export function sumExpectedByDayLimit(
   hospitals: HospitalMonthRow[],
-  maxDay: number
+  maxDay: number,
+  unpaidOnly = false
 ): number {
   let total = 0;
   for (const row of hospitals) {
     if (!isActiveContract(row.contractStatus)) continue;
+    if (unpaidOnly && row.status === "paid") continue;
     const day = row.expectedDay ?? 31;
     if (day <= maxDay) {
       total += Math.max(0, Math.floor(row.amount || 0));
@@ -52,13 +54,15 @@ export function sumExpectedByDayLimit(
   return total;
 }
 
-/** 기타 수금 중 예정일이 maxDay 이하인 금액 합 */
+/** 기타 수금 예정일 합. unpaidOnly면 아직 입금 전(예상)만 */
 export function sumMiscExpectedByDayLimit(
   rows: MiscCollectionRow[],
-  maxDay: number
+  maxDay: number,
+  unpaidOnly = false
 ): number {
   let total = 0;
   for (const row of rows) {
+    if (unpaidOnly && row.status === "paid") continue;
     const day = row.expectedDay ?? 31;
     if (day <= maxDay) {
       total += Math.max(0, Math.floor(row.amount || 0));
@@ -229,21 +233,18 @@ export function buildCheckpoints(
   const misc = month?.miscCollections ?? [];
   const ym = month?.yearMonth;
 
+  // 앞으로 들어올 돈(미수·예상) − 앞으로 나갈 돈(미지급).
+  // 보류·해지·입금완료·기지급은 제외 → 말일 ‘남음’이 부풀지 않음
   const startIn =
-    sumExpectedByDayLimit(hospitals, 1) + sumMiscExpectedByDayLimit(misc, 1);
+    sumExpectedByDayLimit(hospitals, 1, true) +
+    sumMiscExpectedByDayLimit(misc, 1, true);
   const day10In =
-    sumExpectedByDayLimit(hospitals, 10) + sumMiscExpectedByDayLimit(misc, 10);
+    sumExpectedByDayLimit(hospitals, 10, true) +
+    sumMiscExpectedByDayLimit(misc, 10, true);
   const endIn =
-    hospitals.reduce((sum, row) => {
-      if (!isActiveContract(row.contractStatus)) return sum;
-      return sum + Math.max(0, Math.floor(row.amount || 0));
-    }, 0) +
-    misc.reduce(
-      (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
-      0
-    );
+    sumExpectedByDayLimit(hospitals, 31, true) +
+    sumMiscExpectedByDayLimit(misc, 31, true);
 
-  // 기지급은 이미 나갔으므로 ‘더 필요’에는 미지급만 반영
   const startExp = sumExpensesByPayDayLimit(expenses, 1, ym, true);
   const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym, true);
   const endExp = sumExpensesByPayDayLimit(expenses, null, ym, true);
