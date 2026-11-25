@@ -50,6 +50,7 @@ function asContractStatus(value: unknown): ContractStatus {
 function asExpenseSource(value: unknown): ExpenseSource {
   if (
     value === "payroll-bbg" ||
+    value === "payroll-ceo" ||
     value === "payroll-goldfender" ||
     value === "fixed-th" ||
     value === "fixed-vn" ||

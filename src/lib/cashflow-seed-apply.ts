@@ -25,6 +25,8 @@ function expenseNote(source: ExpenseSource, name: string): string {
   switch (source) {
     case "payroll-bbg":
       return "전월 급여대장 실지급 (미지급 제외) · 10일";
+    case "payroll-ceo":
+      return "전월 급여대장 대표이사(이정석) 실지급 · 10일";
     case "payroll-goldfender":
       return "전월 급여대장 실지급 · 말일";
     case "fixed-th":
@@ -117,7 +119,9 @@ export function withSeedHospitalsIfEmpty(
       const prev = prevE.get(t.id);
       const linked = resolveLinkedExpenseAmount(t.source, ym, overrides);
       const isPayrollLinked =
-        t.source === "payroll-bbg" || t.source === "payroll-goldfender";
+        t.source === "payroll-bbg" ||
+        t.source === "payroll-ceo" ||
+        t.source === "payroll-goldfender";
       // 인건비는 전월 대장 기준으로 시드 갱신 시 재계산
       const amount =
         isPayrollLinked && linked != null

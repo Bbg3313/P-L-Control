@@ -20,12 +20,13 @@ export const CONTRACT_STATUS_OPTIONS: ContractStatus[] = [
 export type ExpenseSource =
   | "manual"
   | "payroll-bbg"
+  | "payroll-ceo"
   | "payroll-goldfender"
   | "fixed-th"
   | "fixed-vn"
   | "meta-daily";
 
-export const CASHFLOW_SEED_VERSION = 13;
+export const CASHFLOW_SEED_VERSION = 14;
 
 /** 수금현황 시작 월 — 이전 달 데이터는 버림 */
 export const CASHFLOW_START_MONTH = "2026-11";

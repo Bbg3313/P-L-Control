@@ -4,6 +4,7 @@ import {
 } from "@/lib/payroll-ledger";
 import {
   createDefaultPersonnel,
+  isRepresentativeDirector,
   isUnpaidPayrollPersonnel,
 } from "@/lib/personnel";
 import { applyPersonnelReferenceSalary } from "@/lib/personnel-reference-salaries";
@@ -12,6 +13,7 @@ import type { ExpenseSource, ExpenseTemplate } from "@/lib/cashflow-types";
 /** 고정 ID — 월별 행과 템플릿을 맞춤 */
 export const EXPENSE_IDS = {
   payrollBbg: "exp-payroll-bbg",
+  payrollCeo: "exp-payroll-ceo",
   payrollGoldfender: "exp-payroll-goldfender",
   thailand: "exp-thailand-corp",
   vietnam: "exp-vietnam-corp",
@@ -83,6 +85,25 @@ export function calcBbgNetPayTotal(
   return sumNetPay(yearMonth, "bluebridge", performancePayOverrides, true);
 }
 
+/** 대표이사(이정석) 실지급액 — BBG 인건비와 별도 라인 */
+export function calcCeoNetPayTotal(
+  yearMonth: string,
+  performancePayOverrides: Record<string, number> = {}
+): number {
+  const personnel = createDefaultPersonnel().map((e) =>
+    applyPersonnelReferenceSalary(e.name, e)
+  );
+  const ledger = buildPayrollLedger(
+    yearMonth,
+    personnel,
+    {},
+    "bluebridge",
+    performancePayOverrides
+  );
+  const row = ledger.domestic.find((r) => isRepresentativeDirector(r.name));
+  return row ? Math.max(0, Math.floor(row.netPay || 0)) : 0;
+}
+
 export function calcGoldfenderNetPayTotal(
   yearMonth: string,
   performancePayOverrides: Record<string, number> = {}
@@ -101,6 +122,13 @@ export const SEED_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
     defaultAmount: 0,
     payDay: 10,
     source: "payroll-bbg",
+  },
+  {
+    id: EXPENSE_IDS.payrollCeo,
+    name: "인건비 (대표이사)",
+    defaultAmount: 0,
+    payDay: 10,
+    source: "payroll-ceo",
   },
   {
     id: EXPENSE_IDS.payrollGoldfender,
@@ -214,6 +242,12 @@ export function resolveLinkedExpenseAmount(
 ): number | null {
   if (source === "payroll-bbg") {
     return calcBbgNetPayTotal(
+      payrollSourceYearMonth(cashflowYearMonth),
+      performancePayOverrides
+    );
+  }
+  if (source === "payroll-ceo") {
+    return calcCeoNetPayTotal(
       payrollSourceYearMonth(cashflowYearMonth),
       performancePayOverrides
     );
