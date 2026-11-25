@@ -187,6 +187,126 @@ function daysInCashflowMonth(yearMonth: string | undefined): number {
   return new Date(y, m, 0).getDate();
 }
 
+/** 월 비용 비중용 계정 묶음 */
+export type ExpenseAccountKey =
+  | "payroll"
+  | "ads"
+  | "sales"
+  | "office"
+  | "finance"
+  | "ops"
+  | "other";
+
+export const EXPENSE_ACCOUNT_ORDER: ExpenseAccountKey[] = [
+  "payroll",
+  "ads",
+  "sales",
+  "office",
+  "finance",
+  "ops",
+  "other",
+];
+
+export const EXPENSE_ACCOUNT_LABELS: Record<ExpenseAccountKey, string> = {
+  payroll: "인건비",
+  ads: "광고비",
+  sales: "영업·커미션",
+  office: "임차·관리",
+  finance: "금융",
+  ops: "운영·구독",
+  other: "기타",
+};
+
+export function classifyExpenseAccount(
+  row: Pick<ExpenseMonthRow, "name" | "source">
+): ExpenseAccountKey {
+  const source = row.source;
+  if (
+    source === "payroll-bbg" ||
+    source === "payroll-ceo" ||
+    source === "payroll-goldfender" ||
+    source === "fixed-th" ||
+    source === "fixed-vn"
+  ) {
+    return "payroll";
+  }
+  if (source === "meta-daily") return "ads";
+
+  const name = (row.name || "").replace(/\s+/g, "");
+  if (
+    name.includes("인건비") ||
+    name.includes("급여") ||
+    name.includes("4대보험")
+  ) {
+    return "payroll";
+  }
+  if (name.includes("광고") || name.toLowerCase().includes("meta")) {
+    return "ads";
+  }
+  if (
+    name.includes("커미션") ||
+    name.includes("통역") ||
+    name.includes("영업")
+  ) {
+    return "sales";
+  }
+  if (
+    name.includes("임대") ||
+    name.includes("관리비") ||
+    name.includes("청소") ||
+    name.includes("통신")
+  ) {
+    return "office";
+  }
+  if (name.includes("대출") || name.includes("이자") || name.includes("금융")) {
+    return "finance";
+  }
+  if (
+    name.includes("AI") ||
+    name.includes("구독") ||
+    name.includes("차량") ||
+    name.includes("복합기") ||
+    name.includes("소프트웨어")
+  ) {
+    return "ops";
+  }
+  return "other";
+}
+
+export interface ExpenseAccountSlice {
+  key: ExpenseAccountKey;
+  name: string;
+  value: number;
+  pct: number;
+}
+
+/** 제외 비용 빼고 계정별로 합산 */
+export function buildExpenseAccountMix(
+  expenses: ExpenseMonthRow[]
+): ExpenseAccountSlice[] {
+  const sums = new Map<ExpenseAccountKey, number>();
+  for (const key of EXPENSE_ACCOUNT_ORDER) sums.set(key, 0);
+
+  for (const row of expenses) {
+    if (row.excluded) continue;
+    const amount = Math.max(0, Math.floor(row.amount || 0));
+    if (amount <= 0) continue;
+    const key = classifyExpenseAccount(row);
+    sums.set(key, (sums.get(key) ?? 0) + amount);
+  }
+
+  const total = [...sums.values()].reduce((a, b) => a + b, 0);
+  return EXPENSE_ACCOUNT_ORDER.map((key) => {
+    const value = sums.get(key) ?? 0;
+    return {
+      key,
+      name: EXPENSE_ACCOUNT_LABELS[key],
+      value,
+      pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
+    };
+  }).filter((s) => s.value > 0);
+}
+
 export type ExpenseTimingKey = "start" | "day10" | "monthEnd";
 
 export interface ExpenseTimingBucket {

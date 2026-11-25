@@ -1,29 +1,24 @@
 "use client";
 
+import { useMemo } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { buildExpenseAccountMix } from "@/lib/cashflow-calc";
 import type { ExpenseMonthRow } from "@/lib/cashflow-types";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const COLORS = [
-  "#0f766e",
-  "#e11d48",
-  "#0369a1",
-  "#b45309",
-  "#4d7c0f",
-  "#7c3aed",
-  "#be123c",
-  "#0e7490",
-  "#a16207",
-  "#334155",
-  "#059669",
-  "#c2410c",
-  "#1d4ed8",
-  "#9f1239",
-  "#115e59",
-];
+const ACCOUNT_COLORS: Record<string, string> = {
+  payroll: "#0f766e",
+  ads: "#e11d48",
+  sales: "#0369a1",
+  office: "#b45309",
+  finance: "#7c3aed",
+  ops: "#4d7c0f",
+  other: "#64748b",
+};
 
 interface MixSlice {
+  key: string;
   name: string;
   value: number;
   pct: number;
@@ -62,28 +57,14 @@ export function CashflowExpenseMix({
   expenses,
   className,
 }: CashflowExpenseMixProps) {
-  const active = expenses.filter((row) => !row.excluded);
-  const total = active.reduce(
-    (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
-    0
-  );
-
-  const slices: MixSlice[] = active
-    .map((row) => {
-      const value = Math.max(0, Math.floor(row.amount || 0));
-      return {
-        name: row.name || "이름 없음",
-        value,
-        pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
-        color: "",
-      };
-    })
-    .filter((row) => row.value > 0)
-    .sort((a, b) => b.value - a.value)
-    .map((row, i) => ({
+  const slices: MixSlice[] = useMemo(() => {
+    return buildExpenseAccountMix(expenses).map((row) => ({
       ...row,
-      color: COLORS[i % COLORS.length],
+      color: ACCOUNT_COLORS[row.key] ?? ACCOUNT_COLORS.other,
     }));
+  }, [expenses]);
+
+  const total = slices.reduce((sum, row) => sum + row.value, 0);
 
   if (slices.length === 0 || total <= 0) {
     return (
@@ -129,7 +110,7 @@ export function CashflowExpenseMix({
                 strokeWidth={1}
               >
                 {slices.map((slice) => (
-                  <Cell key={slice.name} fill={slice.color} />
+                  <Cell key={slice.key} fill={slice.color} />
                 ))}
               </Pie>
               <Tooltip content={<MixTooltip />} />
@@ -141,8 +122,8 @@ export function CashflowExpenseMix({
           <ul className="flex flex-col gap-0.5">
             {slices.map((slice) => (
               <li
-                key={slice.name}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 text-[10px]"
+                key={slice.key}
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-1 text-[10px]"
               >
                 <span
                   className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -152,6 +133,9 @@ export function CashflowExpenseMix({
                   {slice.name}
                 </span>
                 <span className="tabular-nums text-slate-500">{slice.pct}%</span>
+                <span className="min-w-[3.5rem] text-right tabular-nums text-slate-700">
+                  {formatCompactCurrency(slice.value)}
+                </span>
               </li>
             ))}
           </ul>
