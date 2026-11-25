@@ -41,6 +41,7 @@ function expenseNote(source: ExpenseSource, name: string): string {
       if (name === "통역비") return "금액 직접 입력";
       if (name === "임대료") return "121만 · 1일";
       if (name === "관리비") return "50만 · 1일";
+      if (name === "통신비") return "50만 · 25일";
       if (name === "대출상환") return "500만 · 10일";
       if (name === "4대보험") return "400만 · 10일";
       if (name === "AI구독") return "100만 · 25일";
