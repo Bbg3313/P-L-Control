@@ -204,17 +204,31 @@ export function sumExpensesByPayDayLimit(
   let total = 0;
   for (const row of expenses) {
     const amount = Math.max(0, Math.floor(row.amount || 0));
-    const remaining = unpaidOnly ? expenseRemaining(row) : amount;
-    if (remaining <= 0) continue;
 
+    // Meta 등 일별: 1일=70만, 10일=700만, 말일=70만×일수
     if (row.source === "meta-daily" || (row.dailyAmount && row.dailyAmount > 0)) {
-      // 일부지급 시 잔액을 월 일수 비율로 기준일에 배분
-      const share =
-        maxDay == null ? 1 : Math.min(maxDay, daysInMonth) / daysInMonth;
-      total += Math.floor(remaining * share);
+      const daily = Math.max(
+        0,
+        Math.floor(row.dailyAmount || 0) ||
+          Math.floor(amount / daysInMonth)
+      );
+      if (daily <= 0) continue;
+      const days =
+        maxDay == null ? daysInMonth : Math.min(maxDay, daysInMonth);
+      let due = daily * days;
+      if (unpaidOnly) {
+        const paid = Math.min(
+          amount || due,
+          Math.max(0, Math.floor(row.paidAmount || 0))
+        );
+        due = Math.max(0, due - Math.min(paid, due));
+      }
+      total += due;
       continue;
     }
 
+    const remaining = unpaidOnly ? expenseRemaining(row) : amount;
+    if (remaining <= 0) continue;
     if (maxDay == null) {
       total += remaining;
       continue;
