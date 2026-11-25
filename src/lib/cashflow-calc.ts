@@ -89,7 +89,7 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
   const expenses = month?.expenses ?? [];
   const misc = month?.miscCollections ?? [];
 
-  let billedTotal = 0;
+  let hospitalBilledTotal = 0;
   let hospitalReceivedTotal = 0;
   let paidCount = 0;
   let unpaidCount = 0;
@@ -108,7 +108,7 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
     activeCount += 1;
     const billed = Math.max(0, Math.floor(row.amount || 0));
-    billedTotal += billed;
+    hospitalBilledTotal += billed;
     if (row.status === "paid") {
       hospitalReceivedTotal += billed;
       paidCount += 1;
@@ -117,7 +117,7 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
   }
 
-  // 기타 수금 = 예상 추가매출. 청구/미수와 무관, 입금분만 수금에만 합산
+  // 기타 수금: 청구·수금·기준일에는 반영. 미수(병원 미수금)에만 제외
   let miscBilledTotal = 0;
   let miscReceivedTotal = 0;
   for (const row of misc) {
@@ -128,8 +128,12 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
   }
 
+  const billedTotal = hospitalBilledTotal + miscBilledTotal;
   const receivedTotal = hospitalReceivedTotal + miscReceivedTotal;
-  const unpaidTotal = Math.max(0, billedTotal - hospitalReceivedTotal);
+  const unpaidTotal = Math.max(
+    0,
+    hospitalBilledTotal - hospitalReceivedTotal
+  );
 
   let expenseTotal = 0;
   let unpaidExpenseTotal = 0;
