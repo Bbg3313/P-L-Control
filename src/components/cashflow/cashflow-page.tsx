@@ -798,7 +798,6 @@ export function CashflowPage() {
             <h2 className="text-sm font-semibold text-slate-800">
               월 비용
               <span className="ml-1.5 text-xs font-normal text-slate-500">
-                잔여 {formatCurrency(summary.unpaidExpenseTotal)} ·{" "}
                 {formatCurrency(summary.expenseTotal)}
               </span>
             </h2>
