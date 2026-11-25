@@ -189,6 +189,9 @@ export function CashflowPage() {
   const checkpoints = useMemo(() => buildCheckpoints(month), [month]);
   const hospitalsByDay = useMemo(() => {
     return [...month.hospitals].sort((a, b) => {
+      const aHold = a.contractStatus === "??" ? 1 : 0;
+      const bHold = b.contractStatus === "??" ? 1 : 0;
+      if (aHold !== bHold) return aHold - bHold;
       const da = a.expectedDay ?? 99;
       const db = b.expectedDay ?? 99;
       if (da !== db) return da - db;
