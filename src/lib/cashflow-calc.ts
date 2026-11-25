@@ -1,6 +1,5 @@
 import type {
   CashflowMonth,
-  CollectionStatus,
   ContractStatus,
   ExpenseMonthRow,
   ExpenseSource,
@@ -217,12 +216,4 @@ export function emptyExpenseRow(
     source,
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
   };
-}
-
-/** @deprecated 부분입금 제거 — 호환용 */
-export function deriveStatus(
-  _amount: number,
-  _receivedAmount: number
-): CollectionStatus {
-  return "unpaid";
 }
