@@ -11,9 +11,7 @@ import {
   emptyExpenseRow,
   emptyHospitalRow,
   emptyMiscRow,
-  expenseRemaining,
   summarizeMonth,
-  withExpensePaidAmount,
 } from "@/lib/cashflow-calc";
 import {
   buildMonthFromTemplates,
@@ -166,9 +164,6 @@ export function CashflowPage() {
   );
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipFirstSave = useRef(true);
-  const [expandedExpenseId, setExpandedExpenseId] = useState<string | null>(
-    null
-  );
 
   const cashflowMonth =
     reportingMonth < CASHFLOW_START_MONTH
@@ -568,12 +563,13 @@ export function CashflowPage() {
         perfOverrides
       );
       if (linked == null) return row;
-      const next = {
+      return {
         ...row,
         amount: linked,
+        paidAmount: 0,
+        status: "unpaid" as const,
         ...(row.source === "meta-daily" ? { dailyAmount: 700_000 } : {}),
       };
-      return withExpensePaidAmount(next, row.paidAmount || 0);
     });
     const ids = new Set(expenses.map((e) => e.id));
     for (const t of snapshot.expenseTemplates) {
@@ -783,15 +779,9 @@ export function CashflowPage() {
                     </span>
                   </span>
                   <span>
-                    지급{" "}
+                    비용{" "}
                     <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.paidExpenses)}
-                    </span>
-                  </span>
-                  <span>
-                    미지급{" "}
-                    <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.unpaidExpenses)}
+                      {formatCurrency(cp.expenses)}
                     </span>
                   </span>
                 </div>
@@ -840,178 +830,70 @@ export function CashflowPage() {
               </p>
             ) : (
               <div className="flex flex-col gap-1">
-                {month.expenses.map((row) => {
-                  const remaining = expenseRemaining(row);
-                  const paid = Math.min(
-                    Math.max(0, Math.floor(row.amount || 0)),
-                    Math.max(0, Math.floor(row.paidAmount || 0))
-                  );
-                  const label =
-                    remaining <= 0 && row.amount > 0
-                      ? "지급"
-                      : paid > 0
-                        ? "일부"
-                        : "미지급";
-                  const open = expandedExpenseId === row.id;
-                  return (
-                    <div
-                      key={row.id}
-                      className={cn(
-                        "rounded-md",
-                        remaining <= 0 && row.amount > 0
-                          ? "bg-emerald-50/70"
-                          : paid > 0
-                            ? "bg-sky-50/70"
-                            : "bg-amber-50/50"
-                      )}
+                {month.expenses.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-slate-50"
+                  >
+                    <Input
+                      value={row.name}
+                      onChange={(e) =>
+                        updateExpense(row.id, { name: e.target.value })
+                      }
+                      className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
+                    />
+                    <MoneyInput
+                      value={row.amount}
+                      onChange={(n) =>
+                        updateExpense(row.id, {
+                          amount: n,
+                          paidAmount: 0,
+                          status: "unpaid",
+                        })
+                      }
+                      className="h-8 w-[7.5rem] shrink-0 border-slate-200 bg-white px-1.5 text-xs"
+                      aria-label="금액"
+                    />
+                    {row.source === "meta-daily" ? (
+                      <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-[10px] font-semibold text-sky-700">
+                        매일
+                      </span>
+                    ) : (
+                      <select
+                        className="h-8 w-12 shrink-0 rounded-md border border-slate-200 bg-white px-0.5 text-[10px] font-semibold text-slate-700"
+                        value={row.payDay ?? ""}
+                        aria-label="지출일"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateExpensePayDay(
+                            row.id,
+                            v === "" ? null : Number(v)
+                          );
+                        }}
+                      >
+                        <option value="">—</option>
+                        <option value={1}>1</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={25}>25</option>
+                        <option value={31}>말</option>
+                        {[5, 15].map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+                      aria-label="삭제"
+                      onClick={() => removeExpense(row.id)}
                     >
-                      <div className="flex items-center gap-1.5 px-1.5 py-1">
-                        <button
-                          type="button"
-                          className={cn(
-                            "h-8 w-[3.25rem] shrink-0 rounded-md text-[11px] font-bold leading-tight",
-                            remaining <= 0 && row.amount > 0
-                              ? "bg-emerald-500 text-white"
-                              : paid > 0
-                                ? "bg-sky-500 text-white"
-                                : "bg-amber-400 text-amber-950"
-                          )}
-                          title="클릭: 전액 지급 ↔ 미지급"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const full = Math.max(
-                              0,
-                              Math.floor(row.amount || 0)
-                            );
-                            const next = remaining <= 0 && full > 0 ? 0 : full;
-                            updateExpense(
-                              row.id,
-                              withExpensePaidAmount(row, next)
-                            );
-                          }}
-                        >
-                          {label}
-                        </button>
-                        <button
-                          type="button"
-                          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 truncate rounded px-1 text-left text-sm text-slate-800 hover:bg-white/60"
-                          onClick={() =>
-                            setExpandedExpenseId(open ? null : row.id)
-                          }
-                        >
-                          <span className="min-w-0 truncate">
-                            {row.name || "이름 없음"}
-                          </span>
-                          {paid > 0 && remaining > 0 && (
-                            <span className="shrink-0 text-[10px] font-medium tabular-nums text-sky-700">
-                              잔여 {formatCurrency(remaining)}
-                            </span>
-                          )}
-                        </button>
-                        <MoneyInput
-                          value={row.amount}
-                          onChange={(n) => {
-                            const capped = Math.min(
-                              Math.max(0, Math.floor(row.paidAmount || 0)),
-                              n
-                            );
-                            updateExpense(
-                              row.id,
-                              withExpensePaidAmount(
-                                { ...row, amount: n },
-                                capped
-                              )
-                            );
-                          }}
-                          className="h-8 w-[7.5rem] shrink-0 border-slate-200 bg-white px-1.5 text-xs"
-                          aria-label="총액"
-                        />
-                        {row.source === "meta-daily" ? (
-                          <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md border border-sky-100 bg-sky-50 text-[10px] font-semibold text-sky-700">
-                            매일
-                          </span>
-                        ) : (
-                          <select
-                            className="h-8 w-12 shrink-0 rounded-md border border-slate-200 bg-white px-0.5 text-[10px] font-semibold text-slate-700"
-                            value={row.payDay ?? ""}
-                            aria-label="지출일"
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              updateExpensePayDay(
-                                row.id,
-                                v === "" ? null : Number(v)
-                              );
-                            }}
-                          >
-                            <option value="">—</option>
-                            <option value={1}>1</option>
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={25}>25</option>
-                            <option value={31}>말</option>
-                            {[5, 15].map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        <button
-                          type="button"
-                          className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
-                          aria-label="삭제"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeExpense(row.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      {open && (
-                        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 px-2 py-2">
-                          <span className="text-[11px] text-slate-500">
-                            일부지급
-                          </span>
-                          <MoneyInput
-                            value={paid}
-                            onChange={(n) =>
-                              updateExpense(
-                                row.id,
-                                withExpensePaidAmount(row, n)
-                              )
-                            }
-                            className="h-8 w-[7.5rem] border-sky-200 bg-white px-1.5 text-xs"
-                            aria-label="지급액"
-                          />
-                          <span className="text-[11px] tabular-nums text-slate-500">
-                            잔여 {formatCurrency(remaining)}
-                          </span>
-                          <button
-                            type="button"
-                            className="text-[11px] font-medium text-slate-500 hover:text-slate-800"
-                            onClick={() =>
-                              updateExpense(
-                                row.id,
-                                withExpensePaidAmount(row, 0)
-                              )
-                            }
-                          >
-                            지급액 초기화
-                          </button>
-                          <Input
-                            value={row.name}
-                            onChange={(e) =>
-                              updateExpense(row.id, { name: e.target.value })
-                            }
-                            className="h-8 min-w-[8rem] flex-1 border-slate-200 bg-white px-2 text-sm"
-                            placeholder="항목명"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

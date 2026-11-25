@@ -33,15 +33,11 @@ export interface CheckpointSummary {
   paidReceived: number;
   /** 아직 안 들어온 예정(병원 미수+기타 예상) */
   unpaidReceived: number;
-  /** 입금+예정 = 예정수금 총액 */
+  /** 입금+예정 */
   received: number;
-  /** 지급액(이미 수금에서 나감) */
-  paidExpenses: number;
-  /** 미지급(아직 나갈 돈) */
-  unpaidExpenses: number;
-  /** 지급+미지급 = 비용 총액 */
+  /** 기준일까지 나갈 비용 총액(전부 지출 예정) */
   expenses: number;
-  /** 예정수금 − 비용총액 */
+  /** 예정수금 − 비용 */
   net: number;
 }
 
@@ -289,9 +285,8 @@ export function sumPaidExpenseByPayDayLimit(
 }
 
 /**
- * 기준일 현금: 예정수금 − (지급액 + 미지급).
- * 둘 다 수금에서 나가거나 나갈 돈. 지급↔미지급 전환 시 지급액/미지급이 바뀜.
- * 보류·해지 제외.
+ * 기준일 현금: 예정수금(입금+예정) − 비용(해당일까지 나갈 금액 전부).
+ * 월 비용은 지급 구분 없이 전부 지출로 본다.
  */
 export function buildCheckpoints(
   month: CashflowMonth | null
@@ -301,7 +296,11 @@ export function buildCheckpoints(
   const misc = month?.miscCollections ?? [];
   const ym = month?.yearMonth;
 
-  function pack(maxDay: number | null, label: string, key: CheckpointSummary["key"]) {
+  function pack(
+    maxDay: number | null,
+    label: string,
+    key: CheckpointSummary["key"]
+  ) {
     const day = maxDay ?? 31;
     const paidReceived =
       sumReceivedByDayLimit(hospitals, day) +
@@ -310,22 +309,13 @@ export function buildCheckpoints(
       sumExpectedByDayLimit(hospitals, day, true) +
       sumMiscExpectedByDayLimit(misc, day, { unpaidOnly: true });
     const received = paidReceived + unpaidReceived;
-    const paidExpenses = sumPaidExpenseByPayDayLimit(expenses, maxDay, ym);
-    const unpaidExpenses = sumExpensesByPayDayLimit(
-      expenses,
-      maxDay,
-      ym,
-      true
-    );
-    const total = paidExpenses + unpaidExpenses;
+    const total = sumExpensesByPayDayLimit(expenses, maxDay, ym, false);
     return {
       key,
       label,
       paidReceived,
       unpaidReceived,
       received,
-      paidExpenses,
-      unpaidExpenses,
       expenses: total,
       net: received - total,
     };
