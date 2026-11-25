@@ -27,7 +27,7 @@ import { resolvePayrollLinkedAmount } from "@/lib/cashflow-payroll-expenses";
 import {
   loadCashflowLocal,
   saveCashflowLocal,
-} from "@/lib/cashflow-store";
+} from "@/lib/cashflow-local";
 import {
   COLLECTION_STATUS_LABELS,
   CONTRACT_STATUS_OPTIONS,
