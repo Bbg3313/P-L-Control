@@ -3,6 +3,7 @@ import type {
   CollectionStatus,
   ContractStatus,
   ExpenseMonthRow,
+  ExpenseSource,
   HospitalMonthRow,
 } from "@/lib/cashflow-types";
 import { isActiveContract } from "@/lib/cashflow-types";
@@ -16,7 +17,6 @@ export interface CashflowSummary {
   operatingProfit: number;
   paidCount: number;
   unpaidCount: number;
-  partialCount: number;
   hospitalCount: number;
   holdCount: number;
   terminatedCount: number;
@@ -30,12 +30,7 @@ export interface CheckpointSummary {
   net: number;
 }
 
-function dayOf(paidDate: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidDate)) return null;
-  return Number(paidDate.slice(8, 10));
-}
-
-/** maxDay 이하 입금일만 합산. maxDay null이면 날짜 있는 입금만 */
+/** 입금완료이고 예정일이 maxDay 이하인 청구액 합 */
 export function sumReceivedByDayLimit(
   hospitals: HospitalMonthRow[],
   maxDay: number
@@ -43,12 +38,11 @@ export function sumReceivedByDayLimit(
   let total = 0;
   for (const row of hospitals) {
     if (!isActiveContract(row.contractStatus)) continue;
-    if (row.status === "unpaid") continue;
-    const received = Math.max(0, Math.floor(row.receivedAmount || 0));
-    if (received <= 0) continue;
-    const day = dayOf(row.paidDate);
-    if (day == null) continue;
-    if (day <= maxDay) total += received;
+    if (row.status !== "paid") continue;
+    const day = row.expectedDay ?? 31;
+    if (day <= maxDay) {
+      total += Math.max(0, Math.floor(row.amount || 0));
+    }
   }
   return total;
 }
@@ -61,7 +55,6 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
   let receivedTotal = 0;
   let paidCount = 0;
   let unpaidCount = 0;
-  let partialCount = 0;
   let activeCount = 0;
   let holdCount = 0;
   let terminatedCount = 0;
@@ -77,12 +70,13 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
     activeCount += 1;
     const billed = Math.max(0, Math.floor(row.amount || 0));
-    const received = Math.max(0, Math.floor(row.receivedAmount || 0));
     billedTotal += billed;
-    receivedTotal += received;
-    if (row.status === "paid") paidCount += 1;
-    else if (row.status === "partial") partialCount += 1;
-    else unpaidCount += 1;
+    if (row.status === "paid") {
+      receivedTotal += billed;
+      paidCount += 1;
+    } else {
+      unpaidCount += 1;
+    }
   }
 
   const expenseTotal = expenses.reduce(
@@ -98,7 +92,6 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     operatingProfit: receivedTotal - expenseTotal,
     paidCount,
     unpaidCount,
-    partialCount,
     hospitalCount: activeCount,
     holdCount,
     terminatedCount,
@@ -157,11 +150,10 @@ export function buildCheckpoints(
   const day10Received = sumReceivedByDayLimit(hospitals, 10);
   const monthEndReceived = hospitals.reduce((sum, row) => {
     if (!isActiveContract(row.contractStatus)) return sum;
-    if (row.status === "unpaid") return sum;
-    return sum + Math.max(0, Math.floor(row.receivedAmount || 0));
+    if (row.status !== "paid") return sum;
+    return sum + Math.max(0, Math.floor(row.amount || 0));
   }, 0);
 
-  // 월초=1일까지 (임대·AI·Meta 1일치 등)
   const startExp = sumExpensesByPayDayLimit(expenses, 1, ym);
   const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym);
   const endExp = sumExpensesByPayDayLimit(expenses, null, ym);
@@ -191,33 +183,20 @@ export function buildCheckpoints(
   ];
 }
 
-export function deriveStatus(
-  amount: number,
-  receivedAmount: number
-): CollectionStatus {
-  const billed = Math.max(0, Math.floor(amount || 0));
-  const received = Math.max(0, Math.floor(receivedAmount || 0));
-  if (received <= 0) return "unpaid";
-  if (billed > 0 && received >= billed) return "paid";
-  if (received > 0 && received < billed) return "partial";
-  return "paid";
-}
-
 export function emptyHospitalRow(
   id: string,
   name = "",
   amount = 0,
-  contractStatus: ContractStatus = "외주"
+  contractStatus: ContractStatus = "외주",
+  expectedDay: number | null = null
 ): HospitalMonthRow {
   return {
     id,
     name,
     contractStatus,
     amount,
-    receivedAmount: 0,
+    expectedDay,
     status: "unpaid",
-    paidDate: "",
-    note: "",
   };
 }
 
@@ -226,7 +205,7 @@ export function emptyExpenseRow(
   name = "",
   amount = 0,
   payDay: number | null = null,
-  source: import("@/lib/cashflow-types").ExpenseSource = "manual",
+  source: ExpenseSource = "manual",
   dailyAmount?: number
 ): ExpenseMonthRow {
   return {
@@ -238,4 +217,12 @@ export function emptyExpenseRow(
     source,
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
   };
+}
+
+/** @deprecated 부분입금 제거 — 호환용 */
+export function deriveStatus(
+  _amount: number,
+  _receivedAmount: number
+): CollectionStatus {
+  return "unpaid";
 }

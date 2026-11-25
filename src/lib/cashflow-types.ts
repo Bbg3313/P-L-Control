@@ -1,10 +1,9 @@
 /** 모든 금액은 부가세 포함(원) */
 
-export type CollectionStatus = "unpaid" | "partial" | "paid";
+export type CollectionStatus = "unpaid" | "paid";
 
 export const COLLECTION_STATUS_LABELS: Record<CollectionStatus, string> = {
   unpaid: "미수",
-  partial: "부분입금",
   paid: "입금완료",
 };
 
@@ -26,7 +25,7 @@ export type ExpenseSource =
   | "fixed-vn"
   | "meta-daily";
 
-export const CASHFLOW_SEED_VERSION = 6;
+export const CASHFLOW_SEED_VERSION = 7;
 
 export interface HospitalTemplate {
   id: string;
@@ -55,12 +54,10 @@ export interface HospitalMonthRow {
   contractStatus: ContractStatus;
   /** 당월 청구액 (부가세 포함, 수동 수정 가능) */
   amount: number;
-  /** 실제 입금액 (부가세 포함) */
-  receivedAmount: number;
+  /** 입금 예정일 (그달 1~31일) */
+  expectedDay: number | null;
+  /** 미수 | 입금완료 — 입금되면 청구액 전액 수금으로 집계 */
   status: CollectionStatus;
-  /** 입금일 YYYY-MM-DD */
-  paidDate: string;
-  note: string;
 }
 
 export interface ExpenseMonthRow {

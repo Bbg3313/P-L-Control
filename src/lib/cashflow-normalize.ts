@@ -21,8 +21,16 @@ function asMoney(value: unknown): number {
 }
 
 function asStatus(value: unknown): CollectionStatus {
-  if (value === "paid" || value === "partial" || value === "unpaid") return value;
+  if (value === "paid") return "paid";
+  // 구버전 partial → 미수로
   return "unpaid";
+}
+
+function asDay(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const n = Math.floor(value);
+  if (n < 1 || n > 31) return null;
+  return n;
 }
 
 function asContractStatus(value: unknown): ContractStatus {
@@ -64,18 +72,11 @@ function normalizeHospitalTemplate(raw: unknown): HospitalTemplate | null {
   const id = typeof o.id === "string" ? o.id.trim() : "";
   const name = typeof o.name === "string" ? o.name.trim() : "";
   if (!id || !name) return null;
-  const expectedDay =
-    typeof o.expectedDay === "number" &&
-    Number.isFinite(o.expectedDay) &&
-    o.expectedDay >= 1 &&
-    o.expectedDay <= 31
-      ? Math.floor(o.expectedDay)
-      : null;
   return {
     id,
     name,
     defaultAmount: asMoney(o.defaultAmount),
-    expectedDay,
+    expectedDay: asDay(o.expectedDay),
     contractStatus: asContractStatus(o.contractStatus),
   };
 }
@@ -103,18 +104,31 @@ function normalizeHospitalRow(raw: unknown): HospitalMonthRow | null {
   const id = typeof o.id === "string" ? o.id.trim() : "";
   const name = typeof o.name === "string" ? o.name.trim() : "";
   if (!id) return null;
+
+  let expectedDay = asDay(o.expectedDay);
+  // 구버전 paidDate(YYYY-MM-DD) → 일자만
+  if (
+    expectedDay == null &&
+    typeof o.paidDate === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(o.paidDate)
+  ) {
+    expectedDay = asDay(Number(o.paidDate.slice(8, 10)));
+  }
+
+  let status = asStatus(o.status);
+  // 구버전: 입금액이 청구액 이상이면 입금완료
+  const amount = asMoney(o.amount);
+  const received = asMoney(o.receivedAmount);
+  if (o.status === "partial") status = "unpaid";
+  if (status !== "paid" && amount > 0 && received >= amount) status = "paid";
+
   return {
     id,
     name,
     contractStatus: asContractStatus(o.contractStatus),
-    amount: asMoney(o.amount),
-    receivedAmount: asMoney(o.receivedAmount),
-    status: asStatus(o.status),
-    paidDate:
-      typeof o.paidDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o.paidDate)
-        ? o.paidDate
-        : "",
-    note: typeof o.note === "string" ? o.note : "",
+    amount,
+    expectedDay,
+    status,
   };
 }
 

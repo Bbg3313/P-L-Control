@@ -76,13 +76,15 @@ export function withSeedHospitalsIfEmpty(
           h.id,
           h.name,
           h.defaultAmount,
-          h.contractStatus
+          h.contractStatus,
+          h.expectedDay
         );
       }
       return {
         ...prev,
         name: h.name,
         contractStatus: h.contractStatus,
+        expectedDay: prev.expectedDay ?? h.expectedDay,
         amount: prev.amount > 0 ? prev.amount : h.defaultAmount,
       };
     });
@@ -145,7 +147,13 @@ export function buildMonthFromTemplates(
   performancePayOverrides: Record<string, number> = {}
 ): CashflowMonth {
   const hospitals = snapshot.hospitals.map((h) =>
-    emptyHospitalRow(h.id, h.name, h.defaultAmount, h.contractStatus)
+    emptyHospitalRow(
+      h.id,
+      h.name,
+      h.defaultAmount,
+      h.contractStatus,
+      h.expectedDay
+    )
   );
   const expenses = snapshot.expenseTemplates.map((t) => {
     const linked = resolveLinkedExpenseAmount(
