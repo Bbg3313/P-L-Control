@@ -162,6 +162,7 @@ export function CashflowGapOverview({
             >
               <div className="text-[10px] font-medium text-slate-500">
                 {cp.label.replace(" 기준", "")}
+                <span className="font-normal text-slate-400"> · 누적</span>
               </div>
               <div
                 className={cn(
@@ -178,6 +179,20 @@ export function CashflowGapOverview({
                 )}
               >
                 {cpShort ? "더 필요" : "남음"}
+              </div>
+              <div className="mt-1 space-y-0.5 text-[10px] text-slate-500">
+                <div>
+                  수금{" "}
+                  <span className="tabular-nums text-slate-700">
+                    {formatCurrency(cp.received)}
+                  </span>
+                </div>
+                <div>
+                  비용{" "}
+                  <span className="tabular-nums text-slate-700">
+                    {formatCurrency(cp.expenses)}
+                  </span>
+                </div>
               </div>
             </div>
           );
