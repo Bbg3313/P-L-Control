@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFinancial } from "@/contexts/financial-context";
 import { CashflowExpenseMix } from "@/components/cashflow/cashflow-expense-mix";
+import { CashflowExpenseTiming } from "@/components/cashflow/cashflow-expense-timing";
 import { CashflowGapOverview } from "@/components/cashflow/cashflow-gap-overview";
 import {
   buildCheckpoints,
@@ -780,7 +781,13 @@ export function CashflowPage() {
         </div>
 
         <div className="grid gap-1.5 lg:grid-cols-2">
-          <CashflowExpenseMix expenses={month.expenses} />
+          <div className="grid min-h-[180px] gap-1.5 sm:grid-cols-2">
+            <CashflowExpenseMix expenses={month.expenses} />
+            <CashflowExpenseTiming
+              expenses={month.expenses}
+              yearMonth={month.yearMonth}
+            />
+          </div>
           <CashflowGapOverview checkpoints={checkpoints} expenseTotal={summary.expenseTotal} />
         </div>
       </div>

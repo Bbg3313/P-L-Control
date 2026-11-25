@@ -89,7 +89,7 @@ export function CashflowExpenseMix({
     return (
       <div
         className={cn(
-          "flex h-[160px] items-center justify-center rounded-lg border border-slate-200 bg-white text-sm text-slate-400",
+          "flex h-full min-h-[160px] items-center justify-center rounded-lg border border-slate-200 bg-white text-sm text-slate-400",
           className
         )}
       >
@@ -101,19 +101,19 @@ export function CashflowExpenseMix({
   return (
     <div
       className={cn(
-        "rounded-lg border border-slate-200 bg-white px-3 py-2.5",
+        "flex h-full flex-col rounded-lg border border-slate-200 bg-white px-2.5 py-2",
         className
       )}
     >
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex items-baseline justify-between gap-1">
         <h2 className="text-sm font-semibold text-slate-800">월 비용 비중</h2>
-        <span className="text-[11px] tabular-nums text-slate-500">
-          합계 {formatCurrency(total)}
+        <span className="text-[10px] tabular-nums text-slate-500">
+          {formatCompactCurrency(total)}
         </span>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="relative mx-auto h-[140px] w-[140px] shrink-0 sm:mx-0">
+      <div className="flex min-h-0 flex-1 flex-col items-stretch gap-1.5">
+        <div className="relative mx-auto h-[100px] w-[100px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -122,8 +122,8 @@ export function CashflowExpenseMix({
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={38}
-                outerRadius={62}
+                innerRadius={28}
+                outerRadius={44}
                 paddingAngle={1.5}
                 stroke="#fff"
                 strokeWidth={1}
@@ -135,34 +135,23 @@ export function CashflowExpenseMix({
               <Tooltip content={<MixTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[10px] font-medium text-slate-400">합계</span>
-            <span className="text-xs font-semibold tabular-nums text-slate-800">
-              {formatCompactCurrency(total)}
-            </span>
-          </div>
         </div>
 
-        <div className="min-h-0 max-h-[148px] min-w-0 flex-1 overflow-y-auto pr-0.5">
-          <ul className="flex flex-col gap-1">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+          <ul className="flex flex-col gap-0.5">
             {slices.map((slice) => (
               <li
                 key={slice.name}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-1.5 text-[11px]"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 text-[10px]"
               >
                 <span
-                  className="h-2 w-2 shrink-0 rounded-full"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: slice.color }}
                 />
                 <span className="truncate text-slate-600" title={slice.name}>
                   {slice.name}
                 </span>
-                <span className="tabular-nums text-slate-500">
-                  {slice.pct}%
-                </span>
-                <span className="min-w-[4.5rem] text-right font-medium tabular-nums text-slate-800">
-                  {formatCurrency(slice.value)}
-                </span>
+                <span className="tabular-nums text-slate-500">{slice.pct}%</span>
               </li>
             ))}
           </ul>

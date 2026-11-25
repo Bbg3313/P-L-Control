@@ -187,6 +187,85 @@ function daysInCashflowMonth(yearMonth: string | undefined): number {
   return new Date(y, m, 0).getDate();
 }
 
+export type ExpenseTimingKey = "start" | "day10" | "monthEnd";
+
+export interface ExpenseTimingBucket {
+  key: ExpenseTimingKey;
+  label: string;
+  amount: number;
+  pct: number;
+}
+
+/** 지출일 → 초(<10) / 10(10~24) / 말(25~). null은 말 */
+export function classifyExpensePayBucket(
+  payDay: number | null
+): ExpenseTimingKey {
+  if (payDay == null) return "monthEnd";
+  if (payDay < 10) return "start";
+  if (payDay < 25) return "day10";
+  return "monthEnd";
+}
+
+/**
+ * 월 비용이 초·10·말에 각각 얼마·몇 % 나가는지.
+ * Meta 일별은 1일 / 2~10일 / 11일~말로 나눔.
+ */
+export function buildExpenseTimingBuckets(
+  expenses: ExpenseMonthRow[],
+  yearMonth?: string
+): ExpenseTimingBucket[] {
+  const daysInMonth = daysInCashflowMonth(yearMonth);
+  let start = 0;
+  let day10 = 0;
+  let monthEnd = 0;
+
+  for (const row of expenses) {
+    if (row.excluded) continue;
+    const amount = Math.max(0, Math.floor(row.amount || 0));
+
+    if (row.source === "meta-daily" || (row.dailyAmount && row.dailyAmount > 0)) {
+      const daily = Math.max(
+        0,
+        Math.floor(row.dailyAmount || 0) ||
+          Math.floor(amount / daysInMonth)
+      );
+      if (daily <= 0) continue;
+      const startDays = Math.min(1, daysInMonth);
+      const through10 = Math.min(10, daysInMonth);
+      const day10Days = Math.max(0, through10 - startDays);
+      const endDays = Math.max(0, daysInMonth - through10);
+      start += daily * startDays;
+      day10 += daily * day10Days;
+      monthEnd += daily * endDays;
+      continue;
+    }
+
+    if (amount <= 0) continue;
+    const bucket = classifyExpensePayBucket(row.payDay);
+    if (bucket === "start") start += amount;
+    else if (bucket === "day10") day10 += amount;
+    else monthEnd += amount;
+  }
+
+  const total = start + day10 + monthEnd;
+  const pack = (
+    key: ExpenseTimingKey,
+    label: string,
+    value: number
+  ): ExpenseTimingBucket => ({
+    key,
+    label,
+    amount: value,
+    pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
+  });
+
+  return [
+    pack("start", "초", start),
+    pack("day10", "10일", day10),
+    pack("monthEnd", "말", monthEnd),
+  ];
+}
+
 export function expenseRemaining(row: ExpenseMonthRow): number {
   const amount = Math.max(0, Math.floor(row.amount || 0));
   const paid = Math.min(
