@@ -125,6 +125,8 @@ export const PERSONNEL_FIRST_PAYROLL_MONTH: Record<string, string> = {
  */
 export const PERSONNEL_LAST_PAYROLL_MONTH: Record<string, string> = {
   아리: "2026-07",
+  /** 2026-11-30 퇴사 — 11월 급여까지, 12월 대장부터 제외 */
+  한하은: "2026-11",
 };
 
 /** 월 중도 입사일 (YYYY-MM-DD). 1일이 아니면 입사월 급여를 일할 */
