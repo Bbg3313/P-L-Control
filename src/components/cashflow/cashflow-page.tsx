@@ -6,6 +6,7 @@ import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFinancial } from "@/contexts/financial-context";
+import { CashflowExpenseMix } from "@/components/cashflow/cashflow-expense-mix";
 import { CashflowGapOverview } from "@/components/cashflow/cashflow-gap-overview";
 import {
   buildCheckpoints,
@@ -778,7 +779,10 @@ export function CashflowPage() {
           })()}
         </div>
 
-        <CashflowGapOverview checkpoints={checkpoints} expenseTotal={summary.expenseTotal} />
+        <div className="grid gap-1.5 lg:grid-cols-2">
+          <CashflowExpenseMix expenses={month.expenses} />
+          <CashflowGapOverview checkpoints={checkpoints} expenseTotal={summary.expenseTotal} />
+        </div>
       </div>
 
       {/* 비용 | 병원 수금 | 기타 수금 */}
