@@ -17,6 +17,10 @@ export interface CashflowSummary {
   unpaidExpenseTotal: number;
   miscBilledTotal: number;
   miscReceivedTotal: number;
+  /** 활성 병원 중 외주 계약 청구 합 */
+  outsourcedBilled: number;
+  /** 활성 병원 중 자체 계약 청구 합 */
+  inHouseBilled: number;
   paidCount: number;
   unpaidCount: number;
   hospitalCount: number;
@@ -101,6 +105,8 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
 
   let hospitalBilledTotal = 0;
   let hospitalReceivedTotal = 0;
+  let outsourcedBilled = 0;
+  let inHouseBilled = 0;
   let paidCount = 0;
   let unpaidCount = 0;
   let activeCount = 0;
@@ -119,6 +125,8 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     activeCount += 1;
     const billed = Math.max(0, Math.floor(row.amount || 0));
     hospitalBilledTotal += billed;
+    if (row.contractStatus === "자체") inHouseBilled += billed;
+    else outsourcedBilled += billed;
     if (row.status === "paid") {
       hospitalReceivedTotal += billed;
       paidCount += 1;
@@ -171,6 +179,8 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     unpaidExpenseTotal,
     miscBilledTotal,
     miscReceivedTotal,
+    outsourcedBilled,
+    inHouseBilled,
     paidCount,
     unpaidCount,
     hospitalCount: activeCount,

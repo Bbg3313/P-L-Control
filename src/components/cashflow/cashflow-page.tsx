@@ -721,30 +721,35 @@ export function CashflowPage() {
               value: number;
               tone: string;
               pct: number | null;
+              detail?: string | null;
             }[] = [
               {
                 label: "병원 수금",
                 value: hospitalBilled,
                 tone: "text-slate-900",
                 pct: null,
+                detail: `외주 ${formatCurrency(summary.outsourcedBilled)} · 자체 ${formatCurrency(summary.inHouseBilled)}`,
               },
               {
                 label: "수금",
                 value: summary.receivedTotal,
                 tone: "text-emerald-700",
                 pct: receivedPct,
+                detail: null,
               },
               {
                 label: "미수",
                 value: summary.unpaidTotal,
                 tone: "text-amber-700",
                 pct: unpaidPct,
+                detail: null,
               },
               {
                 label: "월 비용",
                 value: summary.expenseTotal,
                 tone: "text-slate-900",
                 pct: null,
+                detail: null,
               },
             ];
             return items.map((item) => (
@@ -775,6 +780,11 @@ export function CashflowPage() {
                 >
                   {formatCurrency(item.value)}
                 </div>
+                {item.detail ? (
+                  <div className="mt-0.5 text-[10px] tabular-nums text-slate-500">
+                    {item.detail}
+                  </div>
+                ) : null}
               </div>
             ));
           })()}
