@@ -2,21 +2,18 @@ import { NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
   getAuthPassword,
-  getAuthUsername,
   getSessionToken,
 } from "@/lib/auth";
 
 export async function POST(request: Request) {
-  let username = "";
   let password = "";
 
   try {
     const body = (await request.json()) as {
-      username?: string;
       password?: string;
+      pin?: string;
     };
-    username = String(body.username ?? "").trim();
-    password = String(body.password ?? "");
+    password = String(body.password ?? body.pin ?? "");
   } catch {
     return NextResponse.json(
       { error: "요청 형식이 올바르지 않습니다." },
@@ -24,9 +21,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (username !== getAuthUsername() || password !== getAuthPassword()) {
+  if (password !== getAuthPassword()) {
     return NextResponse.json(
-      { error: "아이디 또는 비밀번호가 올바르지 않습니다." },
+      { error: "비밀번호가 올바르지 않습니다." },
       { status: 401 }
     );
   }

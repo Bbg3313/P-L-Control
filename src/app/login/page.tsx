@@ -3,16 +3,20 @@
 import { Suspense, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { APP_COMPANY_NAME, APP_LOGO_ALT, APP_LOGO_SRC, APP_SUBTITLE } from "@/lib/brand";
+import {
+  APP_COMPANY_NAME,
+  APP_LOGO_ALT,
+  APP_LOGO_SRC,
+  APP_SUBTITLE,
+} from "@/lib/brand";
 
-function LoginForm() {
+function PasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,13 +30,14 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ password }),
       });
 
       const data = (await res.json()) as { error?: string };
 
       if (!res.ok) {
-        setError(data.error ?? "로그인에 실패했습니다.");
+        setError(data.error ?? "비밀번호가 올바르지 않습니다.");
+        setPassword("");
         return;
       }
 
@@ -40,7 +45,7 @@ function LoginForm() {
       router.replace(from && from.startsWith("/") ? from : "/");
       router.refresh();
     } catch {
-      setError("로그인 요청에 실패했습니다.");
+      setError("확인 요청에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -61,50 +66,46 @@ function LoginForm() {
             />
           </div>
           <CardTitle className="space-y-0.5 text-lg leading-snug">
-            <span className="block">{APP_COMPANY_NAME}</span>
+            <span className="flex items-center justify-center gap-1.5">
+              <Lock className="h-4 w-4" />
+              {APP_COMPANY_NAME}
+            </span>
             <span className="block text-base font-medium text-muted-foreground">
               {APP_SUBTITLE}
             </span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            경영 데이터 보호를 위해 로그인하세요.
+            접속 비밀번호를 입력하세요.
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="username">아이디</Label>
-              <Input
-                id="username"
-                type="text"
-                autoComplete="username"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="아이디"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="비밀번호"
-              />
-            </div>
+            <Input
+              id="password"
+              type="password"
+              inputMode="numeric"
+              autoComplete="current-password"
+              autoFocus
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호"
+              className="text-center text-lg tracking-widest"
+              aria-label="접속 비밀번호"
+            />
 
             {error && (
-              <p className="text-sm text-destructive" role="alert">
+              <p className="text-center text-sm text-destructive" role="alert">
                 {error}
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "확인 중…" : "로그인"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !password}
+            >
+              {loading ? "확인 중…" : "확인"}
             </Button>
           </form>
         </CardContent>
@@ -122,7 +123,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <PasswordForm />
     </Suspense>
   );
 }

@@ -1,6 +1,9 @@
 /** 인증 쿠키 (httpOnly) */
 export const AUTH_COOKIE_NAME = "pl-control-auth";
 
+/** 사이트 접속 비밀번호 */
+export const SITE_PASSWORD = "331300";
+
 /** 서버·미들웨어 전용 세션 토큰 (클라이언트에 노출하지 않음) */
 export function getSessionToken(): string {
   return (
@@ -9,19 +12,19 @@ export function getSessionToken(): string {
   );
 }
 
-/** 로그인 아이디 (서버 API에서만 사용) */
+/** @deprecated 아이디 로그인 제거 — 호환용 */
 export function getAuthUsername(): string {
-  return process.env.PL_AUTH_USERNAME ?? "bbg3313";
+  return "";
 }
 
-/** 로그인 비밀번호 (서버 API에서만 사용) */
+/** 접속 비밀번호 */
 export function getAuthPassword(): string {
-  return process.env.PL_AUTH_PASSWORD ?? "dhflrhrl92!";
+  return SITE_PASSWORD;
 }
 
-/** 사이트를 열 때마다 묻는 접속 비밀번호 (서버 API에서만 사용) */
+/** @deprecated getAuthPassword와 동일 */
 export function getAccessPin(): string {
-  return process.env.PL_ACCESS_PIN ?? "3313";
+  return getAuthPassword();
 }
 
 export function isAuthenticated(cookieValue: string | undefined): boolean {
