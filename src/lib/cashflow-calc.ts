@@ -225,6 +225,11 @@ export function sumExpensesByPayDayLimit(
   return total;
 }
 
+/**
+ * 기준일 현금: 수금(활성 병원+기타) − 비용.
+ * 기지급도 수금에서 나가므로 비용은 총액 기준(기지급 제외하면 남음이 부풀음).
+ * 보류·해지 병원만 제외.
+ */
 export function buildCheckpoints(
   month: CashflowMonth | null
 ): CheckpointSummary[] {
@@ -233,21 +238,19 @@ export function buildCheckpoints(
   const misc = month?.miscCollections ?? [];
   const ym = month?.yearMonth;
 
-  // 앞으로 들어올 돈(미수·예상) − 앞으로 나갈 돈(미지급).
-  // 보류·해지·입금완료·기지급은 제외 → 말일 ‘남음’이 부풀지 않음
   const startIn =
-    sumExpectedByDayLimit(hospitals, 1, true) +
-    sumMiscExpectedByDayLimit(misc, 1, true);
+    sumExpectedByDayLimit(hospitals, 1, false) +
+    sumMiscExpectedByDayLimit(misc, 1, false);
   const day10In =
-    sumExpectedByDayLimit(hospitals, 10, true) +
-    sumMiscExpectedByDayLimit(misc, 10, true);
+    sumExpectedByDayLimit(hospitals, 10, false) +
+    sumMiscExpectedByDayLimit(misc, 10, false);
   const endIn =
-    sumExpectedByDayLimit(hospitals, 31, true) +
-    sumMiscExpectedByDayLimit(misc, 31, true);
+    sumExpectedByDayLimit(hospitals, 31, false) +
+    sumMiscExpectedByDayLimit(misc, 31, false);
 
-  const startExp = sumExpensesByPayDayLimit(expenses, 1, ym, true);
-  const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym, true);
-  const endExp = sumExpensesByPayDayLimit(expenses, null, ym, true);
+  const startExp = sumExpensesByPayDayLimit(expenses, 1, ym, false);
+  const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym, false);
+  const endExp = sumExpensesByPayDayLimit(expenses, null, ym, false);
 
   return [
     {
