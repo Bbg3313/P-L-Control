@@ -137,6 +137,7 @@ export function withSeedHospitalsIfEmpty(
         payDay: t.payDay,
         source: t.source,
         amount,
+        status: prev.status === "paid" ? "paid" : "unpaid",
         ...(dailyAmount ? { dailyAmount } : {}),
         note: prev.note || expenseNote(t.source, t.name),
       };

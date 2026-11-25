@@ -69,6 +69,8 @@ export interface ExpenseMonthRow {
   source: ExpenseSource;
   /** 일별 단가 — source=meta-daily 일 때 체크포인트 누적에 사용 */
   dailyAmount?: number;
+  /** 기지급 | 미지급 — 체크포인트 ‘더 필요’는 미지급만 반영 */
+  status: CollectionStatus;
 }
 
 /** 병원 외 기타 수금 (수동 추가) */

@@ -13,6 +13,8 @@ export interface CashflowSummary {
   receivedTotal: number;
   unpaidTotal: number;
   expenseTotal: number;
+  /** 아직 안 나간 비용 합 */
+  unpaidExpenseTotal: number;
   miscBilledTotal: number;
   miscReceivedTotal: number;
   paidCount: number;
@@ -20,6 +22,8 @@ export interface CashflowSummary {
   hospitalCount: number;
   holdCount: number;
   terminatedCount: number;
+  expensePaidCount: number;
+  expenseUnpaidCount: number;
 }
 
 export interface CheckpointSummary {
@@ -125,16 +129,27 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     }
   }
 
-  const expenseTotal = expenses.reduce(
-    (sum, row) => sum + Math.max(0, Math.floor(row.amount || 0)),
-    0
-  );
+  let expenseTotal = 0;
+  let unpaidExpenseTotal = 0;
+  let expensePaidCount = 0;
+  let expenseUnpaidCount = 0;
+  for (const row of expenses) {
+    const amount = Math.max(0, Math.floor(row.amount || 0));
+    expenseTotal += amount;
+    if (row.status === "paid") {
+      expensePaidCount += 1;
+    } else {
+      expenseUnpaidCount += 1;
+      unpaidExpenseTotal += amount;
+    }
+  }
 
   return {
     billedTotal,
     receivedTotal,
     unpaidTotal: Math.max(0, billedTotal - receivedTotal),
     expenseTotal,
+    unpaidExpenseTotal,
     miscBilledTotal,
     miscReceivedTotal,
     paidCount,
@@ -142,6 +157,8 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
     hospitalCount: activeCount,
     holdCount,
     terminatedCount,
+    expensePaidCount,
+    expenseUnpaidCount,
   };
 }
 
@@ -151,15 +168,22 @@ function daysInCashflowMonth(yearMonth: string | undefined): number {
   return new Date(y, m, 0).getDate();
 }
 
-/** 해당 기준일까지 나간 비용. maxDay null = 말일(전체). 일별 비용은 일수×단가 */
+/**
+ * 해당 기준일까지 비용.
+ * maxDay null = 말일(전체). 일별 비용은 일수×단가.
+ * unpaidOnly: 미지급만 (기지급 제외 — ‘더 필요’ 계산용)
+ */
 export function sumExpensesByPayDayLimit(
   expenses: ExpenseMonthRow[],
   maxDay: number | null,
-  yearMonth?: string
+  yearMonth?: string,
+  unpaidOnly = false
 ): number {
   const daysInMonth = daysInCashflowMonth(yearMonth);
   let total = 0;
   for (const row of expenses) {
+    if (unpaidOnly && row.status === "paid") continue;
+
     if (row.source === "meta-daily" || (row.dailyAmount && row.dailyAmount > 0)) {
       const daily = Math.max(
         0,
@@ -209,9 +233,10 @@ export function buildCheckpoints(
       0
     );
 
-  const startExp = sumExpensesByPayDayLimit(expenses, 1, ym);
-  const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym);
-  const endExp = sumExpensesByPayDayLimit(expenses, null, ym);
+  // 기지급은 이미 나갔으므로 ‘더 필요’에는 미지급만 반영
+  const startExp = sumExpensesByPayDayLimit(expenses, 1, ym, true);
+  const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym, true);
+  const endExp = sumExpensesByPayDayLimit(expenses, null, ym, true);
 
   return [
     {
@@ -270,6 +295,7 @@ export function emptyExpenseRow(
     note: "",
     payDay,
     source,
+    status: "unpaid",
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
   };
 }

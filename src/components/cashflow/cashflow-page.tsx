@@ -703,7 +703,7 @@ export function CashflowPage() {
                     </span>
                   </span>
                   <span>
-                    비용{" "}
+                    미지급{" "}
                     <span className="tabular-nums text-slate-700">
                       {formatCurrency(cp.expenses)}
                     </span>
@@ -722,6 +722,7 @@ export function CashflowPage() {
             <h2 className="text-sm font-semibold text-slate-800">
               월 비용
               <span className="ml-1.5 text-xs font-normal text-slate-500">
+                {summary.expensePaidCount}/{month.expenses.length} 기지급 ·{" "}
                 {formatCurrency(summary.expenseTotal)}
               </span>
             </h2>
@@ -756,8 +757,29 @@ export function CashflowPage() {
                 {month.expenses.map((row) => (
                   <div
                     key={row.id}
-                    className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-slate-50"
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-1.5 py-1",
+                      row.status === "paid"
+                        ? "bg-emerald-50/70"
+                        : "bg-amber-50/50"
+                    )}
                   >
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-8 w-[3.25rem] shrink-0 rounded-md text-[11px] font-bold leading-tight",
+                        row.status === "paid"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-amber-400 text-amber-950"
+                      )}
+                      onClick={() =>
+                        updateExpense(row.id, {
+                          status: row.status === "paid" ? "unpaid" : "paid",
+                        })
+                      }
+                    >
+                      {row.status === "paid" ? "기지급" : "미지급"}
+                    </button>
                     <Input
                       value={row.name}
                       onChange={(e) =>

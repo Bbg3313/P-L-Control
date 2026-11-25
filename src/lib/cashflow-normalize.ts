@@ -146,6 +146,7 @@ function normalizeExpenseRow(raw: unknown): ExpenseMonthRow | null {
     note: typeof o.note === "string" ? o.note : "",
     payDay: asPayDay(o.payDay),
     source: asExpenseSource(o.source),
+    status: asStatus(o.status),
     ...(dailyAmount > 0 ? { dailyAmount } : {}),
   };
 }
