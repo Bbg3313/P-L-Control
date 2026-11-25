@@ -771,9 +771,15 @@ export function CashflowPage() {
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                   <span>
-                    예정수금{" "}
+                    입금{" "}
                     <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.received)}
+                      {formatCurrency(cp.paidReceived)}
+                    </span>
+                  </span>
+                  <span>
+                    예정{" "}
+                    <span className="tabular-nums text-slate-700">
+                      {formatCurrency(cp.unpaidReceived)}
                     </span>
                   </span>
                   <span>

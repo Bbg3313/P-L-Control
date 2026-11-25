@@ -29,15 +29,19 @@ export interface CashflowSummary {
 export interface CheckpointSummary {
   key: "start" | "day10" | "monthEnd";
   label: string;
-  /** 해당 기준일까지 예정수금(활성 계약 + 기타, 보류·해지 제외) */
+  /** 입금완료 수금(병원+기타) */
+  paidReceived: number;
+  /** 아직 안 들어온 예정(병원 미수+기타 예상) */
+  unpaidReceived: number;
+  /** 입금+예정 = 예정수금 총액 */
   received: number;
   /** 지급액(이미 수금에서 나감) */
   paidExpenses: number;
-  /** 미지급(아직 나갈 돈, 수금에서 빠질 예정) */
+  /** 미지급(아직 나갈 돈) */
   unpaidExpenses: number;
-  /** 지급+미지급 = 기준일까지 비용 총액 */
+  /** 지급+미지급 = 비용 총액 */
   expenses: number;
-  /** 예정수금 − 비용총액. 음수면 더 필요, 양수면 남음 */
+  /** 예정수금 − 비용총액 */
   net: number;
 }
 
@@ -59,15 +63,16 @@ export function sumExpectedByDayLimit(
   return total;
 }
 
-/** 기타 수금 예정일 합. unpaidOnly면 아직 입금 전(예상)만 */
+/** 기타 수금 예정일 합. unpaidOnly면 예상만, paidOnly면 입금만 */
 export function sumMiscExpectedByDayLimit(
   rows: MiscCollectionRow[],
   maxDay: number,
-  unpaidOnly = false
+  opts: { unpaidOnly?: boolean; paidOnly?: boolean } = {}
 ): number {
   let total = 0;
   for (const row of rows) {
-    if (unpaidOnly && row.status === "paid") continue;
+    if (opts.unpaidOnly && row.status === "paid") continue;
+    if (opts.paidOnly && row.status !== "paid") continue;
     const day = row.expectedDay ?? 31;
     if (day <= maxDay) {
       total += Math.max(0, Math.floor(row.amount || 0));
@@ -297,9 +302,14 @@ export function buildCheckpoints(
   const ym = month?.yearMonth;
 
   function pack(maxDay: number | null, label: string, key: CheckpointSummary["key"]) {
-    const received =
-      sumExpectedByDayLimit(hospitals, maxDay ?? 31, false) +
-      sumMiscExpectedByDayLimit(misc, maxDay ?? 31, false);
+    const day = maxDay ?? 31;
+    const paidReceived =
+      sumReceivedByDayLimit(hospitals, day) +
+      sumMiscExpectedByDayLimit(misc, day, { paidOnly: true });
+    const unpaidReceived =
+      sumExpectedByDayLimit(hospitals, day, true) +
+      sumMiscExpectedByDayLimit(misc, day, { unpaidOnly: true });
+    const received = paidReceived + unpaidReceived;
     const paidExpenses = sumPaidExpenseByPayDayLimit(expenses, maxDay, ym);
     const unpaidExpenses = sumExpensesByPayDayLimit(
       expenses,
@@ -311,6 +321,8 @@ export function buildCheckpoints(
     return {
       key,
       label,
+      paidReceived,
+      unpaidReceived,
       received,
       paidExpenses,
       unpaidExpenses,
