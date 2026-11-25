@@ -23,6 +23,7 @@ import {
 import {
   payrollSourceYearMonth,
   resolvePayrollLinkedAmount,
+  isSeedExpenseId,
 } from "@/lib/cashflow-payroll-expenses";
 import {
   loadCashflowLocal,
@@ -861,6 +862,14 @@ export function CashflowPage() {
                       }
                       className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
                     />
+                    {!isSeedExpenseId(row.id) && (
+                      <span
+                        className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[9px] font-semibold tracking-tight text-slate-500"
+                        title="정례 고정 비용이 아닌 수기 등록 항목"
+                      >
+                        수기
+                      </span>
+                    )}
                     <MoneyInput
                       value={row.amount}
                       onChange={(n) =>

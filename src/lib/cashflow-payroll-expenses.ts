@@ -45,6 +45,13 @@ export const FIXED_AI_SUBSCRIPTION = 1_000_000;
 export const FIXED_COMPANY_CAR = 2_100_000;
 export const FIXED_COPIER = 200_000;
 
+/** 시드(정례) 월 비용 ID — 수동 추가 항목 구분용 */
+export const SEED_EXPENSE_ID_SET = new Set<string>(Object.values(EXPENSE_IDS));
+
+export function isSeedExpenseId(id: string): boolean {
+  return SEED_EXPENSE_ID_SET.has(id);
+}
+
 export function daysInYearMonth(yearMonth: string): number {
   const [y, m] = yearMonth.split("-").map(Number);
   if (!y || !m) return 30;
