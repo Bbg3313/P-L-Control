@@ -7,7 +7,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <DataSyncBanner />
-        <main className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden px-5 py-5 lg:px-8 lg:py-6">
+        <main className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden px-3 py-3 lg:px-4 lg:py-3">
           <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
             {children}
           </div>
