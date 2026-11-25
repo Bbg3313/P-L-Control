@@ -22,6 +22,8 @@ export const EXPENSE_IDS = {
   loan: "exp-loan-repay",
   socialInsurance: "exp-social-insurance",
   aiSub: "exp-ai-subscription",
+  companyCar: "exp-company-car",
+  copier: "exp-copier",
 } as const;
 
 export const FIXED_THAILAND_PAYROLL = 5_000_000;
@@ -32,6 +34,8 @@ export const FIXED_MAINTENANCE = 500_000;
 export const FIXED_LOAN_REPAY = 5_000_000;
 export const FIXED_SOCIAL_INSURANCE = 4_000_000;
 export const FIXED_AI_SUBSCRIPTION = 1_000_000;
+export const FIXED_COMPANY_CAR = 2_100_000;
+export const FIXED_COPIER = 200_000;
 
 export function daysInYearMonth(yearMonth: string): number {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -156,6 +160,20 @@ export const SEED_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
     id: EXPENSE_IDS.aiSub,
     name: "AI구독",
     defaultAmount: FIXED_AI_SUBSCRIPTION,
+    payDay: 25,
+    source: "manual",
+  },
+  {
+    id: EXPENSE_IDS.companyCar,
+    name: "법인차량",
+    defaultAmount: FIXED_COMPANY_CAR,
+    payDay: 20,
+    source: "manual",
+  },
+  {
+    id: EXPENSE_IDS.copier,
+    name: "복합기",
+    defaultAmount: FIXED_COPIER,
     payDay: 25,
     source: "manual",
   },

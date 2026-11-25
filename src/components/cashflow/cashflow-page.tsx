@@ -712,15 +712,16 @@ export function CashflowPage() {
                     }}
                   >
                     <option value="">—</option>
-                    <option value={1}>1일</option>
-                    <option value={10}>10일</option>
-                    <option value={25}>25일</option>
-                    <option value={31}>말일</option>
-                    {[5, 15, 20].map((d) => (
-                      <option key={d} value={d}>
-                        {d}일
-                      </option>
-                    ))}
+                        <option value={1}>1일</option>
+                        <option value={10}>10일</option>
+                        <option value={20}>20일</option>
+                        <option value={25}>25일</option>
+                        <option value={31}>말일</option>
+                        {[5, 15].map((d) => (
+                          <option key={d} value={d}>
+                            {d}일
+                          </option>
+                        ))}
                   </select>
                 )}
                 <Button

@@ -32,6 +32,8 @@ function expenseNote(source: ExpenseSource, name: string): string {
       if (name === "대출상환") return "500만 · 10일";
       if (name === "4대보험") return "400만 · 10일";
       if (name === "AI구독") return "100만 · 25일";
+      if (name === "법인차량") return "210만 · 20일";
+      if (name === "복합기") return "20만 · 25일";
       return "";
   }
 }
