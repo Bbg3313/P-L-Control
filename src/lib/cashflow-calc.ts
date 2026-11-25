@@ -239,10 +239,49 @@ export function sumExpensesByPayDayLimit(
   return total;
 }
 
+/** 기준일까지 실제 지급액(수금에서 빠진 돈). 지급 누르면 여기가 바뀜 */
+export function sumPaidExpenseByPayDayLimit(
+  expenses: ExpenseMonthRow[],
+  maxDay: number | null,
+  yearMonth?: string
+): number {
+  const daysInMonth = daysInCashflowMonth(yearMonth);
+  let total = 0;
+  for (const row of expenses) {
+    const amount = Math.max(0, Math.floor(row.amount || 0));
+    const paid = Math.min(
+      amount || Number.MAX_SAFE_INTEGER,
+      Math.max(0, Math.floor(row.paidAmount || 0))
+    );
+    if (paid <= 0) continue;
+
+    if (row.source === "meta-daily" || (row.dailyAmount && row.dailyAmount > 0)) {
+      const daily = Math.max(
+        0,
+        Math.floor(row.dailyAmount || 0) ||
+          Math.floor(amount / daysInMonth)
+      );
+      if (daily <= 0) continue;
+      const days =
+        maxDay == null ? daysInMonth : Math.min(maxDay, daysInMonth);
+      total += Math.min(paid, daily * days);
+      continue;
+    }
+
+    if (maxDay == null) {
+      total += paid;
+      continue;
+    }
+    const payDay = row.payDay ?? 31;
+    if (payDay <= maxDay) total += paid;
+  }
+  return total;
+}
+
 /**
- * 기준일 현금: 수금(활성 병원+기타) − 비용.
- * 기지급도 수금에서 나가므로 비용은 총액 기준(기지급 제외하면 남음이 부풀음).
- * 보류·해지 병원만 제외.
+ * 기준일 현금: 예정수금 − 지급액.
+ * 지급은 수금에서 나가므로, 지급 체크 시 지급액·남음/더필요가 바로 바뀜.
+ * 보류·해지 제외.
  */
 export function buildCheckpoints(
   month: CashflowMonth | null
@@ -262,9 +301,9 @@ export function buildCheckpoints(
     sumExpectedByDayLimit(hospitals, 31, false) +
     sumMiscExpectedByDayLimit(misc, 31, false);
 
-  const startExp = sumExpensesByPayDayLimit(expenses, 1, ym, false);
-  const day10Exp = sumExpensesByPayDayLimit(expenses, 10, ym, false);
-  const endExp = sumExpensesByPayDayLimit(expenses, null, ym, false);
+  const startExp = sumPaidExpenseByPayDayLimit(expenses, 1, ym);
+  const day10Exp = sumPaidExpenseByPayDayLimit(expenses, 10, ym);
+  const endExp = sumPaidExpenseByPayDayLimit(expenses, null, ym);
 
   return [
     {
