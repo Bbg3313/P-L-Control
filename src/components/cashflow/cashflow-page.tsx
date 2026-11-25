@@ -111,6 +111,14 @@ export function CashflowPage() {
 
   const summary = useMemo(() => summarizeMonth(month), [month]);
   const checkpoints = useMemo(() => buildCheckpoints(month), [month]);
+  const hospitalsByDay = useMemo(() => {
+    return [...month.hospitals].sort((a, b) => {
+      const da = a.expectedDay ?? 99;
+      const db = b.expectedDay ?? 99;
+      if (da !== db) return da - db;
+      return a.name.localeCompare(b.name, "ko");
+    });
+  }, [month.hospitals]);
 
   const persistMonth = useCallback(
     (nextMonth: CashflowMonth) => {
@@ -662,7 +670,7 @@ export function CashflowPage() {
       </div>
 
       {/* 비용 | 병원 수금 — 좌우 분할, 스크롤 없이 한 화면 */}
-      <div className="grid min-h-0 flex-1 gap-1.5 overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div className="grid min-h-0 flex-1 gap-1.5 overflow-hidden lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1">
             <h2 className="text-xs font-semibold text-slate-800">
@@ -773,20 +781,20 @@ export function CashflowPage() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-5 border-slate-200 px-1.5 text-[10px]"
+              className="h-7 border-slate-200 px-2 text-xs"
               onClick={addHospital}
             >
-              +
+              + 추가
             </Button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-1">
-            {month.hospitals.length === 0 ? (
-              <p className="py-2 text-center text-[11px] text-slate-400">
+          <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+            {hospitalsByDay.length === 0 ? (
+              <p className="py-2 text-center text-xs text-slate-400">
                 병원 없음
               </p>
             ) : (
-              <div className="grid grid-cols-1 gap-0.5 xl:grid-cols-2">
-                {month.hospitals.map((row) => {
+              <div className="flex flex-col gap-1">
+                {hospitalsByDay.map((row) => {
                   const inactive =
                     row.contractStatus === "보류" ||
                     row.contractStatus === "해지";
@@ -794,7 +802,7 @@ export function CashflowPage() {
                     <div
                       key={row.id}
                       className={cn(
-                        "flex items-center gap-1 rounded px-1 py-0.5",
+                        "flex items-center gap-2 rounded-md px-1.5 py-1",
                         inactive && "opacity-45",
                         !inactive &&
                           row.status === "paid" &&
@@ -807,10 +815,10 @@ export function CashflowPage() {
                       <button
                         type="button"
                         className={cn(
-                          "h-5 w-10 shrink-0 rounded text-[10px] font-semibold",
+                          "h-8 w-14 shrink-0 rounded-md text-xs font-bold",
                           row.status === "paid"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-amber-100 text-amber-900"
+                            ? "bg-emerald-500 text-white"
+                            : "bg-amber-400 text-amber-950"
                         )}
                         onClick={() =>
                           updateHospital(row.id, {
@@ -825,10 +833,10 @@ export function CashflowPage() {
                         onChange={(e) =>
                           renameHospitalMaster(row.id, e.target.value)
                         }
-                        className="h-5 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[11px] shadow-none focus-visible:ring-1"
+                        className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-1"
                       />
                       <select
-                        className="h-5 w-[3.25rem] shrink-0 rounded border-0 bg-transparent text-[10px] text-slate-500"
+                        className="h-8 w-16 shrink-0 rounded-md border border-slate-200 bg-white px-1 text-xs text-slate-600"
                         value={row.contractStatus}
                         aria-label="계약"
                         onChange={(e) =>
@@ -845,9 +853,9 @@ export function CashflowPage() {
                         ))}
                       </select>
                       <select
-                        className="h-5 w-8 shrink-0 rounded border-0 bg-transparent text-[10px] text-slate-500"
+                        className="h-8 w-14 shrink-0 rounded-md border border-slate-200 bg-white px-1 text-xs font-semibold text-slate-700"
                         value={row.expectedDay ?? ""}
-                        aria-label="예정일"
+                        aria-label="수금일"
                         onChange={(e) => {
                           const v = e.target.value;
                           setHospitalExpectedDay(
@@ -860,7 +868,7 @@ export function CashflowPage() {
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(
                           (d) => (
                             <option key={d} value={d}>
-                              {d}
+                              {d}일
                             </option>
                           )
                         )}
@@ -871,15 +879,15 @@ export function CashflowPage() {
                           updateHospital(row.id, { amount: n });
                           setHospitalDefaultAmount(row.id, n);
                         }}
-                        className="h-5 w-[5.25rem] shrink-0 border-slate-200 bg-white px-1 text-[11px]"
+                        className="h-8 w-28 shrink-0 border-slate-200 bg-white px-2 text-sm"
                       />
                       <button
                         type="button"
-                        className="shrink-0 text-slate-300 hover:text-slate-600"
+                        className="shrink-0 rounded p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
                         aria-label="삭제"
                         onClick={() => removeHospital(row.id)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   );
