@@ -534,78 +534,121 @@ export function CashflowPage() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-1.5 overflow-hidden">
-      {/* 헤더 + KPI + 기준일 — 한 덩어리로 얇게 */}
-      <div className="shrink-0 space-y-1.5">
+      {/* 헤더 + 현황 KPI + 기준일 현금흐름 */}
+      <div className="shrink-0 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <h1 className="text-sm font-semibold text-slate-900">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h1 className="text-base font-semibold text-slate-900">
               영업이익 · 수금현황
             </h1>
-            <span className="text-slate-500">
+            <span className="text-sm text-slate-500">
               {formatPeriodLabel(reportingMonth)}
             </span>
-            <span className="tabular-nums text-slate-600">
-              청구 {formatCurrency(summary.billedTotal)}
-            </span>
-            <span className="tabular-nums text-emerald-700">
-              수금 {formatCurrency(summary.receivedTotal)}
-            </span>
-            <span className="tabular-nums text-amber-700">
-              미수 {formatCurrency(summary.unpaidTotal)}
-            </span>
-            <span className="tabular-nums text-slate-600">
-              비용 {formatCurrency(summary.expenseTotal)}
-            </span>
-            <span
-              className={cn(
-                "font-semibold tabular-nums",
-                summary.operatingProfit >= 0
-                  ? "text-emerald-700"
-                  : "text-red-600"
-              )}
-            >
-              이익 {formatCurrency(summary.operatingProfit)}
-            </span>
             {saveState === "saving" && (
-              <span className="inline-flex items-center gap-1 text-slate-400">
-                <Loader2 className="h-3 w-3 animate-spin" />
+              <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 저장
               </span>
             )}
             {saveState === "saved" && (
-              <span className="inline-flex items-center gap-1 text-slate-400">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+              <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                 저장됨
               </span>
             )}
             {saveState === "error" && error && (
-              <span className="text-red-600">{error}</span>
+              <span className="text-xs text-red-600">{error}</span>
             )}
           </div>
           <ReportingMonthNav showQuickMonths={false} />
         </div>
 
-        <div className="flex flex-wrap gap-1 text-[11px]">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
+          {(
+            [
+              {
+                label: "청구",
+                value: summary.billedTotal,
+                tone: "text-slate-900",
+              },
+              {
+                label: "수금",
+                value: summary.receivedTotal,
+                tone: "text-emerald-700",
+              },
+              {
+                label: "미수",
+                value: summary.unpaidTotal,
+                tone: "text-amber-700",
+              },
+              {
+                label: "비용",
+                value: summary.expenseTotal,
+                tone: "text-slate-900",
+              },
+              {
+                label: "영업이익",
+                value: summary.operatingProfit,
+                tone:
+                  summary.operatingProfit >= 0
+                    ? "text-emerald-700"
+                    : "text-red-600",
+              },
+            ] as const
+          ).map((item) => (
+            <div
+              key={item.label}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+            >
+              <div className="text-[11px] font-medium text-slate-500">
+                {item.label}
+              </div>
+              <div
+                className={cn(
+                  "mt-0.5 text-base font-semibold tabular-nums tracking-tight",
+                  item.tone
+                )}
+              >
+                {formatCurrency(item.value)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
           {checkpoints.map((cp) => (
             <div
               key={cp.key}
-              className="inline-flex items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2"
             >
-              <span className="font-semibold text-slate-700">{cp.label}</span>
-              <span className="tabular-nums text-slate-500">
-                수금 {formatCurrency(cp.received)}
-              </span>
-              <span className="tabular-nums text-slate-500">
-                비용 {formatCurrency(cp.expenses)}
-              </span>
-              <span
-                className={cn(
-                  "font-semibold tabular-nums",
-                  cp.net >= 0 ? "text-emerald-700" : "text-red-600"
-                )}
-              >
-                {formatCurrency(cp.net)}
-              </span>
+              <div className="mb-1.5 text-xs font-semibold text-slate-800">
+                {cp.label}
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <div>
+                  <div className="text-slate-400">수금</div>
+                  <div className="font-medium tabular-nums text-slate-700">
+                    {formatCurrency(cp.received)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-400">비용</div>
+                  <div className="font-medium tabular-nums text-slate-700">
+                    {formatCurrency(cp.expenses)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-400">+/-</div>
+                  <div
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      cp.net >= 0 ? "text-emerald-700" : "text-red-600"
+                    )}
+                  >
+                    {formatCurrency(cp.net)}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
