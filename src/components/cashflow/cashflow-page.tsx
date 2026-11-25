@@ -777,9 +777,15 @@ export function CashflowPage() {
                     </span>
                   </span>
                   <span>
-                    지급액{" "}
+                    지급{" "}
                     <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.expenses)}
+                      {formatCurrency(cp.paidExpenses)}
+                    </span>
+                  </span>
+                  <span>
+                    미지급{" "}
+                    <span className="tabular-nums text-slate-700">
+                      {formatCurrency(cp.unpaidExpenses)}
                     </span>
                   </span>
                 </div>

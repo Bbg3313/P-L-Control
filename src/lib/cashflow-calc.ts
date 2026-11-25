@@ -29,10 +29,15 @@ export interface CashflowSummary {
 export interface CheckpointSummary {
   key: "start" | "day10" | "monthEnd";
   label: string;
-  /** 해당 기준일까지 예정·실수금(활성 계약 청구액) */
+  /** 해당 기준일까지 예정수금(활성 계약 + 기타, 보류·해지 제외) */
   received: number;
+  /** 지급액(이미 수금에서 나감) */
+  paidExpenses: number;
+  /** 미지급(아직 나갈 돈, 수금에서 빠질 예정) */
+  unpaidExpenses: number;
+  /** 지급+미지급 = 기준일까지 비용 총액 */
   expenses: number;
-  /** 수금 − 비용. 음수면 부족(더 필요), 양수면 여유(남음) */
+  /** 예정수금 − 비용총액. 음수면 더 필요, 양수면 남음 */
   net: number;
 }
 
@@ -279,8 +284,8 @@ export function sumPaidExpenseByPayDayLimit(
 }
 
 /**
- * 기준일 현금: 예정수금 − 지급액.
- * 지급은 수금에서 나가므로, 지급 체크 시 지급액·남음/더필요가 바로 바뀜.
+ * 기준일 현금: 예정수금 − (지급액 + 미지급).
+ * 둘 다 수금에서 나가거나 나갈 돈. 지급↔미지급 전환 시 지급액/미지급이 바뀜.
  * 보류·해지 제외.
  */
 export function buildCheckpoints(
@@ -291,42 +296,33 @@ export function buildCheckpoints(
   const misc = month?.miscCollections ?? [];
   const ym = month?.yearMonth;
 
-  const startIn =
-    sumExpectedByDayLimit(hospitals, 1, false) +
-    sumMiscExpectedByDayLimit(misc, 1, false);
-  const day10In =
-    sumExpectedByDayLimit(hospitals, 10, false) +
-    sumMiscExpectedByDayLimit(misc, 10, false);
-  const endIn =
-    sumExpectedByDayLimit(hospitals, 31, false) +
-    sumMiscExpectedByDayLimit(misc, 31, false);
-
-  const startExp = sumPaidExpenseByPayDayLimit(expenses, 1, ym);
-  const day10Exp = sumPaidExpenseByPayDayLimit(expenses, 10, ym);
-  const endExp = sumPaidExpenseByPayDayLimit(expenses, null, ym);
+  function pack(maxDay: number | null, label: string, key: CheckpointSummary["key"]) {
+    const received =
+      sumExpectedByDayLimit(hospitals, maxDay ?? 31, false) +
+      sumMiscExpectedByDayLimit(misc, maxDay ?? 31, false);
+    const paidExpenses = sumPaidExpenseByPayDayLimit(expenses, maxDay, ym);
+    const unpaidExpenses = sumExpensesByPayDayLimit(
+      expenses,
+      maxDay,
+      ym,
+      true
+    );
+    const total = paidExpenses + unpaidExpenses;
+    return {
+      key,
+      label,
+      received,
+      paidExpenses,
+      unpaidExpenses,
+      expenses: total,
+      net: received - total,
+    };
+  }
 
   return [
-    {
-      key: "start",
-      label: "1일 기준",
-      received: startIn,
-      expenses: startExp,
-      net: startIn - startExp,
-    },
-    {
-      key: "day10",
-      label: "10일 기준",
-      received: day10In,
-      expenses: day10Exp,
-      net: day10In - day10Exp,
-    },
-    {
-      key: "monthEnd",
-      label: "말일 기준",
-      received: endIn,
-      expenses: endExp,
-      net: endIn - endExp,
-    },
+    pack(1, "1일 기준", "start"),
+    pack(10, "10일 기준", "day10"),
+    pack(null, "말일 기준", "monthEnd"),
   ];
 }
 
