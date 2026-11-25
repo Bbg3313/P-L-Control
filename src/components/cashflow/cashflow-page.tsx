@@ -6,8 +6,9 @@ import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFinancial } from "@/contexts/financial-context";
+import { CashflowDailyChart } from "@/components/cashflow/cashflow-daily-chart";
 import {
-  buildCheckpoints,
+  buildDailyCashflowSeries,
   emptyExpenseRow,
   emptyHospitalRow,
   emptyMiscRow,
@@ -183,7 +184,7 @@ export function CashflowPage() {
   );
 
   const summary = useMemo(() => summarizeMonth(month), [month]);
-  const checkpoints = useMemo(() => buildCheckpoints(month), [month]);
+  const dailySeries = useMemo(() => buildDailyCashflowSeries(month), [month]);
   const hospitalsByDay = useMemo(() => {
     return [...month.hospitals].sort((a, b) => {
       const da = a.expectedDay ?? 99;
@@ -739,56 +740,7 @@ export function CashflowPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-          {checkpoints.map((cp) => {
-            const short = cp.net < 0;
-            const gap = Math.abs(cp.net);
-            return (
-              <div
-                key={cp.key}
-                className={cn(
-                  "rounded-lg border bg-white px-3 py-2.5",
-                  short ? "border-red-200" : "border-emerald-200"
-                )}
-              >
-                <div className="text-xs font-semibold text-slate-800">
-                  {cp.label}
-                </div>
-                <div
-                  className={cn(
-                    "mt-1 text-lg font-bold tabular-nums tracking-tight",
-                    short ? "text-red-600" : "text-emerald-700"
-                  )}
-                >
-                  {formatCurrency(gap)}
-                  <span className="ml-1 text-sm font-semibold">
-                    {short ? "더 필요" : "남음"}
-                  </span>
-                </div>
-                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
-                  <span>
-                    입금{" "}
-                    <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.paidReceived)}
-                    </span>
-                  </span>
-                  <span>
-                    예정{" "}
-                    <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.unpaidReceived)}
-                    </span>
-                  </span>
-                  <span>
-                    비용{" "}
-                    <span className="tabular-nums text-slate-700">
-                      {formatCurrency(cp.expenses)}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <CashflowDailyChart data={dailySeries} />
       </div>
 
       {/* 비용 | 병원 수금 | 기타 수금 */}

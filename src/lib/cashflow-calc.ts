@@ -284,9 +284,69 @@ export function sumPaidExpenseByPayDayLimit(
   return total;
 }
 
+export interface DailyCashflowPoint {
+  day: number;
+  /** X축 라벨 (1, 2, …) */
+  label: string;
+  paidReceived: number;
+  unpaidReceived: number;
+  /** 입금+예정 누적 */
+  received: number;
+  /** 해당일까지 나갈 비용 누적 */
+  expenses: number;
+  /** 예정수금 − 비용 */
+  net: number;
+}
+
+function packDayCashflow(
+  hospitals: HospitalMonthRow[],
+  expenses: ExpenseMonthRow[],
+  misc: MiscCollectionRow[],
+  ym: string | undefined,
+  day: number
+): Omit<DailyCashflowPoint, "day" | "label"> {
+  const paidReceived =
+    sumReceivedByDayLimit(hospitals, day) +
+    sumMiscExpectedByDayLimit(misc, day, { paidOnly: true });
+  const unpaidReceived =
+    sumExpectedByDayLimit(hospitals, day, true) +
+    sumMiscExpectedByDayLimit(misc, day, { unpaidOnly: true });
+  const received = paidReceived + unpaidReceived;
+  const total = sumExpensesByPayDayLimit(expenses, day, ym, false);
+  return {
+    paidReceived,
+    unpaidReceived,
+    received,
+    expenses: total,
+    net: received - total,
+  };
+}
+
+/**
+ * 1일~말일 누적 수금·비용·잔액 시리즈.
+ * 월 비용은 지급 구분 없이 전부 지출로 본다.
+ */
+export function buildDailyCashflowSeries(
+  month: CashflowMonth | null
+): DailyCashflowPoint[] {
+  const hospitals = month?.hospitals ?? [];
+  const expenses = month?.expenses ?? [];
+  const misc = month?.miscCollections ?? [];
+  const ym = month?.yearMonth;
+  const days = daysInCashflowMonth(ym);
+  const points: DailyCashflowPoint[] = [];
+  for (let day = 1; day <= days; day++) {
+    points.push({
+      day,
+      label: String(day),
+      ...packDayCashflow(hospitals, expenses, misc, ym, day),
+    });
+  }
+  return points;
+}
+
 /**
  * 기준일 현금: 예정수금(입금+예정) − 비용(해당일까지 나갈 금액 전부).
- * 월 비용은 지급 구분 없이 전부 지출로 본다.
  */
 export function buildCheckpoints(
   month: CashflowMonth | null
@@ -300,24 +360,12 @@ export function buildCheckpoints(
     maxDay: number | null,
     label: string,
     key: CheckpointSummary["key"]
-  ) {
-    const day = maxDay ?? 31;
-    const paidReceived =
-      sumReceivedByDayLimit(hospitals, day) +
-      sumMiscExpectedByDayLimit(misc, day, { paidOnly: true });
-    const unpaidReceived =
-      sumExpectedByDayLimit(hospitals, day, true) +
-      sumMiscExpectedByDayLimit(misc, day, { unpaidOnly: true });
-    const received = paidReceived + unpaidReceived;
-    const total = sumExpensesByPayDayLimit(expenses, maxDay, ym, false);
+  ): CheckpointSummary {
+    const day = maxDay ?? daysInCashflowMonth(ym);
     return {
       key,
       label,
-      paidReceived,
-      unpaidReceived,
-      received,
-      expenses: total,
-      net: received - total,
+      ...packDayCashflow(hospitals, expenses, misc, ym, day),
     };
   }
 
