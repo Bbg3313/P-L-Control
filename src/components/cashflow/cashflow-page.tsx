@@ -780,17 +780,23 @@ export function CashflowPage() {
           })()}
         </div>
 
-        <div className="grid w-full gap-1.5 lg:grid-cols-2">
+        <CashflowGapOverview
+          checkpoints={checkpoints}
+          expenseTotal={summary.expenseTotal}
+          className="w-full"
+        />
+
+        <div className="grid w-full gap-1.5 sm:grid-cols-2">
           <CashflowExpenseMix expenses={month.expenses} />
-          <CashflowGapOverview
-            checkpoints={checkpoints}
-            expenseTotal={summary.expenseTotal}
+          <CashflowExpenseTiming
+            expenses={month.expenses}
+            yearMonth={month.yearMonth}
           />
         </div>
       </div>
 
-      {/* 월 비용 | 지출 시점 | 병원 수금 | 기타 수금 */}
-      <div  className="grid min-h-0 flex-1 gap-0.5 overflow-hidden lg:grid-cols-4">
+      {/* 월 비용 | 병원 수금 | 기타 수금 */}
+      <div className="grid min-h-0 flex-1 gap-0.5 overflow-hidden lg:grid-cols-3">
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
           <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1.5">
             <h2 className="text-sm font-semibold text-slate-800">
@@ -918,13 +924,7 @@ export function CashflowPage() {
             )}
           </div>
         </section>
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <CashflowExpenseTiming
-            expenses={month.expenses}
-            yearMonth={month.yearMonth}
-            className="min-h-0 flex-1 border-0"
-          />
-        </section>
+
 
 
         <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
