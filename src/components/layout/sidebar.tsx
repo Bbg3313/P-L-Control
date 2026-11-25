@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
+  LineChart,
   Mail,
   Users,
   Settings,
@@ -24,9 +25,15 @@ type NavItem = {
   exact?: boolean;
 };
 
-const HOME_HREF = "/hr/payroll";
+const HOME_HREF = "/cashflow";
 
 const navItems: NavItem[] = [
+  {
+    href: "/cashflow",
+    label: "영업이익",
+    icon: LineChart,
+    iconTone: "bg-emerald-100 text-emerald-700",
+  },
   {
     href: "/hr",
     label: "근로계약",
