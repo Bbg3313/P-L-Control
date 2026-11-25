@@ -882,12 +882,19 @@ export function CashflowPage() {
                         </button>
                         <button
                           type="button"
-                          className="h-8 min-w-0 flex-1 truncate rounded px-1 text-left text-sm text-slate-800 hover:bg-white/60"
+                          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 truncate rounded px-1 text-left text-sm text-slate-800 hover:bg-white/60"
                           onClick={() =>
                             setExpandedExpenseId(open ? null : row.id)
                           }
                         >
-                          {row.name || "이름 없음"}
+                          <span className="min-w-0 truncate">
+                            {row.name || "이름 없음"}
+                          </span>
+                          {paid > 0 && remaining > 0 && (
+                            <span className="shrink-0 text-[10px] font-medium tabular-nums text-sky-700">
+                              잔여 {formatCurrency(remaining)}
+                            </span>
+                          )}
                         </button>
                         <MoneyInput
                           value={row.amount}
