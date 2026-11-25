@@ -740,7 +740,7 @@ export function CashflowPage() {
           ))}
         </div>
 
-        <CashflowGapOverview checkpoints={checkpoints} />
+        <CashflowGapOverview checkpoints={checkpoints} expenseTotal={summary.expenseTotal} />
       </div>
 
       {/* 비용 | 병원 수금 | 기타 수금 */}

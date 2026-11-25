@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 interface CashflowGapOverviewProps {
   checkpoints: CheckpointSummary[];
+  /** 상단 '비용' KPI와 동일한 월 비용 총액 */
+  expenseTotal: number;
   className?: string;
 }
 
@@ -44,21 +46,35 @@ function GapBar({
 
 export function CashflowGapOverview({
   checkpoints,
+  expenseTotal,
   className,
 }: CashflowGapOverviewProps) {
-  const monthEnd =
+  const monthEndCp =
     checkpoints.find((c) => c.key === "monthEnd") ?? checkpoints.at(-1);
-  if (!monthEnd) return null;
+  if (!monthEndCp) return null;
 
-  const short = monthEnd.net < 0;
-  const gap = Math.abs(monthEnd.net);
-  const coverMax = Math.max(monthEnd.received, monthEnd.expenses, 1);
+  // 말일: 예정수금(입금+예정) − 월 비용 전체(상단 KPI와 동일)
+  const received = monthEndCp.received;
+  const expenses = Math.max(0, Math.floor(expenseTotal || 0));
+  const net = received - expenses;
+  const short = net < 0;
+  const gap = Math.abs(net);
+  const coverMax = Math.max(received, expenses, 1);
   const coverPct =
-    monthEnd.expenses > 0
-      ? Math.min(100, Math.round((monthEnd.received / monthEnd.expenses) * 100))
-      : monthEnd.received > 0
+    expenses > 0
+      ? Math.min(100, Math.round((received / expenses) * 100))
+      : received > 0
         ? 100
         : 0;
+
+  const chips: CheckpointSummary[] = checkpoints.map((cp) => {
+    if (cp.key !== "monthEnd") return cp;
+    return {
+      ...cp,
+      expenses,
+      net,
+    };
+  });
 
   return (
     <div
@@ -68,7 +84,6 @@ export function CashflowGapOverview({
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-4">
-        {/* 한눈: 말일 부족/여유 */}
         <div
           className={cn(
             "flex min-w-[11rem] shrink-0 flex-col justify-center rounded-md px-3 py-2",
@@ -104,17 +119,16 @@ export function CashflowGapOverview({
           </div>
         </div>
 
-        {/* 수금 vs 비용 막대 */}
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
           <GapBar
             label="예정수금 (입금+예정)"
-            value={monthEnd.received}
+            value={received}
             max={coverMax}
             tone="received"
           />
           <GapBar
             label="월 비용"
-            value={monthEnd.expenses}
+            value={expenses}
             max={coverMax}
             tone="expense"
           />
@@ -122,22 +136,21 @@ export function CashflowGapOverview({
             <span>
               입금{" "}
               <span className="tabular-nums text-slate-700">
-                {formatCurrency(monthEnd.paidReceived)}
+                {formatCurrency(monthEndCp.paidReceived)}
               </span>
             </span>
             <span>
               예정{" "}
               <span className="tabular-nums text-slate-700">
-                {formatCurrency(monthEnd.unpaidReceived)}
+                {formatCurrency(monthEndCp.unpaidReceived)}
               </span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* 시점별 갭만 */}
       <div className="mt-3 grid grid-cols-3 gap-1.5 border-t border-slate-100 pt-2.5">
-        {checkpoints.map((cp) => {
+        {chips.map((cp) => {
           const cpShort = cp.net < 0;
           return (
             <div
