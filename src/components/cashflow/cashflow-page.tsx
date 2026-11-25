@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  CheckCircle2,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { ReportingMonthNav } from "@/components/dashboard/reporting-month-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -584,6 +578,9 @@ export function CashflowPage() {
                 저장됨
               </span>
             )}
+            {saveState === "error" && error && (
+              <span className="text-red-600">{error}</span>
+            )}
           </div>
           <ReportingMonthNav showQuickMonths={false} />
         </div>
@@ -792,8 +789,8 @@ export function CashflowPage() {
                         }
                       >
                         {CONTRACT_STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
+                          <option key={o} value={o}>
+                            {o}
                           </option>
                         ))}
                       </select>
