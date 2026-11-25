@@ -131,13 +131,19 @@ export function withSeedHospitalsIfEmpty(
           note: expenseNote(t.source, t.name),
         };
       }
+      const paidAmount = Math.min(
+        amount,
+        Math.max(0, Math.floor(prev.paidAmount || 0)) ||
+          (prev.status === "paid" ? amount : 0)
+      );
       return {
         ...prev,
         name: t.name,
         payDay: t.payDay,
         source: t.source,
         amount,
-        status: prev.status === "paid" ? "paid" : "unpaid",
+        paidAmount,
+        status: amount > 0 && paidAmount >= amount ? "paid" : "unpaid",
         ...(dailyAmount ? { dailyAmount } : {}),
         note: prev.note || expenseNote(t.source, t.name),
       };

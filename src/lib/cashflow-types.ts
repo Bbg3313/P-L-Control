@@ -63,13 +63,16 @@ export interface HospitalMonthRow {
 export interface ExpenseMonthRow {
   id: string;
   name: string;
+  /** 당월 총 비용 */
   amount: number;
+  /** 이미 지급한 금액 (일부 지급 가능). 미지급 잔액 = amount − paidAmount */
+  paidAmount: number;
   note: string;
   payDay: number | null;
   source: ExpenseSource;
   /** 일별 단가 — source=meta-daily 일 때 체크포인트 누적에 사용 */
   dailyAmount?: number;
-  /** 기지급 | 미지급 — 체크포인트 ‘더 필요’는 미지급만 반영 */
+  /** paidAmount 기준 요약: 전액이면 paid, 아니면 unpaid(일부 포함) */
   status: CollectionStatus;
 }
 

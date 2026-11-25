@@ -138,15 +138,23 @@ function normalizeExpenseRow(raw: unknown): ExpenseMonthRow | null {
   const o = raw as Record<string, unknown>;
   const id = typeof o.id === "string" ? o.id.trim() : "";
   if (!id) return null;
+  const amount = asMoney(o.amount);
+  let paidAmount = asMoney(o.paidAmount);
+  // 구버전: status=paid 만 있던 경우 전액 기지급으로 이관
+  if (o.paidAmount == null && o.status === "paid") paidAmount = amount;
+  paidAmount = Math.min(paidAmount, amount);
+  const status: CollectionStatus =
+    amount > 0 && paidAmount >= amount ? "paid" : "unpaid";
   const dailyAmount = asMoney(o.dailyAmount);
   return {
     id,
     name: typeof o.name === "string" ? o.name.trim() : "",
-    amount: asMoney(o.amount),
+    amount,
+    paidAmount,
     note: typeof o.note === "string" ? o.note : "",
     payDay: asPayDay(o.payDay),
     source: asExpenseSource(o.source),
-    status: asStatus(o.status),
+    status,
     ...(dailyAmount > 0 ? { dailyAmount } : {}),
   };
 }

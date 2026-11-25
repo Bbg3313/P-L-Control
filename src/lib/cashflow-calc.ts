@@ -135,13 +135,15 @@ export function summarizeMonth(month: CashflowMonth | null): CashflowSummary {
   let expenseUnpaidCount = 0;
   for (const row of expenses) {
     const amount = Math.max(0, Math.floor(row.amount || 0));
+    const paid = Math.min(
+      amount,
+      Math.max(0, Math.floor(row.paidAmount || 0))
+    );
+    const remaining = Math.max(0, amount - paid);
     expenseTotal += amount;
-    if (row.status === "paid") {
-      expensePaidCount += 1;
-    } else {
-      expenseUnpaidCount += 1;
-      unpaidExpenseTotal += amount;
-    }
+    unpaidExpenseTotal += remaining;
+    if (remaining <= 0 && amount > 0) expensePaidCount += 1;
+    else expenseUnpaidCount += 1;
   }
 
   return {
@@ -168,10 +170,19 @@ function daysInCashflowMonth(yearMonth: string | undefined): number {
   return new Date(y, m, 0).getDate();
 }
 
+export function expenseRemaining(row: ExpenseMonthRow): number {
+  const amount = Math.max(0, Math.floor(row.amount || 0));
+  const paid = Math.min(
+    amount,
+    Math.max(0, Math.floor(row.paidAmount || 0))
+  );
+  return Math.max(0, amount - paid);
+}
+
 /**
  * 해당 기준일까지 비용.
  * maxDay null = 말일(전체). 일별 비용은 일수×단가.
- * unpaidOnly: 미지급만 (기지급 제외 — ‘더 필요’ 계산용)
+ * unpaidOnly: 미지급 잔액만 (‘더 필요’ 계산용, 일부지급 반영)
  */
 export function sumExpensesByPayDayLimit(
   expenses: ExpenseMonthRow[],
@@ -182,31 +193,24 @@ export function sumExpensesByPayDayLimit(
   const daysInMonth = daysInCashflowMonth(yearMonth);
   let total = 0;
   for (const row of expenses) {
-    if (unpaidOnly && row.status === "paid") continue;
+    const amount = Math.max(0, Math.floor(row.amount || 0));
+    const remaining = unpaidOnly ? expenseRemaining(row) : amount;
+    if (remaining <= 0) continue;
 
     if (row.source === "meta-daily" || (row.dailyAmount && row.dailyAmount > 0)) {
-      const daily = Math.max(
-        0,
-        Math.floor(row.dailyAmount || 0) ||
-          Math.floor((row.amount || 0) / daysInMonth)
-      );
-      if (daily <= 0) continue;
-      if (maxDay == null) {
-        total += daily * daysInMonth;
-      } else {
-        total += daily * Math.min(maxDay, daysInMonth);
-      }
+      // 일부지급 시 잔액을 월 일수 비율로 기준일에 배분
+      const share =
+        maxDay == null ? 1 : Math.min(maxDay, daysInMonth) / daysInMonth;
+      total += Math.floor(remaining * share);
       continue;
     }
 
-    const amount = Math.max(0, Math.floor(row.amount || 0));
-    if (amount <= 0) continue;
     if (maxDay == null) {
-      total += amount;
+      total += remaining;
       continue;
     }
     const payDay = row.payDay ?? 31;
-    if (payDay <= maxDay) total += amount;
+    if (payDay <= maxDay) total += remaining;
   }
   return total;
 }
@@ -292,11 +296,26 @@ export function emptyExpenseRow(
     id,
     name,
     amount,
+    paidAmount: 0,
     note: "",
     payDay,
     source,
     status: "unpaid",
     ...(dailyAmount && dailyAmount > 0 ? { dailyAmount } : {}),
+  };
+}
+
+/** 지급액 변경 시 status 동기화 */
+export function withExpensePaidAmount(
+  row: ExpenseMonthRow,
+  paidAmount: number
+): ExpenseMonthRow {
+  const amount = Math.max(0, Math.floor(row.amount || 0));
+  const paid = Math.min(amount, Math.max(0, Math.floor(paidAmount || 0)));
+  return {
+    ...row,
+    paidAmount: paid,
+    status: amount > 0 && paid >= amount ? "paid" : "unpaid",
   };
 }
 
