@@ -539,84 +539,66 @@ export function CashflowPage() {
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain pb-4 [scrollbar-gutter:stable]">
-      {/* 상단 헤더 */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <h1 className="text-base font-semibold tracking-tight text-slate-900">
-            영업이익 · 수금현황
-          </h1>
-          <p className="text-xs text-slate-500">
-            {formatPeriodLabel(reportingMonth)} · 부가세 포함
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-1.5 overflow-hidden">
+      {/* 헤더 + KPI + 기준일 — 한 덩어리로 얇게 */}
+      <div className="shrink-0 space-y-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <h1 className="text-sm font-semibold text-slate-900">
+              영업이익 · 수금현황
+            </h1>
+            <span className="text-slate-500">
+              {formatPeriodLabel(reportingMonth)}
+            </span>
+            <span className="tabular-nums text-slate-600">
+              청구 {formatCurrency(summary.billedTotal)}
+            </span>
+            <span className="tabular-nums text-emerald-700">
+              수금 {formatCurrency(summary.receivedTotal)}
+            </span>
+            <span className="tabular-nums text-amber-700">
+              미수 {formatCurrency(summary.unpaidTotal)}
+            </span>
+            <span className="tabular-nums text-slate-600">
+              비용 {formatCurrency(summary.expenseTotal)}
+            </span>
+            <span
+              className={cn(
+                "font-semibold tabular-nums",
+                summary.operatingProfit >= 0
+                  ? "text-emerald-700"
+                  : "text-red-600"
+              )}
+            >
+              이익 {formatCurrency(summary.operatingProfit)}
+            </span>
             {saveState === "saving" && (
-              <>
+              <span className="inline-flex items-center gap-1 text-slate-400">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                저장 중
-              </>
+                저장
+              </span>
             )}
             {saveState === "saved" && (
-              <>
+              <span className="inline-flex items-center gap-1 text-slate-400">
                 <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                 저장됨
-              </>
+              </span>
             )}
-            {saveState === "error" && (
-              <span className="text-red-600">{error ?? "저장 실패"}</span>
-            )}
-          </span>
+          </div>
           <ReportingMonthNav showQuickMonths={false} />
         </div>
-      </div>
 
-      {/* 요약 KPI — 한 줄 밀도 */}
-      <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-5">
-        <SummaryCard
-          label="청구"
-          value={summary.billedTotal}
-          hint={`${summary.hospitalCount}곳`}
-        />
-        <SummaryCard
-          label="수금"
-          value={summary.receivedTotal}
-          hint={`${summary.paidCount}곳`}
-          tone="positive"
-        />
-        <SummaryCard
-          label="미수"
-          value={summary.unpaidTotal}
-          hint={`${summary.unpaidCount}곳`}
-          tone="warn"
-        />
-        <SummaryCard
-          label="비용"
-          value={summary.expenseTotal}
-          hint={`${month.expenses.length}건`}
-        />
-        <SummaryCard
-          label="영업이익"
-          value={summary.operatingProfit}
-          tone={summary.operatingProfit >= 0 ? "positive" : "danger"}
-          emphasize
-        />
-      </div>
-
-      {/* 초 / 10일 / 말일 — 얇은 3열 */}
-      <section className="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
-        <div className="grid gap-1.5 md:grid-cols-3">
+        <div className="flex flex-wrap gap-1 text-[11px]">
           {checkpoints.map((cp) => (
             <div
               key={cp.key}
-              className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-md bg-slate-50 px-2.5 py-1.5 text-xs"
+              className="inline-flex items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1"
             >
               <span className="font-semibold text-slate-700">{cp.label}</span>
-              <span className="tabular-nums text-slate-600">
+              <span className="tabular-nums text-slate-500">
                 수금 {formatCurrency(cp.received)}
               </span>
-              <span className="tabular-nums text-slate-600">
+              <span className="tabular-nums text-slate-500">
                 비용 {formatCurrency(cp.expenses)}
               </span>
               <span
@@ -630,266 +612,236 @@ export function CashflowPage() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* 월 비용 — 체크용 밀집 그리드 */}
-      <section className="rounded-lg border border-slate-200 bg-white p-2">
-        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
-          <h2 className="text-xs font-semibold text-slate-800">
-            월 비용
-            <span className="ml-1.5 font-normal text-slate-500">
-              {formatCurrency(summary.expenseTotal)}
-            </span>
-          </h2>
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6 border-slate-200 px-2 text-[11px]"
-              onClick={syncPayrollExpenses}
-            >
-              <RefreshCw className="mr-0.5 h-3 w-3" />
-              급여반영
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6 border-slate-200 px-2 text-[11px]"
-              onClick={addExpense}
-            >
-              <Plus className="mr-0.5 h-3 w-3" />
-              추가
-            </Button>
-          </div>
-        </div>
-        {month.expenses.length === 0 ? (
-          <p className="py-3 text-center text-xs text-slate-400">
-            비용 없음 · 급여반영을 눌러 주세요
-          </p>
-        ) : (
-          <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-3">
-            {month.expenses.map((row) => (
-              <div
-                key={row.id}
-                className="flex items-center gap-1 rounded border border-slate-100 bg-slate-50/50 px-1.5 py-0.5"
-              >
-                <Input
-                  value={row.name}
-                  onChange={(e) =>
-                    updateExpense(row.id, { name: e.target.value })
-                  }
-                  className="h-6 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-xs shadow-none focus-visible:ring-1"
-                />
-                <MoneyInput
-                  value={row.amount}
-                  onChange={(n) => updateExpense(row.id, { amount: n })}
-                  className="h-6 w-[6.5rem] shrink-0 border-slate-200 bg-white px-1 text-xs"
-                />
-                {row.source === "meta-daily" ? (
-                  <span className="w-9 shrink-0 text-center text-[10px] text-sky-700">
-                    매일
-                  </span>
-                ) : (
-                  <select
-                    className="h-6 w-12 shrink-0 rounded border border-slate-200 bg-white px-0.5 text-[10px]"
-                    value={row.payDay ?? ""}
-                    aria-label="지출일"
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      updateExpensePayDay(row.id, v === "" ? null : Number(v));
-                    }}
-                  >
-                    <option value="">—</option>
-                    <option value={1}>1</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={25}>25</option>
-                    <option value={31}>말</option>
-                    {[5, 15].map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <button
-                  type="button"
-                  className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700"
-                  aria-label="삭제"
-                  onClick={() => removeExpense(row.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 병원 수금 — 체크용 밀집 그리드 */}
-      <section className="rounded-lg border border-slate-200 bg-white p-2">
-        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
-          <h2 className="text-xs font-semibold text-slate-800">
-            병원 수금
-            <span className="ml-1.5 font-normal text-slate-500">
-              {formatCurrency(summary.billedTotal)}
-            </span>
-          </h2>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-6 border-slate-200 px-2 text-[11px]"
-            onClick={addHospital}
-          >
-            <Plus className="mr-0.5 h-3 w-3" />
-            추가
-          </Button>
-        </div>
-        {month.hospitals.length === 0 ? (
-          <p className="py-3 text-center text-xs text-slate-400">병원 없음</p>
-        ) : (
-          <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-3">
-            {month.hospitals.map((row) => {
-              const inactive =
-                row.contractStatus === "보류" || row.contractStatus === "해지";
-              return (
-                <div
-                  key={row.id}
-                  className={cn(
-                    "flex items-center gap-1 rounded border px-1.5 py-0.5",
-                    inactive
-                      ? "border-slate-100 bg-slate-50 opacity-50"
-                      : row.status === "paid"
-                        ? "border-emerald-100 bg-emerald-50/40"
-                        : "border-amber-100 bg-amber-50/30"
-                  )}
-                >
-                  <Input
-                    value={row.name}
-                    onChange={(e) =>
-                      renameHospitalMaster(row.id, e.target.value)
-                    }
-                    className="h-6 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-xs shadow-none focus-visible:ring-1"
-                  />
-                  <select
-                    className="h-6 w-10 shrink-0 rounded border border-slate-200 bg-white px-0.5 text-[10px]"
-                    value={row.contractStatus}
-                    aria-label="계약"
-                    onChange={(e) =>
-                      setContractStatus(
-                        row.id,
-                        e.target.value as ContractStatus
-                      )
-                    }
-                  >
-                    {CONTRACT_STATUS_OPTIONS.map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </select>
-                  <MoneyInput
-                    value={row.amount}
-                    onChange={(n) => {
-                      updateHospital(row.id, { amount: n });
-                      setHospitalDefaultAmount(row.id, n);
-                    }}
-                    className="h-6 w-[5.75rem] shrink-0 border-slate-200 bg-white px-1 text-xs"
-                  />
-                  <select
-                    className="h-6 w-10 shrink-0 rounded border border-slate-200 bg-white px-0.5 text-[10px]"
-                    value={row.expectedDay ?? ""}
-                    aria-label="예정일"
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setHospitalExpectedDay(
-                        row.id,
-                        v === "" ? null : Number(v)
-                      );
-                    }}
-                  >
-                    <option value="">—</option>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={cn(
-                      "h-6 shrink-0 rounded px-1.5 text-[10px] font-semibold",
-                      row.status === "paid"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-amber-100 text-amber-900"
-                    )}
-                    onClick={() =>
-                      updateHospital(row.id, {
-                        status: row.status === "paid" ? "unpaid" : "paid",
-                      })
-                    }
-                  >
-                    {row.status === "paid" ? "완료" : "미수"}
-                  </button>
-                  <button
-                    type="button"
-                    className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700"
-                    aria-label="삭제"
-                    onClick={() => removeHospital(row.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  hint,
-  tone,
-  emphasize,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-  tone?: "positive" | "warn" | "danger";
-  emphasize?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg border border-slate-200 bg-white px-2.5 py-1.5",
-        emphasize && "border-slate-300"
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-1">
-        <p className="text-[11px] text-slate-500">
-          {label}
-          {hint ? (
-            <span className="ml-1 text-slate-400">· {hint}</span>
-          ) : null}
-        </p>
       </div>
-      <p
-        className={cn(
-          "text-sm font-semibold tabular-nums tracking-tight text-slate-900",
-          tone === "positive" && "text-emerald-700",
-          tone === "warn" && "text-amber-700",
-          tone === "danger" && "text-red-600"
-        )}
-      >
-        {formatCurrency(value)}
-      </p>
+
+      {/* 비용 | 병원 수금 — 좌우 분할, 스크롤 없이 한 화면 */}
+      <div className="grid min-h-0 flex-1 gap-1.5 overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
+          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1">
+            <h2 className="text-xs font-semibold text-slate-800">
+              월 비용
+              <span className="ml-1 font-normal text-slate-500">
+                {formatCurrency(summary.expenseTotal)}
+              </span>
+            </h2>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-5 border-slate-200 px-1.5 text-[10px]"
+                onClick={syncPayrollExpenses}
+              >
+                급여반영
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-5 border-slate-200 px-1.5 text-[10px]"
+                onClick={addExpense}
+              >
+                +
+              </Button>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-1">
+            {month.expenses.length === 0 ? (
+              <p className="py-2 text-center text-[11px] text-slate-400">
+                비용 없음
+              </p>
+            ) : (
+              <div className="space-y-0.5">
+                {month.expenses.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-slate-50"
+                  >
+                    <Input
+                      value={row.name}
+                      onChange={(e) =>
+                        updateExpense(row.id, { name: e.target.value })
+                      }
+                      className="h-5 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[11px] shadow-none focus-visible:ring-1"
+                    />
+                    <MoneyInput
+                      value={row.amount}
+                      onChange={(n) => updateExpense(row.id, { amount: n })}
+                      className="h-5 w-[5.5rem] shrink-0 border-slate-200 bg-white px-1 text-[11px]"
+                    />
+                    {row.source === "meta-daily" ? (
+                      <span className="w-7 shrink-0 text-center text-[10px] text-sky-700">
+                        매일
+                      </span>
+                    ) : (
+                      <select
+                        className="h-5 w-9 shrink-0 rounded border border-slate-200 bg-white text-[10px]"
+                        value={row.payDay ?? ""}
+                        aria-label="지출일"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateExpensePayDay(
+                            row.id,
+                            v === "" ? null : Number(v)
+                          );
+                        }}
+                      >
+                        <option value="">—</option>
+                        <option value={1}>1</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={25}>25</option>
+                        <option value={31}>말</option>
+                        {[5, 15].map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      className="shrink-0 text-slate-300 hover:text-slate-600"
+                      aria-label="삭제"
+                      onClick={() => removeExpense(row.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-white">
+          <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-100 px-2 py-1">
+            <h2 className="text-xs font-semibold text-slate-800">
+              병원 수금
+              <span className="ml-1 font-normal text-slate-500">
+                {summary.paidCount}/{summary.hospitalCount} 완료
+              </span>
+            </h2>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-5 border-slate-200 px-1.5 text-[10px]"
+              onClick={addHospital}
+            >
+              +
+            </Button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-1">
+            {month.hospitals.length === 0 ? (
+              <p className="py-2 text-center text-[11px] text-slate-400">
+                병원 없음
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-0.5 xl:grid-cols-2">
+                {month.hospitals.map((row) => {
+                  const inactive =
+                    row.contractStatus === "보류" ||
+                    row.contractStatus === "해지";
+                  return (
+                    <div
+                      key={row.id}
+                      className={cn(
+                        "flex items-center gap-1 rounded px-1 py-0.5",
+                        inactive && "opacity-45",
+                        !inactive &&
+                          row.status === "paid" &&
+                          "bg-emerald-50/70",
+                        !inactive &&
+                          row.status === "unpaid" &&
+                          "bg-amber-50/50"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        className={cn(
+                          "h-5 w-10 shrink-0 rounded text-[10px] font-semibold",
+                          row.status === "paid"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-900"
+                        )}
+                        onClick={() =>
+                          updateHospital(row.id, {
+                            status: row.status === "paid" ? "unpaid" : "paid",
+                          })
+                        }
+                      >
+                        {row.status === "paid" ? "완료" : "미수"}
+                      </button>
+                      <Input
+                        value={row.name}
+                        onChange={(e) =>
+                          renameHospitalMaster(row.id, e.target.value)
+                        }
+                        className="h-5 min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[11px] shadow-none focus-visible:ring-1"
+                      />
+                      <select
+                        className="h-5 w-[3.25rem] shrink-0 rounded border-0 bg-transparent text-[10px] text-slate-500"
+                        value={row.contractStatus}
+                        aria-label="계약"
+                        onChange={(e) =>
+                          setContractStatus(
+                            row.id,
+                            e.target.value as ContractStatus
+                          )
+                        }
+                      >
+                        {CONTRACT_STATUS_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="h-5 w-8 shrink-0 rounded border-0 bg-transparent text-[10px] text-slate-500"
+                        value={row.expectedDay ?? ""}
+                        aria-label="예정일"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setHospitalExpectedDay(
+                            row.id,
+                            v === "" ? null : Number(v)
+                          );
+                        }}
+                      >
+                        <option value="">—</option>
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(
+                          (d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          )
+                        )}
+                      </select>
+                      <MoneyInput
+                        value={row.amount}
+                        onChange={(n) => {
+                          updateHospital(row.id, { amount: n });
+                          setHospitalDefaultAmount(row.id, n);
+                        }}
+                        className="h-5 w-[5.25rem] shrink-0 border-slate-200 bg-white px-1 text-[11px]"
+                      />
+                      <button
+                        type="button"
+                        className="shrink-0 text-slate-300 hover:text-slate-600"
+                        aria-label="삭제"
+                        onClick={() => removeHospital(row.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
