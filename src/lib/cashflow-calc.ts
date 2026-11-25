@@ -199,7 +199,8 @@ function daysInCashflowMonth(yearMonth: string | undefined): number {
 
 /** 월 비용 비중용 계정 묶음 */
 export type ExpenseAccountKey =
-  | "payroll"
+  | "payrollDomestic"
+  | "payrollOverseas"
   | "ads"
   | "sales"
   | "office"
@@ -208,7 +209,8 @@ export type ExpenseAccountKey =
   | "other";
 
 export const EXPENSE_ACCOUNT_ORDER: ExpenseAccountKey[] = [
-  "payroll",
+  "payrollDomestic",
+  "payrollOverseas",
   "ads",
   "sales",
   "office",
@@ -218,7 +220,8 @@ export const EXPENSE_ACCOUNT_ORDER: ExpenseAccountKey[] = [
 ];
 
 export const EXPENSE_ACCOUNT_LABELS: Record<ExpenseAccountKey, string> = {
-  payroll: "인건비",
+  payrollDomestic: "인건비 (국내)",
+  payrollOverseas: "인건비 (해외)",
   ads: "광고비",
   sales: "영업·커미션",
   office: "임차·관리",
@@ -231,24 +234,33 @@ export function classifyExpenseAccount(
   row: Pick<ExpenseMonthRow, "name" | "source">
 ): ExpenseAccountKey {
   const source = row.source;
+  if (source === "fixed-th" || source === "fixed-vn") {
+    return "payrollOverseas";
+  }
   if (
     source === "payroll-bbg" ||
     source === "payroll-ceo" ||
-    source === "payroll-goldfender" ||
-    source === "fixed-th" ||
-    source === "fixed-vn"
+    source === "payroll-goldfender"
   ) {
-    return "payroll";
+    return "payrollDomestic";
   }
   if (source === "meta-daily") return "ads";
 
   const name = (row.name || "").replace(/\s+/g, "");
   if (
+    name.includes("태국") ||
+    name.includes("베트남") ||
+    name.includes("해외")
+  ) {
+    return "payrollOverseas";
+  }
+  if (
     name.includes("인건비") ||
     name.includes("급여") ||
-    name.includes("4대보험")
+    name.includes("4대보험") ||
+    name.includes("대표이사")
   ) {
-    return "payroll";
+    return "payrollDomestic";
   }
   if (name.includes("광고") || name.toLowerCase().includes("meta")) {
     return "ads";

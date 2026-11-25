@@ -8,7 +8,8 @@ import { formatCompactCurrency, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const ACCOUNT_COLORS: Record<string, string> = {
-  payroll: "#0f766e",
+  payrollDomestic: "#0f766e",
+  payrollOverseas: "#0e7490",
   ads: "#e11d48",
   sales: "#0369a1",
   office: "#b45309",
