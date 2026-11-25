@@ -43,6 +43,14 @@ export function daysInYearMonth(yearMonth: string): number {
   return new Date(y, m, 0).getDate();
 }
 
+/** 지급월 → 급여 귀속월 (11월 10일 지급 = 10월 급여) */
+export function payrollSourceYearMonth(cashflowYearMonth: string): string {
+  if (!/^\d{4}-\d{2}$/.test(cashflowYearMonth)) return cashflowYearMonth;
+  const [y, m] = cashflowYearMonth.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /** BBG 인건비에서 제외: 미지급 (김영창·서미희·이정석) */
 function sumNetPay(
   yearMonth: string,
@@ -179,20 +187,30 @@ export const SEED_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
   },
 ];
 
+/**
+ * @param cashflowYearMonth 비용이 나가는 달 (예: 2026-11)
+ * @param performancePayOverrides 전월(급여 귀속월) 성과급 오버라이드
+ */
 export function resolveLinkedExpenseAmount(
   source: ExpenseSource,
-  yearMonth: string,
+  cashflowYearMonth: string,
   performancePayOverrides: Record<string, number> = {}
 ): number | null {
   if (source === "payroll-bbg") {
-    return calcBbgNetPayTotal(yearMonth, performancePayOverrides);
+    return calcBbgNetPayTotal(
+      payrollSourceYearMonth(cashflowYearMonth),
+      performancePayOverrides
+    );
   }
   if (source === "payroll-goldfender") {
-    return calcGoldfenderNetPayTotal(yearMonth, performancePayOverrides);
+    return calcGoldfenderNetPayTotal(
+      payrollSourceYearMonth(cashflowYearMonth),
+      performancePayOverrides
+    );
   }
   if (source === "fixed-th") return FIXED_THAILAND_PAYROLL;
   if (source === "fixed-vn") return FIXED_VIETNAM_PAYROLL;
-  if (source === "meta-daily") return calcMetaMonthlyAmount(yearMonth);
+  if (source === "meta-daily") return calcMetaMonthlyAmount(cashflowYearMonth);
   return null;
 }
 

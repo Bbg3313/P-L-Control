@@ -7,6 +7,7 @@ import {
   SEED_HOSPITALS,
 } from "@/lib/cashflow-seed";
 import {
+  payrollSourceYearMonth,
   resolveLinkedExpenseAmount,
   SEED_EXPENSE_TEMPLATES,
 } from "@/lib/cashflow-payroll-expenses";
@@ -22,9 +23,9 @@ import {
 function expenseNote(source: ExpenseSource, name: string): string {
   switch (source) {
     case "payroll-bbg":
-      return "BBG 실지급 (미지급 제외) · 10일";
+      return "전월 급여대장 실지급 (미지급 제외) · 10일";
     case "payroll-goldfender":
-      return "골드펜더 실지급 · 말일";
+      return "전월 급여대장 실지급 · 말일";
     case "fixed-th":
       return "고정 500만 · 말일";
     case "fixed-vn":
@@ -75,7 +76,8 @@ export function withSeedHospitalsIfEmpty(
     const month = snapshot.months[ym];
     const prevH = new Map((month?.hospitals ?? []).map((h) => [h.id, h]));
     const prevE = new Map((month?.expenses ?? []).map((e) => [e.id, e]));
-    const overrides = performancePayOverridesByMonth[ym] ?? {};
+    const payrollYm = payrollSourceYearMonth(ym);
+    const overrides = performancePayOverridesByMonth[payrollYm] ?? {};
 
     const nextHospitals: HospitalMonthRow[] = hospitals.map((h) => {
       const prev = prevH.get(h.id);
@@ -106,8 +108,15 @@ export function withSeedHospitalsIfEmpty(
     const nextExpenses: ExpenseMonthRow[] = expenseTemplates.map((t) => {
       const prev = prevE.get(t.id);
       const linked = resolveLinkedExpenseAmount(t.source, ym, overrides);
+      const isPayrollLinked =
+        t.source === "payroll-bbg" || t.source === "payroll-goldfender";
+      // 인건비는 전월 대장 기준으로 시드 갱신 시 재계산
       const amount =
-        prev && prev.amount > 0 ? prev.amount : (linked ?? t.defaultAmount);
+        isPayrollLinked && linked != null
+          ? linked
+          : prev && prev.amount > 0
+            ? prev.amount
+            : (linked ?? t.defaultAmount);
       const dailyAmount = t.dailyAmount;
       if (!prev) {
         return {
@@ -171,6 +180,7 @@ export function buildMonthFromTemplates(
     )
   );
   const expenses = snapshot.expenseTemplates.map((t) => {
+    // performancePayOverrides 는 호출측에서 전월(급여 귀속월) 기준으로 넘김
     const linked = resolveLinkedExpenseAmount(
       t.source,
       yearMonth,

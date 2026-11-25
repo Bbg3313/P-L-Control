@@ -17,7 +17,10 @@ import {
   buildMonthFromTemplates,
   withSeedHospitalsIfEmpty,
 } from "@/lib/cashflow-seed-apply";
-import { resolvePayrollLinkedAmount } from "@/lib/cashflow-payroll-expenses";
+import {
+  payrollSourceYearMonth,
+  resolvePayrollLinkedAmount,
+} from "@/lib/cashflow-payroll-expenses";
 import {
   loadCashflowLocal,
   saveCashflowLocal,
@@ -239,20 +242,26 @@ export function CashflowPage() {
             );
             setSnapshot(chosen);
             saveCashflowLocal(chosen);
-            setPerfOverrides(perfAll[reportingMonth] ?? {});
+            setPerfOverrides(
+              perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+            );
           }
         } else if (!cancelled) {
           const seeded = withSeedHospitalsIfEmpty(local, perfAll);
           setSnapshot(seeded);
           saveCashflowLocal(seeded);
-          setPerfOverrides(perfAll[reportingMonth] ?? {});
+          setPerfOverrides(
+            perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+          );
         }
       } catch {
         if (!cancelled) {
           const seeded = withSeedHospitalsIfEmpty(local, perfAll);
           setSnapshot(seeded);
           saveCashflowLocal(seeded);
-          setPerfOverrides(perfAll[reportingMonth] ?? {});
+          setPerfOverrides(
+            perfAll[payrollSourceYearMonth(reportingMonth)] ?? {}
+          );
         }
       } finally {
         if (!cancelled) {
@@ -279,7 +288,9 @@ export function CashflowPage() {
           performancePay?: Record<string, Record<string, number>>;
         };
         if (!cancelled) {
-          setPerfOverrides(ov.performancePay?.[reportingMonth] ?? {});
+          setPerfOverrides(
+            ov.performancePay?.[payrollSourceYearMonth(reportingMonth)] ?? {}
+          );
         }
       } catch {
         /* ignore */
