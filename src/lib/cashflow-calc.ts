@@ -24,9 +24,27 @@ export interface CashflowSummary {
 export interface CheckpointSummary {
   key: "start" | "day10" | "monthEnd";
   label: string;
+  /** 해당 기준일까지 예정·실수금(활성 계약 청구액) */
   received: number;
   expenses: number;
+  /** 수금 − 비용. 음수면 부족(더 필요), 양수면 여유(남음) */
   net: number;
+}
+
+/** 활성 계약 중 예정일이 maxDay 이하인 청구액 합(미수 포함 — 현금 계획용) */
+export function sumExpectedByDayLimit(
+  hospitals: HospitalMonthRow[],
+  maxDay: number
+): number {
+  let total = 0;
+  for (const row of hospitals) {
+    if (!isActiveContract(row.contractStatus)) continue;
+    const day = row.expectedDay ?? 31;
+    if (day <= maxDay) {
+      total += Math.max(0, Math.floor(row.amount || 0));
+    }
+  }
+  return total;
 }
 
 /** 입금완료이고 예정일이 maxDay 이하인 청구액 합 */
@@ -146,10 +164,10 @@ export function buildCheckpoints(
   const expenses = month?.expenses ?? [];
   const ym = month?.yearMonth;
 
-  const day10Received = sumReceivedByDayLimit(hospitals, 10);
-  const monthEndReceived = hospitals.reduce((sum, row) => {
+  const startIn = sumExpectedByDayLimit(hospitals, 1);
+  const day10In = sumExpectedByDayLimit(hospitals, 10);
+  const endIn = hospitals.reduce((sum, row) => {
     if (!isActiveContract(row.contractStatus)) return sum;
-    if (row.status !== "paid") return sum;
     return sum + Math.max(0, Math.floor(row.amount || 0));
   }, 0);
 
@@ -160,24 +178,24 @@ export function buildCheckpoints(
   return [
     {
       key: "start",
-      label: "월초 (1일)",
-      received: 0,
+      label: "1일 기준",
+      received: startIn,
       expenses: startExp,
-      net: -startExp,
+      net: startIn - startExp,
     },
     {
       key: "day10",
       label: "10일 기준",
-      received: day10Received,
+      received: day10In,
       expenses: day10Exp,
-      net: day10Received - day10Exp,
+      net: day10In - day10Exp,
     },
     {
       key: "monthEnd",
-      label: "말일",
-      received: monthEndReceived,
+      label: "말일 기준",
+      received: endIn,
       expenses: endExp,
-      net: monthEndReceived - endExp,
+      net: endIn - endExp,
     },
   ];
 }

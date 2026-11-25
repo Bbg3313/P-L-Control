@@ -616,41 +616,48 @@ export function CashflowPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-          {checkpoints.map((cp) => (
-            <div
-              key={cp.key}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2"
-            >
-              <div className="mb-1.5 text-xs font-semibold text-slate-800">
-                {cp.label}
+          {checkpoints.map((cp) => {
+            const short = cp.net < 0;
+            const gap = Math.abs(cp.net);
+            return (
+              <div
+                key={cp.key}
+                className={cn(
+                  "rounded-lg border bg-white px-3 py-2.5",
+                  short ? "border-red-200" : "border-emerald-200"
+                )}
+              >
+                <div className="text-xs font-semibold text-slate-800">
+                  {cp.label}
+                </div>
+                <div
+                  className={cn(
+                    "mt-1 text-lg font-bold tabular-nums tracking-tight",
+                    short ? "text-red-600" : "text-emerald-700"
+                  )}
+                >
+                  {formatCurrency(gap)}
+                  <span className="ml-1 text-sm font-semibold">
+                    {short ? "더 필요" : "남음"}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                  <span>
+                    예정수금{" "}
+                    <span className="tabular-nums text-slate-700">
+                      {formatCurrency(cp.received)}
+                    </span>
+                  </span>
+                  <span>
+                    비용{" "}
+                    <span className="tabular-nums text-slate-700">
+                      {formatCurrency(cp.expenses)}
+                    </span>
+                  </span>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-[11px]">
-                <div>
-                  <div className="text-slate-400">수금</div>
-                  <div className="font-medium tabular-nums text-slate-700">
-                    {formatCurrency(cp.received)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-slate-400">비용</div>
-                  <div className="font-medium tabular-nums text-slate-700">
-                    {formatCurrency(cp.expenses)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-slate-400">+/-</div>
-                  <div
-                    className={cn(
-                      "font-semibold tabular-nums",
-                      cp.net >= 0 ? "text-emerald-700" : "text-red-600"
-                    )}
-                  >
-                    {formatCurrency(cp.net)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
