@@ -697,47 +697,85 @@ export function CashflowPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-          {(
-            [
+          {(() => {
+            const hospitalBilled = Math.max(
+              0,
+              summary.billedTotal - summary.miscBilledTotal
+            );
+            const hospitalReceived = Math.max(
+              0,
+              summary.receivedTotal - summary.miscReceivedTotal
+            );
+            const receivedPct =
+              hospitalBilled > 0
+                ? Math.round((hospitalReceived / hospitalBilled) * 100)
+                : 0;
+            const unpaidPct =
+              hospitalBilled > 0
+                ? Math.round((summary.unpaidTotal / hospitalBilled) * 100)
+                : 0;
+            const items: {
+              label: string;
+              value: number;
+              tone: string;
+              pct: number | null;
+            }[] = [
               {
-                label: "청구",
-                value: summary.billedTotal,
+                label: "병원 수금",
+                value: hospitalBilled,
                 tone: "text-slate-900",
+                pct: null,
               },
               {
                 label: "수금",
                 value: summary.receivedTotal,
                 tone: "text-emerald-700",
+                pct: receivedPct,
               },
               {
                 label: "미수",
                 value: summary.unpaidTotal,
                 tone: "text-amber-700",
+                pct: unpaidPct,
               },
               {
-                label: "비용",
+                label: "월 비용",
                 value: summary.expenseTotal,
                 tone: "text-slate-900",
+                pct: null,
               },
-            ] as const
-          ).map((item) => (
-            <div
-              key={item.label}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2"
-            >
-              <div className="text-[11px] font-medium text-slate-500">
-                {item.label}
-              </div>
+            ];
+            return items.map((item) => (
               <div
-                className={cn(
-                  "mt-0.5 text-base font-semibold tabular-nums tracking-tight",
-                  item.tone
-                )}
+                key={item.label}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2"
               >
-                {formatCurrency(item.value)}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="text-[11px] font-medium text-slate-500">
+                    {item.label}
+                  </div>
+                  {item.pct != null && (
+                    <div
+                      className={cn(
+                        "text-[11px] font-semibold tabular-nums",
+                        item.tone
+                      )}
+                    >
+                      {item.pct}%
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    "mt-0.5 text-base font-semibold tabular-nums tracking-tight",
+                    item.tone
+                  )}
+                >
+                  {formatCurrency(item.value)}
+                </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
 
         <CashflowGapOverview checkpoints={checkpoints} expenseTotal={summary.expenseTotal} />
