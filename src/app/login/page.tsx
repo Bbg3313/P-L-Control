@@ -13,6 +13,7 @@ import {
   APP_LOGO_SRC,
   APP_SUBTITLE,
 } from "@/lib/brand";
+import { AUTH_UNLOCK_SESSION_KEY } from "@/lib/auth-session";
 
 function PasswordForm() {
   const router = useRouter();
@@ -41,6 +42,7 @@ function PasswordForm() {
         return;
       }
 
+      sessionStorage.setItem(AUTH_UNLOCK_SESSION_KEY, "1");
       const from = searchParams.get("from");
       router.replace(from && from.startsWith("/") ? from : "/");
       router.refresh();

@@ -29,12 +29,12 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true });
+  // maxAge 없음 = 브라우저 세션 쿠키 (창 종료 시 만료)
   response.cookies.set(AUTH_COOKIE_NAME, getSessionToken(), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
   });
 
   return response;
